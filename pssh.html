@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extracteur MPD & Générateur PSSH</title>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; max-width: 900px; margin: 20px auto; padding: 0 20px; background: #f4f4f9; }
+        .container { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        textarea { width: 100%; height: 200px; font-family: monospace; margin-top: 10px; }
+        .result { background: #e7f3ff; padding: 15px; border-left: 5px solid #2196F3; margin-top: 20px; word-break: break-all; }
+        input[type="file"] { margin-bottom: 20px; }
+        h3 { color: #333; }
+        .label { font-weight: bold; color: #2196F3; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Analyseur de fichier MPD</h2>
+    <p>Sélectionnez un fichier .mpd pour extraire le KID et générer un PSSH Widevine.</p>
+    
+    <input type="file" id="fileInput" accept=".mpd,.xml">
+    
+    <h3>Contenu du fichier :</h3>
+    <textarea id="fileContent" readonly placeholder="Le contenu s'affichera ici..."></textarea>
+
+    <div id="output" class="result" style="display:none;">
+        <p><span class="label">KID extrait :</span> <span id="kidDisplay"></span></p>
+        <p><span class="label">PSSH Widevine (Base64) :</span> <br><span id="psshDisplay"></span></p>
+    </div>
+</div>
+
+<script>
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const content = e.target.result;
+            document.getElementById('fileContent').value = content;
+            extractAndGenerate(content);
+        };
+        reader.readAsText(file);
+    });
+
+    function extractAndGenerate(xmlString) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+        
+        // Recherche du KID dans l'attribut cenc:default_KID
+        // On utilise XPath ou selector car l'espace de nom peut varier
+        let kid = "";
+        const contentProtection = xmlDoc.querySelector("ContentProtection[cenc\\:default_KID], ContentProtection[default_KID]");
+        
+        if (contentProtection) {
+            kid = contentProtection.getAttribute("cenc:default_KID") || contentProtection.getAttribute("default_KID");
+        }
+
+        if (kid) {
+            document.getElementById('kidDisplay').textContent = kid;
+            const pssh = generateWidevinePssh(kid);
+            document.getElementById('psshDisplay').textContent = pssh;
+            document.getElementById('output').style.display = "block";
+        } else {
+            alert("Aucun default_KID trouvé dans ce fichier MPD.");
+            document.getElementById('output').style.display = "none";
+        }
+    }
+
+    function generateWidevinePssh(kid) {
+        // Nettoyer le KID (enlever les tirets) et convertir en hex
+        const hexKid = kid.replace(/-/g, '').toLowerCase();
+        
+        // Construction d'un PSSH Widevine minimal (Version 0)
+        // System ID Widevine: edef8ba9-79d6-4ace-a3c8-27dcd51d21ed
+        
+        const systemId = "edef8ba979d64acea3c827dcd51d21ed";
+        
+        // Données spécifiques Widevine (08011210 + hexKid)
+        // 0801 = version/id, 12 = length (16 bytes), 10 = key id type
+        const psshData = "08011210" + hexKid;
+        
+        // Taille totale : 4(taille) + 4(pssh) + 4(fullbox header) + 16(systemId) + 4(data length) + data
+        const dataLength = psshData.length / 2;
+        const totalSize = 32 + dataLength;
+        
+        // Construction de la chaîne hexadécimale
+        let psshHex = totalSize.toString(16).padStart(8, '0'); // Size
+        psshHex += "70737368"; // 'pssh'
+        psshHex += "00000000"; // Fullbox (version 0, flags 0)
+        psshHex += systemId;
+        psshHex += dataLength.toString(16).padStart(8, '0'); // Data length
+        psshHex += psshData;
+
+        return hexToBase64(psshHex);
+    }
+
+    function hexToBase64(hexstring) {
+        return btoa(hexstring.match(/\w{2}/g).map(function(a) {
+            return String.fromCharCode(parseInt(a, 16));
+        }).join(""));
+    }
+</script>
+
+</body>
+</html>
