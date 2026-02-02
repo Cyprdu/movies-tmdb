@@ -3,66 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Catalogue Cyprdu</title>
+    <title>Mon Catalogue Moovies</title>
     <style>
         :root { --bg: #0b0b0b; --card: #161616; --accent: #e50914; }
         body { background: var(--bg); color: white; font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 40px 20px; }
-        h1 { text-align: center; color: var(--accent); text-transform: uppercase; letter-spacing: 4px; margin-bottom: 50px; }
+        h1 { text-align: center; color: var(--accent); text-transform: uppercase; letter-spacing: 4px; margin-bottom: 50px; font-size: 1.8em; }
         
         #catalog { 
             display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
-            gap: 25px; max-width: 1300px; margin: 0 auto; 
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+            gap: 20px; max-width: 1400px; margin: 0 auto; 
         }
         
         .movie-card { 
             background: var(--card); border-radius: 8px; overflow: hidden; 
-            transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); 
-            text-decoration: none; color: inherit; display: block;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease; text-decoration: none; color: inherit; display: block;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.5);
         }
         
-        .movie-card:hover { transform: scale(1.08); z-index: 10; }
-        .movie-card img { width: 100%; height: 270px; object-fit: cover; }
+        .movie-card:hover { transform: scale(1.05); }
+        .movie-card img { width: 100%; height: auto; aspect-ratio: 2/3; object-fit: cover; display: block; }
         
-        .info { padding: 12px; text-align: center; }
-        .title { display: block; font-weight: bold; font-size: 0.9em; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .year { color: #888; font-size: 0.8em; }
+        .info { padding: 10px; text-align: center; }
+        .title { display: block; font-weight: bold; font-size: 0.85em; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .year { color: #888; font-size: 0.75em; }
 
-        .loader { text-align: center; font-size: 1.2em; color: #555; }
+        .loader { text-align: center; font-size: 1.2em; color: #666; margin-top: 50px; }
     </style>
 </head>
 <body>
 
-    <h1>Mon Catalogue Cinéma</h1>
-    <div id="catalog" class="loader">Analyse du dépôt GitHub...</div>
+    <h1>MON CATALOGUE</h1>
+    <div id="catalog" class="loader">Chargement des films depuis GitHub...</div>
 
     <script>
+        // Configuration
         const API_GITHUB = 'https://api.github.com/repos/Cyprdu/movies-tmdb/contents/';
+        const BASE_URL_NETLIFY = 'https://moovies-mpd.netlify.app/';
         const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0YmM5NGE4NTk4ODgzZjNhYTgyM2IxZWZmNjUzNmE5ZSIsIm5iZiI6MTc2OTAxNTQ2OS44NDgsInN1YiI6IjY5NzEwOGFkYmM1ODc1OWVkYzA4ZGE2ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IyDx0X9qH6RIAPdxwODeMSZKMBgMxu07Gg6TgZZOCMw';
 
         async function loadCatalog() {
             const catalog = document.getElementById('catalog');
             
             try {
-                // 1. Récupération des fichiers sur GitHub
                 const response = await fetch(API_GITHUB);
-                if (!response.ok) throw new Error("Impossible d'accéder à GitHub");
+                if (!response.ok) throw new Error("Erreur de connexion à l'API GitHub");
                 const files = await response.json();
 
-                // 2. Filtrage des IDs (On prend les fichiers .html qui sont des nombres)
+                // Filtrage : uniquement les fichiers .html dont le nom est un nombre
                 const ids = files
                     .filter(f => f.name.endsWith('.html') && /^\d+$/.test(f.name.split('.')[0]))
                     .map(f => f.name.split('.')[0]);
 
                 if (ids.length === 0) {
-                    catalog.innerHTML = "Aucun film détecté dans le dossier.";
+                    catalog.innerHTML = "Aucun film trouvé dans le dépôt.";
                     return;
                 }
 
-                catalog.innerHTML = ''; // On efface le message de chargement
+                catalog.innerHTML = ''; // Nettoyage du loader
 
-                // 3. Récupération des données TMDB pour chaque ID
+                // On lance toutes les requêtes TMDB en parallèle
                 const promises = ids.map(id => fetchTMDB(id));
                 await Promise.all(promises);
 
@@ -80,13 +80,14 @@
 
                 if (data.poster_path) {
                     const card = document.createElement('a');
-                    card.href = `https://cyprdu.github.io/movies-tmdb/${id}.html`; // Lien vers votre page
+                    // Redirection vers Netlify sans le .html
+                    card.href = `${BASE_URL_NETLIFY}${id}`; 
                     card.className = 'movie-card';
                     card.innerHTML = `
                         <img src="https://image.tmdb.org/t/p/w500${data.poster_path}" alt="${data.title}">
                         <div class="info">
                             <span class="title">${data.title}</span>
-                            <span class="year">${new Date(data.release_date).getFullYear()}</span>
+                            <span class="year">${data.release_date ? data.release_date.split('-')[0] : 'N/A'}</span>
                         </div>
                     `;
                     document.getElementById('catalog').appendChild(card);
