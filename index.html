@@ -5,10 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mon Catalogue Moovies</title>
     <style>
-        :root { --bg: #0b0b0b; --card: #161616; --accent: #e50914; }
-        body { background: var(--bg); color: white; font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 40px 20px; }
-        h1 { text-align: center; color: var(--accent); text-transform: uppercase; letter-spacing: 4px; margin-bottom: 50px; font-size: 1.8em; }
+        :root { --bg: #0b0b0b; --card: #161616; --accent: #e50914; --input: #222; }
+        body { background: var(--bg); color: white; font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 20px; }
         
+        header { max-width: 1400px; margin: 0 auto 40px; text-align: center; }
+        h1 { color: var(--accent); text-transform: uppercase; letter-spacing: 4px; margin-bottom: 30px; }
+
+        /* Barre de recherche et Filtres */
+        .controls { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-bottom: 30px; }
+        #searchBar { 
+            padding: 12px 20px; width: 300px; border-radius: 25px; border: none; 
+            background: var(--input); color: white; outline: none; font-size: 1em;
+        }
+        #genreFilter { 
+            padding: 10px 20px; border-radius: 25px; border: none; 
+            background: var(--input); color: white; outline: none; cursor: pointer;
+        }
+
+        /* Grille */
         #catalog { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
@@ -21,53 +35,63 @@
             box-shadow: 0 8px 15px rgba(0,0,0,0.5);
         }
         
+        .movie-card.hidden { display: none; }
         .movie-card:hover { transform: scale(1.05); }
-        .movie-card img { width: 100%; height: auto; aspect-ratio: 2/3; object-fit: cover; display: block; }
+        .movie-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; }
         
         .info { padding: 10px; text-align: center; }
         .title { display: block; font-weight: bold; font-size: 0.85em; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .year { color: #888; font-size: 0.75em; }
+        .meta { color: #888; font-size: 0.75em; }
 
-        .loader { text-align: center; font-size: 1.2em; color: #666; margin-top: 50px; }
+        .loader { text-align: center; font-size: 1.2em; color: #666; margin-top: 50px; width: 100%; }
     </style>
 </head>
 <body>
 
-    <h1>MON CATALOGUE</h1>
-    <div id="catalog" class="loader">Chargement des films depuis GitHub...</div>
+    <header>
+        <h1>MON CATALOGUE</h1>
+        <div class="controls">
+            <input type="text" id="searchBar" placeholder="Rechercher un film..." oninput="filterMovies()">
+            <select id="genreFilter" onchange="filterMovies()">
+                <option value="all">Toutes les catégories</option>
+            </select>
+        </div>
+    </header>
+
+    <div id="catalog" class="loader">Chargement des films...</div>
 
     <script>
-        // Configuration
         const API_GITHUB = 'https://api.github.com/repos/Cyprdu/movies-tmdb/contents/';
         const BASE_URL_NETLIFY = 'https://moovies-mpd.netlify.app/';
         const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0YmM5NGE4NTk4ODgzZjNhYTgyM2IxZWZmNjUzNmE5ZSIsIm5iZiI6MTc2OTAxNTQ2OS44NDgsInN1YiI6IjY5NzEwOGFkYmM1ODc1OWVkYzA4ZGE2ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IyDx0X9qH6RIAPdxwODeMSZKMBgMxu07Gg6TgZZOCMw';
 
+        let moviesData = []; // Stockage local pour le filtrage
+        const genresMap = new Set(); // Pour remplir le select dynamiquement
+
         async function loadCatalog() {
-            const catalog = document.getElementById('catalog');
-            
             try {
                 const response = await fetch(API_GITHUB);
-                if (!response.ok) throw new Error("Erreur de connexion à l'API GitHub");
                 const files = await response.json();
 
-                // Filtrage : uniquement les fichiers .html dont le nom est un nombre
                 const ids = files
                     .filter(f => f.name.endsWith('.html') && /^\d+$/.test(f.name.split('.')[0]))
                     .map(f => f.name.split('.')[0]);
 
                 if (ids.length === 0) {
-                    catalog.innerHTML = "Aucun film trouvé dans le dépôt.";
+                    document.getElementById('catalog').innerHTML = "Aucun film trouvé.";
                     return;
                 }
 
-                catalog.innerHTML = ''; // Nettoyage du loader
-
-                // On lance toutes les requêtes TMDB en parallèle
+                // Récupération parallèle
                 const promises = ids.map(id => fetchTMDB(id));
-                await Promise.all(promises);
+                const results = await Promise.all(promises);
+                
+                moviesData = results.filter(m => m !== null);
+                renderCatalog(moviesData);
+                populateGenres();
 
             } catch (error) {
-                catalog.innerHTML = "⚠️ Erreur : " + error.message;
+                document.getElementById('catalog').innerHTML = "⚠️ Erreur GitHub : " + error.message;
             }
         }
 
@@ -77,24 +101,71 @@
                     headers: { Authorization: `Bearer ${TMDB_TOKEN}` }
                 });
                 const data = await res.json();
+                
+                if (!data.title) return null;
 
-                if (data.poster_path) {
-                    const card = document.createElement('a');
-                    // Redirection vers Netlify sans le .html
-                    card.href = `${BASE_URL_NETLIFY}${id}`; 
-                    card.className = 'movie-card';
-                    card.innerHTML = `
-                        <img src="https://image.tmdb.org/t/p/w500${data.poster_path}" alt="${data.title}">
-                        <div class="info">
-                            <span class="title">${data.title}</span>
-                            <span class="year">${data.release_date ? data.release_date.split('-')[0] : 'N/A'}</span>
-                        </div>
-                    `;
-                    document.getElementById('catalog').appendChild(card);
+                // On ajoute les genres au Set global
+                data.genres.forEach(g => genresMap.add(g.name));
+
+                return {
+                    id: id,
+                    title: data.title,
+                    poster: data.poster_path,
+                    year: data.release_date ? data.release_date.split('-')[0] : 'N/A',
+                    genres: data.genres.map(g => g.name)
+                };
+            } catch (e) { return null; }
+        }
+
+        function renderCatalog(movies) {
+            const catalog = document.getElementById('catalog');
+            catalog.innerHTML = '';
+            catalog.classList.remove('loader');
+
+            movies.forEach(movie => {
+                const card = document.createElement('a');
+                card.href = `${BASE_URL_NETLIFY}${movie.id}`;
+                card.className = 'movie-card';
+                card.dataset.title = movie.title.toLowerCase();
+                card.dataset.genres = movie.genres.join('|').toLowerCase();
+                
+                card.innerHTML = `
+                    <img src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}">
+                    <div class="info">
+                        <span class="title">${movie.title}</span>
+                        <span class="meta">${movie.year} • ${movie.genres[0] || 'Film'}</span>
+                    </div>
+                `;
+                catalog.appendChild(card);
+            });
+        }
+
+        function populateGenres() {
+            const select = document.getElementById('genreFilter');
+            const sortedGenres = Array.from(genresMap).sort();
+            sortedGenres.forEach(genre => {
+                const opt = document.createElement('option');
+                opt.value = genre.toLowerCase();
+                opt.textContent = genre;
+                select.appendChild(opt);
+            });
+        }
+
+        function filterMovies() {
+            const searchTerm = document.getElementById('searchBar').value.toLowerCase();
+            const selectedGenre = document.getElementById('genreFilter').value;
+            const cards = document.querySelectorAll('.movie-card');
+
+            cards.forEach(card => {
+                const titleMatch = card.dataset.title.includes(searchTerm);
+                const genreMatch = selectedGenre === 'all' || card.dataset.genres.includes(selectedGenre);
+                
+                if (titleMatch && genreMatch) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
                 }
-            } catch (e) {
-                console.error("Erreur TMDB pour l'ID " + id);
-            }
+            });
         }
 
         loadCatalog();
