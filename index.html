@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Catalogue Cinéma</title>
+    <style>
+        body { background: #141414; color: white; font-family: 'Segoe UI', sans-serif; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
+        .movie-card { 
+            background: #1f1f1f; border-radius: 10px; overflow: hidden; 
+            transition: transform 0.3s; cursor: pointer; text-decoration: none; color: inherit;
+        }
+        .movie-card:hover { transform: scale(1.05); }
+        .movie-card img { width: 100%; display: block; }
+        .info { padding: 10px; text-align: center; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+    <h1>Mon Catalogue</h1>
+    <div class="grid" id="catalog">
+        </div>
+
+    <script>
+        const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0YmM5NGE4NTk4ODgzZjNhYTgyM2IxZWZmNjUzNmE5ZSIsIm5iZiI6MTc2OTAxNTQ2OS44NDgsInN1YiI6IjY5NzEwOGFkYmM1ODc1OWVkYzA4ZGE2ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IyDx0X9qH6RIAPdxwODeMSZKMBgMxu07Gg6TgZZOCMw';
+        
+        // Liste des IDs extraits de vos fichiers (à mettre à jour ou générer via script)
+        const movieIds = [
+            '1084736', '1166749', '1356670', '1536053', 
+            '315635', '429617', '520725', '575264', 
+            '634649', '663260', '936108'
+        ];
+
+        async function fetchMovies() {
+            const catalog = document.getElementById('catalog');
+            
+            for (const id of movieIds) {
+                try {
+                    const response = await fetch(`https://api.themoviedb.org/3/movie/${id}?language=fr-FR`, {
+                        headers: { Authorization: `Bearer ${TMDB_TOKEN}` }
+                    });
+                    const data = await response.json();
+
+                    if (data.poster_path) {
+                        const card = document.createElement('a');
+                        card.href = `${id}.html`; // Lien vers votre fichier local
+                        card.className = 'movie-card';
+                        card.innerHTML = `
+                            <img src="https://image.tmdb.org/t/p/w500${data.poster_path}" alt="${data.title}">
+                            <div class="info">
+                                <strong>${data.title}</strong><br>
+                                ${new Date(data.release_date).getFullYear()}
+                            </div>
+                        `;
+                        catalog.appendChild(card);
+                    }
+                } catch (error) {
+                    console.error(`Erreur pour l'ID ${id}:`, error);
+                }
+            }
+        }
+
+        fetchMovies();
+    </script>
+</body>
+</html>
