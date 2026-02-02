@@ -3,101 +3,100 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Catalogue Automatique</title>
+    <title>Mon Catalogue Cyprdu</title>
     <style>
-        :root { --bg: #0f0f0f; --card-bg: #1a1a1a; --text: #efefef; }
-        body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; margin: 0; padding: 20px; }
-        h1 { text-align: center; font-weight: 300; letter-spacing: 2px; margin-bottom: 40px; }
+        :root { --bg: #0b0b0b; --card: #161616; --accent: #e50914; }
+        body { background: var(--bg); color: white; font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 40px 20px; }
+        h1 { text-align: center; color: var(--accent); text-transform: uppercase; letter-spacing: 4px; margin-bottom: 50px; }
         
-        .grid { 
+        #catalog { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
-            gap: 25px; max-width: 1200px; margin: 0 auto; 
+            gap: 25px; max-width: 1300px; margin: 0 auto; 
         }
         
         .movie-card { 
-            background: var(--card-bg); border-radius: 12px; overflow: hidden; 
-            transition: all 0.3s ease; text-decoration: none; color: inherit;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); position: relative;
+            background: var(--card); border-radius: 8px; overflow: hidden; 
+            transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1); 
+            text-decoration: none; color: inherit; display: block;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
         
-        .movie-card:hover { transform: translateY(-10px); box-shadow: 0 10px 25px rgba(0,0,0,0.8); }
-        .movie-card img { width: 100%; height: 270px; object-fit: cover; border-bottom: 2px solid #333; }
+        .movie-card:hover { transform: scale(1.08); z-index: 10; }
+        .movie-card img { width: 100%; height: 270px; object-fit: cover; }
         
-        .info { padding: 12px; font-size: 0.85em; }
-        .info strong { display: block; margin-bottom: 5px; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .rating { color: #ffbd00; font-weight: bold; }
+        .info { padding: 12px; text-align: center; }
+        .title { display: block; font-weight: bold; font-size: 0.9em; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .year { color: #888; font-size: 0.8em; }
+
+        .loader { text-align: center; font-size: 1.2em; color: #555; }
     </style>
 </head>
 <body>
 
-    <h1>CINÉMA PRIVÉ</h1>
-    <div class="grid" id="catalog">Chargement du catalogue...</div>
+    <h1>Mon Catalogue Cinéma</h1>
+    <div id="catalog" class="loader">Analyse du dépôt GitHub...</div>
 
     <script>
-        // --- CONFIGURATION ---
-        const GITHUB_USER = 'Cyprdu'; 
-        const GITHUB_REPO = 'movies-tmdb';
+        const API_GITHUB = 'https://api.github.com/repos/Cyprdu/movies-tmdb/contents/';
         const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0YmM5NGE4NTk4ODgzZjNhYTgyM2IxZWZmNjUzNmE5ZSIsIm5iZiI6MTc2OTAxNTQ2OS44NDgsInN1YiI6IjY5NzEwOGFkYmM1ODc1OWVkYzA4ZGE2ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IyDx0X9qH6RIAPdxwODeMSZKMBgMxu07Gg6TgZZOCMw';
 
-        const catalogEl = document.getElementById('catalog');
-
-        async function init() {
+        async function loadCatalog() {
+            const catalog = document.getElementById('catalog');
+            
             try {
-                // 1. Récupérer la liste des fichiers sur GitHub
-                const repoUrl = `https://api.github.com/contents/`; // Racine du repo
-                const resRepo = await fetch(repoUrl);
-                const files = await resRepo.json();
+                // 1. Récupération des fichiers sur GitHub
+                const response = await fetch(API_GITHUB);
+                if (!response.ok) throw new Error("Impossible d'accéder à GitHub");
+                const files = await response.json();
 
-                // 2. Filtrer pour ne garder que les fichiers .html qui sont des nombres (IDs)
-                const movieIds = files
-                    .filter(f => f.name.endsWith('.html') && !isNaN(f.name.split('.')[0]))
+                // 2. Filtrage des IDs (On prend les fichiers .html qui sont des nombres)
+                const ids = files
+                    .filter(f => f.name.endsWith('.html') && /^\d+$/.test(f.name.split('.')[0]))
                     .map(f => f.name.split('.')[0]);
 
-                if (movieIds.length === 0) {
-                    catalogEl.innerHTML = "Aucun film trouvé.";
+                if (ids.length === 0) {
+                    catalog.innerHTML = "Aucun film détecté dans le dossier.";
                     return;
                 }
 
-                catalogEl.innerHTML = ''; // Vide le message de chargement
+                catalog.innerHTML = ''; // On efface le message de chargement
 
-                // 3. Boucler sur chaque ID pour chercher les infos TMDB
-                for (const id of movieIds) {
-                    renderMovie(id);
-                }
+                // 3. Récupération des données TMDB pour chaque ID
+                const promises = ids.map(id => fetchTMDB(id));
+                await Promise.all(promises);
 
-            } catch (err) {
-                console.error(err);
-                catalogEl.innerHTML = "Erreur de chargement des données GitHub.";
+            } catch (error) {
+                catalog.innerHTML = "⚠️ Erreur : " + error.message;
             }
         }
 
-        async function renderMovie(id) {
+        async function fetchTMDB(id) {
             try {
-                const resTmdb = await fetch(`https://api.themoviedb.org/3/movie/${id}?language=fr-FR`, {
+                const res = await fetch(`https://api.themoviedb.org/3/movie/${id}?language=fr-FR`, {
                     headers: { Authorization: `Bearer ${TMDB_TOKEN}` }
                 });
-                const movie = await resTmdb.json();
+                const data = await res.json();
 
-                if (movie.poster_path) {
+                if (data.poster_path) {
                     const card = document.createElement('a');
-                    card.href = `${id}.html`;
+                    card.href = `https://cyprdu.github.io/movies-tmdb/${id}.html`; // Lien vers votre page
                     card.className = 'movie-card';
                     card.innerHTML = `
-                        <img src="https://image.tmdb.org/t/p/w500${movie.poster_path}" alt="${movie.title}">
+                        <img src="https://image.tmdb.org/t/p/w500${data.poster_path}" alt="${data.title}">
                         <div class="info">
-                            <strong>${movie.title}</strong>
-                            <span class="rating">★ ${movie.vote_average.toFixed(1)}</span> • ${new Date(movie.release_date).getFullYear()}
+                            <span class="title">${data.title}</span>
+                            <span class="year">${new Date(data.release_date).getFullYear()}</span>
                         </div>
                     `;
-                    catalogEl.appendChild(card);
+                    document.getElementById('catalog').appendChild(card);
                 }
             } catch (e) {
-                console.log(`Erreur TMDB pour l'ID ${id}`);
+                console.error("Erreur TMDB pour l'ID " + id);
             }
         }
 
-        init();
+        loadCatalog();
     </script>
 </body>
 </html>
