@@ -13,7 +13,6 @@
         body.hide-cursor { cursor: none !important; }
         body.hide-cursor * { cursor: none !important; }
         
-        /* Protection Capture d'écran (CSS Trick - ne fonctionne pas sur tous les OS sans DRM hardware) */
         @media screen and (display-mode: picture-in-picture) { body { display: none !important; } }
         
         #player-container { position: relative; width: 100%; height: 100%; background: #000; overflow: hidden; }
@@ -167,6 +166,13 @@
         .icon-btn svg path, .icon-btn svg rect, .icon-btn svg circle { transition: stroke 0.15s, fill 0.15s; }
         .icon-btn svg path[fill="#fff"], .icon-btn svg rect[fill="#fff"], .icon-btn svg circle[fill="#fff"] { fill: currentColor; }
         .icon-btn svg path[stroke="#fff"], .icon-btn svg rect[stroke="#fff"] { stroke: currentColor; }
+
+        /* --- Séparateur vertical --- */
+        .top-icons-separator {
+            width: 1px;
+            height: 22px;
+            background: rgba(255,255,255,0.5);
+        }
 
         /* --- VOLUME VERTICAL --- */
         .volume-container { position: relative; display: flex; flex-direction: column; align-items: center; pointer-events: auto; }
@@ -425,6 +431,14 @@
                 <div class="icon-btn" id="fullscreen-btn" title="Plein écran">
                     <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="none" viewBox="0 0 25 25"><path fill="#fff" d="M4.746 8.056V6.294L18.73 20.278h-1.762a1.111 1.111 0 1 0 0 2.222h4.444a1.11 1.11 0 0 0 1.111-1.111v-4.445a1.111 1.111 0 0 0-2.222 0v1.762L6.317 4.722h1.762a1.111 1.111 0 1 0 0-2.222H3.635c-.614 0-1.112.497-1.112 1.111v4.445a1.111 1.111 0 1 0 2.223 0z"/></svg>
                 </div>
+
+                <!-- Séparateur vertical -->
+                <div class="top-icons-separator"></div>
+
+                <!-- Bouton fermer (croix) -->
+                <a href="info?1084736" class="icon-btn" id="close-btn" title="Fermer" style="text-decoration:none;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="none" viewBox="0 0 25 25"><path fill="#fff" fill-rule="evenodd" d="M4.691 4.667a1 1 0 0 1 1.415 0l6.418 6.419 6.42-6.42a1 1 0 1 1 1.414 1.415l-6.42 6.419 6.42 6.419a1 1 0 0 1-1.415 1.414l-6.419-6.419-6.418 6.42a1 1 0 0 1-1.415-1.415l6.42-6.419-6.42-6.419a1 1 0 0 1 0-1.414z" clip-rule="evenodd"/></svg>
+                </a>
             </div>
         </div>
 
@@ -458,15 +472,13 @@
 <script>
     /* ==================== CONFIGURATION ==================== */
     
-    // Configuration du film
     const MOVIE_CONFIG = {
-        tmdb_id: 1084736, // ID TMDB du film
+        tmdb_id: 1084736,
         mpd_url: 'https://cdn-downloads2.ig1-cdn.com/drm/84/112/14978771694785/stream.ism/stream.mpd',
         drm_key: {
             'c14f0337543ae6e51b38ca115c2dff3e': 'f2bd1553bc9e5236621ccc9ede9c6b43'
         },
         
-        // Configuration des sous-titres externes
         external_subtitles: [
             {
                 langue: "Français Audio Description",
@@ -474,18 +486,15 @@
             }
         ],
         
-        // Configuration du générique de début (skip intro)
         skip_intro_enabled: true,
-        skip_intro_start: "00:00:00", // Début du générique (format HH:MM:SS)
-        skip_intro_end: "00:00:58",   // Fin du générique
+        skip_intro_start: "00:00:00",
+        skip_intro_end: "00:00:58",
         
-        // Configuration du générique de fin (skip credits)
         skip_credits_enabled: true,
-        skip_credits_start: "02:43:22", // Début du générique de fin
-        redirect_url: "info?{tmdb_id}" // URL de redirection (sera remplacé par l'ID TMDB)
+        skip_credits_start: "02:43:22",
+        redirect_url: "info?{tmdb_id}"
     };
 
-    // API TMDB
     const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0YmM5NGE4NTk4ODgzZjNhYTgyM2IxZWZmNjUzNmE5ZSIsIm5iZiI6MTc2OTAxNTQ2OS44NDgsInN1YiI6IjY5NzEwOGFkYmM1ODc1OWVkYzA4ZGE2ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IyDx0X9qH6RIAPdxwODeMSZKMBgMxu07Gg6TgZZOCMw';
 
     /* ==================== ELEMENTS DOM ==================== */
@@ -516,7 +525,6 @@
     let externalSubtitleTracks = [];
     let currentExternalSubtitle = null;
 
-    // Conversion des timestamps pour skip intro/credits
     function parseTimestamp(timeStr) {
         const parts = timeStr.split(':');
         return parseInt(parts[0]) * 3600 + parseInt(parts[1]) * 60 + parseInt(parts[2]);
@@ -585,7 +593,7 @@
             if (timeMatch) {
                 const startTime = parseInt(timeMatch[1]) * 3600 + parseInt(timeMatch[2]) * 60 + parseInt(timeMatch[3]) + parseInt(timeMatch[4]) / 1000;
                 const endTime = parseInt(timeMatch[5]) * 3600 + parseInt(timeMatch[6]) * 60 + parseInt(timeMatch[7]) + parseInt(timeMatch[8]) / 1000;
-                const text = lines.slice(2).join('\n'); // Préserver les retours à la ligne
+                const text = lines.slice(2).join('\n');
                 
                 cues.push({
                     startTime: startTime,
@@ -619,7 +627,6 @@
         const track = externalSubtitleTracks.find(t => t.language === language);
         currentExternalSubtitle = track || null;
         
-        // Désactiver les sous-titres du player
         if (player) {
             player.setTextTrackVisibility(false);
         }
@@ -634,7 +641,6 @@
 
     /* ==================== GESTION DU CACHE (LOCALSTORAGE) ==================== */
     function getStorageKey(key) {
-        // Clé unique combinant l'ID TMDB et l'URL de la page
         const pageUrl = window.location.pathname;
         return `movie_${MOVIE_CONFIG.tmdb_id}_${pageUrl}_${key}`;
     }
@@ -644,13 +650,11 @@
         localStorage.setItem(getStorageKey('time'), video.currentTime);
         localStorage.setItem(getStorageKey('vol'), video.volume);
         
-        // Langues
         const textTracks = player.getTextTracks().find(t => t.active);
         const audioTracks = player.getVariantTracks().find(t => t.active);
         if(textTracks) localStorage.setItem(getStorageKey('lang_sub'), textTracks.language);
         if(audioTracks) localStorage.setItem(getStorageKey('lang_audio'), audioTracks.language);
         
-        // État sous-titres (on/off)
         if (currentExternalSubtitle) {
             localStorage.setItem(getStorageKey('subs_visible'), 'external');
             localStorage.setItem(getStorageKey('external_sub'), currentExternalSubtitle.language);
@@ -676,7 +680,6 @@
     function checkSkipButtons() {
         const currentTime = video.currentTime;
         
-        // Bouton Skip Intro
         if (MOVIE_CONFIG.skip_intro_enabled && 
             currentTime >= skipIntroStart && 
             currentTime < skipIntroEnd) {
@@ -685,7 +688,6 @@
             skipIntroBtn.style.display = 'none';
         }
         
-        // Bouton Skip Credits
         if (MOVIE_CONFIG.skip_credits_enabled && 
             currentTime >= skipCreditsStart) {
             skipCreditsBtn.style.display = 'block';
@@ -727,12 +729,10 @@
         const currentTime = video.currentTime;
         if(Math.floor(currentTime) % 5 === 0) saveState();
         
-        // Afficher les sous-titres externes si actifs
         if (currentExternalSubtitle) {
             displayExternalSubtitle(currentTime);
         }
 
-        // Vérifier les boutons skip
         checkSkipButtons();
     });
 
@@ -808,12 +808,10 @@
 
     /* ==================== RENOMMAGE PISTES AUDIO QTZ ==================== */
     function getAudioTrackDisplayName(track) {
-        // Si la langue est QTZ ou QAA, renommer en Audio Description
         if (track.language && (track.language.toLowerCase() === 'qtz' || track.language.toLowerCase() === 'qaa')) {
             return 'Audio Description';
         }
         
-        // Sinon utiliser le label ou la langue
         if (track.label) return track.label;
         if (track.language === 'fr') return 'Français';
         if (track.language === 'en') return 'English';
@@ -824,7 +822,6 @@
     async function init() {
         if(!checkSecurity()) return;
 
-        // Charger les données
         await Promise.all([
             loadExternalSubtitles(),
             loadMovieTitle()
@@ -859,7 +856,6 @@
                     if(savedAudio) player.selectAudioLanguage(savedAudio);
                     else player.selectAudioLanguage('fr');
 
-                    // Restaurer les sous-titres externes ou internes
                     if (savedSubsVisible === 'external' && savedExternalSub) {
                         selectExternalSubtitle(savedExternalSub);
                     } else {
@@ -1048,7 +1044,6 @@
             };
             menu.appendChild(offBtn);
             
-            // Sous-titres du MPD
             const textTracks = player.getTextTracks();
             if (textTracks && textTracks.length > 0) {
                 textTracks.forEach(track => {
@@ -1073,7 +1068,6 @@
                 });
             }
 
-            // Sous-titres externes
             externalSubtitleTracks.forEach(track => {
                 const btn = document.createElement('button');
                 btn.innerText = track.language;
@@ -1104,7 +1098,6 @@
             audioLangs.forEach(lang => {
                 const btn = document.createElement('button');
                 
-                // Utiliser la fonction pour obtenir le nom d'affichage
                 const track = audioTracks.find(t => t.language === lang);
                 const langName = getAudioTrackDisplayName(track);
                 
@@ -1179,6 +1172,7 @@
         e.stopPropagation();
         toggleFullscreen();
     });
+    // Le bouton fermer (croix) est un lien <a>, pas besoin d'event listener JS
 
     updateVolumeIcon();
 </script>
