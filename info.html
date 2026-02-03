@@ -1,240 +1,592 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Info Film</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
-    
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #141414; color: white; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        /* Dégradé plus fort pour lisibilité texte */
-        .backdrop-overlay {
-            background: linear-gradient(to right, #141414 20%, rgba(20,20,20,0.8) 50%, rgba(20,20,20,0.4) 100%),
-                        linear-gradient(to top, #141414 0%, transparent 50%);
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Info Film</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Inter:wght@300;400;500;600&family=Oswald:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root {
+    --bg: #0a0a0a;
+    --bg-2: #111111;
+    --accent: #c9a227;
+    --accent-dim: rgba(201,162,39,0.15);
+    --accent-glow: rgba(201,162,39,0.35);
+    --text: #e8e0d0;
+    --text-dim: #7a7570;
+    --glass: rgba(18,18,20,0.65);
+    --glass-border: rgba(255,255,255,0.06);
+    --red: #d44a3a;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* ─── LOADER ─── */
+#loader {
+    position: fixed; inset: 0;
+    background: var(--bg);
+    z-index: 1000;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 24px;
+    transition: opacity 0.6s, visibility 0.6s;
+}
+#loader.hidden { opacity: 0; visibility: hidden; }
+.loader-ring {
+    width: 56px; height: 56px;
+    border: 3px solid rgba(255,255,255,0.08);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+.loader-text { font-family: 'Oswald', sans-serif; letter-spacing: 0.35em; text-transform: uppercase; font-size: 11px; color: var(--text-dim); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── BACK BUTTON ─── */
+#back-btn {
+    position: fixed; top: 28px; left: 28px; z-index: 50;
+    display: flex; align-items: center; gap: 10px;
+    background: var(--glass);
+    backdrop-filter: blur(14px);
+    border: 1px solid var(--glass-border);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 40px;
+    text-decoration: none;
+    font-size: 13px; font-weight: 500;
+    letter-spacing: 0.04em;
+    transition: background 0.3s, border-color 0.3s, transform 0.3s;
+}
+#back-btn:hover { background: rgba(255,255,255,0.1); border-color: var(--accent); transform: translateX(-3px); }
+#back-btn i { font-size: 11px; transition: transform 0.3s; }
+#back-btn:hover i { transform: translateX(-3px); }
+
+/* ─── CONTENT WRAPPER ─── */
+#content { opacity: 0; transition: opacity 0.9s 0.15s; }
+#content.visible { opacity: 1; }
+
+/* ════════════════════════════════════════════
+   HERO
+   ════════════════════════════════════════════ */
+.hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex; align-items: flex-end;
+    overflow: hidden;
+}
+.hero-bg {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center top;
+    transform: scale(1.05);
+    transition: transform 8s ease-out;
+    filter: brightness(0.45) saturate(1.1);
+}
+.hero.loaded .hero-bg { transform: scale(1); }
+
+/* Multiple gradient layers for cinematic depth */
+.hero-overlay {
+    position: absolute; inset: 0; pointer-events: none;
+    background:
+        linear-gradient(180deg, rgba(10,10,10,0.25) 0%, transparent 30%),
+        linear-gradient(180deg, transparent 40%, rgba(10,10,10,0.85) 75%, var(--bg) 100%),
+        linear-gradient(90deg, rgba(10,10,10,0.7) 0%, transparent 55%);
+}
+/* Noise grain overlay for film texture */
+.hero-grain {
+    position: absolute; inset: 0; pointer-events: none;
+    opacity: 0.035;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.hero-content {
+    position: relative; z-index: 2;
+    width: 100%; max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 32px 100px;
+    display: flex; align-items: flex-end; gap: 64px;
+}
+
+/* Poster */
+.poster-wrap {
+    flex-shrink: 0; width: 260px;
+    animation: posterIn 1s cubic-bezier(.22,.68,0,1.2) 0.3s both;
+}
+@keyframes posterIn {
+    from { opacity: 0; transform: translateY(40px) rotate(-2deg); }
+    to   { opacity: 1; transform: translateY(0) rotate(0deg); }
+}
+.poster-wrap img {
+    width: 100%; border-radius: 10px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.07);
+    transition: transform 0.5s, box-shadow 0.5s;
+}
+.poster-wrap:hover img {
+    transform: translateY(-6px) scale(1.015);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.7), 0 0 40px var(--accent-glow);
+}
+
+/* Info column */
+.hero-info { flex: 1; padding-bottom: 8px; }
+
+/* Logo / Title */
+.movie-logo-wrap {
+    height: 140px;
+    display: flex; align-items: flex-end;
+    margin-bottom: 20px;
+    animation: fadeUp 0.9s cubic-bezier(.22,.68,0,1) 0.5s both;
+}
+.movie-logo-wrap img {
+    max-height: 120px; width: auto;
+    filter: drop-shadow(0 4px 24px rgba(0,0,0,0.8));
+}
+.movie-title-text {
+    font-family: 'Oswald', sans-serif;
+    font-size: clamp(3rem, 7vw, 5.5rem);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    text-transform: uppercase;
+    color: #fff;
+    text-shadow: 0 4px 30px rgba(0,0,0,0.7);
+}
+
+/* Meta bar */
+.meta-bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 18px;
+    margin-bottom: 22px;
+    animation: fadeUp 0.9s cubic-bezier(.22,.68,0,1) 0.6s both;
+}
+.meta-bar .year {
+    font-family: 'Oswald', sans-serif;
+    font-size: 15px; font-weight: 600;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+}
+.meta-bar .sep {
+    width: 4px; height: 4px;
+    background: var(--text-dim);
+    border-radius: 50%;
+}
+.meta-bar .runtime, .meta-bar .genres {
+    font-size: 13px; color: var(--text-dim); font-weight: 400; letter-spacing: 0.03em;
+}
+.vote-pill {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--accent-dim);
+    border: 1px solid var(--accent-glow);
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 13px; font-weight: 600; color: var(--accent);
+}
+.vote-pill i { font-size: 11px; }
+
+/* Overview */
+.overview-text {
+    font-size: 15px; line-height: 1.75;
+    color: rgba(232,224,208,0.75);
+    max-width: 580px;
+    margin-bottom: 32px;
+    font-weight: 300;
+    animation: fadeUp 0.9s cubic-bezier(.22,.68,0,1) 0.7s both;
+}
+
+/* CTA Buttons */
+.cta-row {
+    display: flex; gap: 14px; flex-wrap: wrap;
+    animation: fadeUp 0.9s cubic-bezier(.22,.68,0,1) 0.8s both;
+}
+.btn-play {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: linear-gradient(135deg, var(--red), #b33a2c);
+    color: #fff;
+    padding: 14px 36px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-family: 'Oswald', sans-serif;
+    font-size: 16px; font-weight: 600;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    box-shadow: 0 8px 30px rgba(212,74,58,0.35);
+    transition: transform 0.25s, box-shadow 0.25s, filter 0.25s;
+    position: relative; overflow: hidden;
+}
+.btn-play::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.12));
+    pointer-events: none;
+}
+.btn-play:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(212,74,58,0.5);
+    filter: brightness(1.08);
+}
+.btn-play i { font-size: 14px; }
+
+.btn-trailer {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(12px);
+    color: var(--text);
+    padding: 14px 28px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px; font-weight: 500;
+    letter-spacing: 0.04em;
+    transition: background 0.3s, border-color 0.3s, transform 0.25s;
+}
+.btn-trailer:hover { background: rgba(255,255,255,0.1); border-color: var(--accent); transform: translateY(-2px); }
+.btn-trailer i { color: var(--accent); font-size: 13px; }
+
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ════════════════════════════════════════════
+   SECTIONS BELOW HERO
+   ════════════════════════════════════════════ */
+.sections-wrap {
+    background: var(--bg);
+    position: relative; z-index: 10;
+    padding: 80px 0 60px;
+}
+.sections-wrap .container { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+
+/* Section header */
+.section-title {
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 36px;
+}
+.section-title .line {
+    width: 3px; height: 28px;
+    background: linear-gradient(180deg, var(--accent), transparent);
+    border-radius: 2px;
+}
+.section-title h2 {
+    font-family: 'Oswald', sans-serif;
+    font-size: 20px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--text);
+}
+.section-title i { color: var(--accent); font-size: 16px; }
+
+/* ─── CAST ─── */
+.cast-scroll {
+    display: flex; gap: 22px;
+    overflow-x: auto;
+    padding-bottom: 16px;
+    scrollbar-width: none;
+}
+.cast-scroll::-webkit-scrollbar { display: none; }
+
+.cast-card {
+    flex-shrink: 0; width: 130px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.35s;
+}
+.cast-card:hover { transform: translateY(-5px); }
+
+.cast-photo-wrap {
+    width: 100px; height: 100px;
+    margin: 0 auto 12px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid transparent;
+    background: linear-gradient(var(--bg), var(--bg)) padding-box,
+                linear-gradient(135deg, transparent, var(--accent), transparent) border-box;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+    transition: box-shadow 0.35s, border-width 0.35s;
+    position: relative;
+}
+.cast-card:hover .cast-photo-wrap {
+    box-shadow: 0 8px 32px var(--accent-glow);
+    border-width: 2.5px;
+}
+.cast-photo-wrap img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.cast-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cast-role { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ─── TRAILER ─── */
+.trailer-outer {
+    max-width: 860px; margin: 0 auto;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 16/9;
+    background: #000;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.05);
+}
+.trailer-outer iframe {
+    width: 100%; height: 100%; border: none; display: block;
+}
+.trailer-placeholder {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; color: var(--text-dim);
+}
+.trailer-placeholder i { font-size: 42px; opacity: 0.35; }
+.trailer-placeholder span { font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.45; }
+
+/* ─── DIVIDER ─── */
+.section-divider {
+    width: 100%; max-width: 1200px;
+    margin: 56px auto;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.08) 80%, transparent);
+}
+
+/* ─── FOOTER ─── */
+.footer {
+    text-align: center;
+    padding: 40px 20px;
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.5;
+}
+.footer span { color: var(--accent); opacity: 0.8; margin: 0 6px; }
+
+/* ════════════════════════════════════════════
+   RESPONSIVE
+   ════════════════════════════════════════════ */
+@media (max-width: 860px) {
+    .hero-content { flex-direction: column; align-items: flex-start; gap: 32px; padding-bottom: 70px; }
+    .poster-wrap { width: 180px; }
+    .movie-logo-wrap { height: auto; margin-bottom: 16px; }
+}
+@media (max-width: 560px) {
+    .hero-content { padding: 0 20px 60px; }
+    .poster-wrap { width: 140px; }
+    #back-btn { top: 18px; left: 18px; padding: 8px 16px; font-size: 12px; }
+    .sections-wrap .container { padding: 0 20px; }
+    .cta-row { flex-direction: column; }
+    .btn-play, .btn-trailer { justify-content: center; }
+}
+</style>
 </head>
-<body class="min-h-screen bg-[#141414]">
+<body>
 
-    <div id="loader" class="fixed inset-0 flex items-center justify-center bg-[#141414] z-[100]">
-        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-red-600"></div>
-    </div>
+<!-- LOADER -->
+<div id="loader">
+    <div class="loader-ring"></div>
+    <div class="loader-text">Chargement</div>
+</div>
 
-    <a href="index.html" class="fixed top-6 left-6 z-50 flex items-center gap-2 bg-black/50 hover:bg-white/20 backdrop-blur-md px-4 py-2 rounded-full transition text-white text-sm font-semibold border border-white/10 group">
-        <i class="fas fa-arrow-left group-hover:-translate-x-1 transition-transform"></i> Retour
-    </a>
+<!-- BACK -->
+<a id="back-btn" href="/">
+    <i class="fas fa-arrow-left"></i> Retour
+</a>
 
-    <div id="content" class="hidden relative">
-        
-        <div class="relative min-h-screen lg:min-h-[85vh] flex items-center">
-            
-            <div id="hero-bg" class="absolute inset-0 bg-cover bg-center transition-opacity duration-700 opacity-60"></div>
-            <div class="absolute inset-0 backdrop-overlay pointer-events-none"></div>
+<!-- MAIN -->
+<div id="content">
 
-            <div class="container mx-auto px-6 relative z-10 pt-20 pb-10">
-                <div class="flex flex-col md:flex-row items-center md:items-start gap-10 lg:gap-16">
-                    
-                    <div class="hidden md:block w-64 lg:w-80 shrink-0">
-                        <img id="poster-img" src="" alt="Affiche" class="w-full rounded-lg shadow-[0_0_20px_rgba(0,0,0,0.8)] border border-white/10 rotate-1 hover:rotate-0 transition duration-500 transform">
+    <!-- HERO -->
+    <section class="hero" id="hero">
+        <div class="hero-bg" id="hero-bg"></div>
+        <div class="hero-overlay"></div>
+        <div class="hero-grain"></div>
+
+        <div class="hero-content">
+            <!-- Poster -->
+            <div class="poster-wrap" id="poster-wrap">
+                <img id="poster-img" src="" alt="Affiche">
+            </div>
+
+            <!-- Info -->
+            <div class="hero-info">
+                <div class="movie-logo-wrap" id="movie-logo-wrap">
+                    <h1 class="movie-title-text" id="movie-title"></h1>
+                </div>
+
+                <div class="meta-bar" id="meta-bar">
+                    <span class="year" id="release-year"></span>
+                    <span class="sep"></span>
+                    <span class="runtime" id="runtime"></span>
+                    <span class="sep"></span>
+                    <div class="vote-pill" id="vote-pill">
+                        <i class="fas fa-star"></i>
+                        <span id="vote-average"></span>
                     </div>
+                    <span class="sep"></span>
+                    <span class="genres" id="genres"></span>
+                </div>
 
-                    <div class="flex-1 space-y-6 text-center md:text-left">
-                        
-                        <div id="movie-logo-container" class="h-24 md:h-32 flex items-center justify-center md:justify-start">
-                            <h1 id="movie-title" class="text-4xl md:text-6xl font-black leading-tight"></h1>
-                        </div>
+                <p class="overview-text" id="overview"></p>
 
-                        <div class="flex flex-wrap justify-center md:justify-start items-center gap-4 text-sm font-medium text-gray-300">
-                            <span id="release-year" class="text-green-400 font-bold"></span>
-                            <span id="runtime"></span>
-                            <span id="vote-average" class="border border-white/30 px-2 py-0.5 rounded text-xs bg-white/10"></span>
-                            <span id="genres" class="text-gray-400"></span>
-                        </div>
-
-                        <p id="overview" class="text-gray-200 text-lg leading-relaxed max-w-2xl mx-auto md:mx-0 drop-shadow-md"></p>
-
-                        <div class="flex flex-col sm:flex-row gap-4 pt-4 justify-center md:justify-start">
-                            <a id="play-btn" href="#" class="flex items-center justify-center bg-red-600 text-white px-8 py-3 rounded hover:bg-red-700 transition font-bold text-lg shadow-lg">
-                                <i class="fas fa-play mr-3"></i> Lecture
-                            </a>
-                            <button onclick="document.getElementById('trailer-section').scrollIntoView({behavior: 'smooth'})" class="flex items-center justify-center bg-gray-600/60 hover:bg-gray-600/80 text-white px-6 py-3 rounded transition font-semibold backdrop-blur-sm">
-                                <i class="fas fa-film mr-3"></i> Bande-annonce
-                            </button>
-                        </div>
-                    </div>
-
+                <div class="cta-row">
+                    <a id="play-btn" href="#" class="btn-play">
+                        <i class="fas fa-play"></i> Lecture
+                    </a>
+                    <button class="btn-trailer" onclick="document.getElementById('trailer-section').scrollIntoView({behavior:'smooth'})">
+                        <i class="fas fa-film"></i> Bande-annonce
+                    </button>
                 </div>
             </div>
         </div>
+    </section>
 
-        <div class="bg-[#141414] relative z-20 -mt-10 rounded-t-3xl border-t border-white/5 shadow-[0_-10px_40px_rgba(0,0,0,1)]">
-            <div class="container mx-auto px-6 py-12 space-y-16">
-                
-                <section>
-                    <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-gray-200">
-                        <i class="fas fa-users text-red-600"></i> Casting Principal
-                    </h2>
-                    <div id="cast-list" class="flex overflow-x-auto gap-6 pb-6 no-scrollbar snap-x">
-                        </div>
-                </section>
+    <!-- SECTIONS -->
+    <div class="sections-wrap">
+        <div class="container">
 
-                <section id="trailer-section">
-                    <h2 class="text-xl font-bold mb-6 flex items-center gap-3 text-gray-200">
-                        <i class="fab fa-youtube text-red-600"></i> Bandes-annonces & Vidéos
-                    </h2>
-                    <div id="trailer-container" class="aspect-video w-full max-w-4xl mx-auto bg-black rounded-xl overflow-hidden shadow-2xl border border-gray-800">
-                        <div class="flex h-full items-center justify-center text-gray-500">
-                            <i class="fas fa-video-slash text-4xl mb-2"></i><br>Aucune vidéo disponible
-                        </div>
+            <!-- CAST -->
+            <section>
+                <div class="section-title">
+                    <div class="line"></div>
+                    <i class="fas fa-users"></i>
+                    <h2>Casting Principal</h2>
+                </div>
+                <div class="cast-scroll" id="cast-list"></div>
+            </section>
+
+            <div class="section-divider"></div>
+
+            <!-- TRAILER -->
+            <section id="trailer-section">
+                <div class="section-title">
+                    <div class="line"></div>
+                    <i class="fab fa-youtube"></i>
+                    <h2>Bandes-annonces</h2>
+                </div>
+                <div class="trailer-outer" id="trailer-container">
+                    <div class="trailer-placeholder">
+                        <i class="fas fa-video-slash"></i>
+                        <span>Aucune vidéo disponible</span>
                     </div>
-                </section>
-            </div>
-            
-            <footer class="text-center text-gray-600 py-8 border-t border-gray-900 text-sm">
-                Code généré pour test • API TMDB
-            </footer>
+                </div>
+            </section>
         </div>
+
+        <footer class="footer">
+            Propulsé par <span>TMDB API</span> • Projet personnel
+        </footer>
     </div>
+</div>
 
-    <script>
-        // CONFIGURATION API
-        const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0YmM5NGE4NTk4ODgzZjNhYTgyM2IxZWZmNjUzNmE5ZSIsIm5iZiI6MTc2OTAxNTQ2OS44NDgsInN1YiI6IjY5NzEwOGFkYmM1ODc1OWVkYzA4ZGE2ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IyDx0X9qH6RIAPdxwODeMSZKMBgMxu07Gg6TgZZOCMw';
-        
-        const BASE_URL = 'https://api.themoviedb.org/3';
-        const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/original';
-        const POSTER_SIZE = 'https://image.tmdb.org/t/p/w500';
-        const PROFILE_SIZE = 'https://image.tmdb.org/t/p/w185';
+<!-- ════════════════════════════════════════════
+     SCRIPT – LOGIQUE API (identique + améliorée)
+     ════════════════════════════════════════════ -->
+<script>
+(function(){
+    const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0YmM5NGE4NTk4ODgzZjNhYTgyM2IxZWZmNjUzNmE5ZSIsIm5iZiI6MTc2OTAxNTQ2OS44NDgsInN1YiI6IjY5NzEwOGFkYmM1ODc1OWVkYzA4ZGE2ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IyDx0X9qH6RIAPdxwODeMSZKMBgMxu07Gg6TgZZOCMw';
+    const BASE = 'https://api.themoviedb.org/3';
+    const IMG  = 'https://image.tmdb.org/t/p/original';
+    const W500 = 'https://image.tmdb.org/t/p/w500';
+    const W185 = 'https://image.tmdb.org/t/p/w185';
 
-        // INITIALISATION
-        async function init() {
-            const queryString = window.location.search;
-            const movieId = queryString ? queryString.substring(1) : null;
+    const opts = { method:'GET', headers:{ accept:'application/json', Authorization:`Bearer ${TMDB_TOKEN}` }};
 
-            if (!movieId) {
-                // Redirection auto si pas d'ID (optionnel)
-                window.location.href = 'index.html'; 
-                return;
-            }
+    async function init(){
+        const id = (window.location.search||'').replace('?','');
+        if(!id){ window.location.href='/'; return; }
 
-            const options = {
-                method: 'GET',
-                headers: { accept: 'application/json', Authorization: `Bearer ${TMDB_TOKEN}` }
-            };
+        try {
+            const [dRes, cRes, vRes, iRes] = await Promise.all([
+                fetch(`${BASE}/movie/${id}?language=fr-FR`, opts),
+                fetch(`${BASE}/movie/${id}/credits?language=fr-FR`, opts),
+                fetch(`${BASE}/movie/${id}/videos?language=fr-FR`, opts),
+                fetch(`${BASE}/movie/${id}/images`, opts)
+            ]);
+            if(!dRes.ok) throw new Error('404');
 
-            try {
-                const [detailsRes, creditsRes, videosRes, imagesRes] = await Promise.all([
-                    fetch(`${BASE_URL}/movie/${movieId}?language=fr-FR`, options),
-                    fetch(`${BASE_URL}/movie/${movieId}/credits?language=fr-FR`, options),
-                    fetch(`${BASE_URL}/movie/${movieId}/videos?language=fr-FR`, options),
-                    fetch(`${BASE_URL}/movie/${movieId}/images`, options)
-                ]);
-
-                if (!detailsRes.ok) throw new Error("Film introuvable");
-
-                const movie = await detailsRes.json();
-                const credits = await creditsRes.json();
-                const videos = await videosRes.json();
-                const images = await imagesRes.json();
-
-                populateUI(movie, credits, videos, images);
-
-            } catch (err) {
-                console.error(err);
-                alert("Erreur de chargement. Retour à l'accueil.");
-                window.location.href = 'index.html';
-            } finally {
-                document.getElementById('loader').classList.add('hidden');
-                document.getElementById('content').classList.remove('hidden');
-            }
+            const [movie, credits, videos, images] = await Promise.all([dRes.json(), cRes.json(), vRes.json(), iRes.json()]);
+            render(movie, credits, videos, images);
+        } catch(e){
+            console.error(e);
+            alert('Erreur de chargement.');
+            window.location.href='/';
+        } finally {
+            document.getElementById('loader').classList.add('hidden');
+            // Slight delay so fade-in feels intentional
+            requestAnimationFrame(()=> document.getElementById('content').classList.add('visible'));
         }
+    }
 
-        function populateUI(movie, credits, videos, images) {
-            // Meta Données
-            document.title = movie.title;
+    function render(movie, credits, videos, images){
+        /* ── Title / Logo ── */
+        document.title = movie.title;
+
+        const logos = (images.logos||[]).filter(l=> l.iso_639_1==='fr' || l.iso_639_1==='en');
+        const logoWrap = document.getElementById('movie-logo-wrap');
+        if(logos.length){
+            logoWrap.innerHTML = `<img src="${IMG}${logos[0].file_path}" alt="${movie.title}">`;
+        } else {
             document.getElementById('movie-title').textContent = movie.title;
-            document.getElementById('overview').textContent = movie.overview || "Résumé indisponible.";
-            document.getElementById('release-year').textContent = movie.release_date ? movie.release_date.split('-')[0] : '';
-            
-            const hours = Math.floor(movie.runtime / 60);
-            const mins = movie.runtime % 60;
-            document.getElementById('runtime').textContent = `${hours}h ${mins}min`;
-            document.getElementById('vote-average').textContent = `${movie.vote_average.toFixed(1)}/10`;
-            document.getElementById('genres').textContent = movie.genres.slice(0,3).map(g => g.name).join(' • ');
-
-            // Images de fond
-            if (movie.backdrop_path) {
-                document.getElementById('hero-bg').style.backgroundImage = `url('${IMAGE_BASE_URL}${movie.backdrop_path}')`;
-            }
-
-            // Affiche (Poster)
-            if (movie.poster_path) {
-                document.getElementById('poster-img').src = `${POSTER_SIZE}${movie.poster_path}`;
-            } else {
-                // Si pas d'affiche, on cache le bloc image pour centrer le texte
-                document.getElementById('poster-img').parentElement.style.display = 'none';
-            }
-
-            // Logo (Cherche un logo PNG pour remplacer le titre texte)
-            const logos = images.logos.filter(l => l.iso_639_1 === 'fr' || l.iso_639_1 === 'en');
-            if (logos.length > 0) {
-                const logoUrl = `${IMAGE_BASE_URL}${logos[0].file_path}`;
-                const logoImg = document.createElement('img');
-                logoImg.src = logoUrl;
-                logoImg.alt = movie.title;
-                logoImg.className = "max-h-32 w-auto object-contain drop-shadow-lg"; 
-                
-                const titleContainer = document.getElementById('movie-logo-container');
-                titleContainer.innerHTML = '';
-                titleContainer.appendChild(logoImg);
-                // Ajustement alignment container
-                titleContainer.className = "mb-4 flex justify-center md:justify-start";
-            }
-
-            // Bouton Play
-            document.getElementById('play-btn').href = `${movie.id}.html`;
-
-            // Casting
-            const castContainer = document.getElementById('cast-list');
-            const topCast = credits.cast.slice(0, 10);
-            if(topCast.length) {
-                topCast.forEach(actor => {
-                    if (actor.profile_path) {
-                        const div = document.createElement('div');
-                        div.className = "flex-none w-32 snap-start group cursor-pointer";
-                        div.innerHTML = `
-                            <div class="w-24 h-24 mx-auto mb-3 rounded-full overflow-hidden border-2 border-transparent group-hover:border-red-600 transition shadow-lg relative">
-                                <img src="${PROFILE_SIZE}${actor.profile_path}" class="w-full h-full object-cover">
-                            </div>
-                            <div class="text-center">
-                                <h3 class="text-white text-sm font-bold truncate">${actor.name}</h3>
-                                <p class="text-gray-500 text-xs truncate">${actor.character}</p>
-                            </div>
-                        `;
-                        castContainer.appendChild(div);
-                    }
-                });
-            } else {
-                castContainer.innerHTML = '<p class="text-gray-500 italic">Casting non disponible</p>';
-            }
-
-            // Trailer
-            let trailer = videos.results.find(v => v.site === 'YouTube' && v.type === 'Trailer');
-            if (!trailer) trailer = videos.results.find(v => v.site === 'YouTube'); // Fallback
-
-            if (trailer) {
-                document.getElementById('trailer-container').innerHTML = `
-                    <iframe width="100%" height="100%" src="https://www.youtube.com/embed/${trailer.key}" title="Trailer" frameborder="0" allowfullscreen></iframe>
-                `;
-            }
         }
 
-        window.addEventListener('DOMContentLoaded', init);
-    </script>
+        /* ── Meta ── */
+        document.getElementById('release-year').textContent = (movie.release_date||'').split('-')[0];
+        const h = Math.floor((movie.runtime||0)/60), m = (movie.runtime||0)%60;
+        document.getElementById('runtime').textContent = `${h}h ${m}min`;
+        document.getElementById('vote-average').textContent = `${(movie.vote_average||0).toFixed(1)} / 10`;
+        document.getElementById('genres').textContent = (movie.genres||[]).slice(0,3).map(g=>g.name).join(' • ');
+
+        /* ── Overview ── */
+        document.getElementById('overview').textContent = movie.overview || 'Résumé indisponible.';
+
+        /* ── Hero BG ── */
+        if(movie.backdrop_path){
+            const bg = document.getElementById('hero-bg');
+            bg.style.backgroundImage = `url('${IMG}${movie.backdrop_path}')`;
+            // trigger zoom animation after paint
+            requestAnimationFrame(()=> document.getElementById('hero').classList.add('loaded'));
+        }
+
+        /* ── Poster ── */
+        if(movie.poster_path){
+            document.getElementById('poster-img').src = `${W500}${movie.poster_path}`;
+        } else {
+            document.getElementById('poster-wrap').style.display='none';
+        }
+
+        /* ── Play link ── */
+        document.getElementById('play-btn').href = `${movie.id}.html`;
+
+        /* ── Cast ── */
+        const castEl = document.getElementById('cast-list');
+        const top = (credits.cast||[]).slice(0,12);
+        if(top.length){
+            castEl.innerHTML = top.filter(a=>a.profile_path).map(a=>`
+                <div class="cast-card">
+                    <div class="cast-photo-wrap"><img src="${W185}${a.profile_path}" alt="${a.name}" loading="lazy"></div>
+                    <div class="cast-name">${a.name}</div>
+                    <div class="cast-role">${a.character||''}</div>
+                </div>
+            `).join('');
+        } else {
+            castEl.innerHTML = '<p style="color:var(--text-dim);font-style:italic;font-size:14px;">Casting non disponible</p>';
+        }
+
+        /* ── Trailer ── */
+        let trailer = (videos.results||[]).find(v=> v.site==='YouTube' && v.type==='Trailer');
+        if(!trailer) trailer = (videos.results||[]).find(v=> v.site==='YouTube');
+        if(trailer){
+            document.getElementById('trailer-container').innerHTML =
+                `<iframe src="https://www.youtube.com/embed/${trailer.key}?autoplay=0&rel=0" title="Trailer" allowfullscreen></iframe>`;
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
 </body>
 </html>
