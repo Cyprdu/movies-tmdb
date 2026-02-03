@@ -36,7 +36,7 @@
         }
         
         .movie-card.hidden { display: none; }
-        .movie-card:hover { transform: scale(1.05); }
+        .movie-card:hover { transform: scale(1.05); border: 1px solid var(--accent); }
         .movie-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; }
         
         .info { padding: 10px; text-align: center; }
@@ -62,11 +62,11 @@
 
     <script>
         const API_GITHUB = 'https://api.github.com/repos/Cyprdu/movies-tmdb/contents/';
-        const BASE_URL_NETLIFY = 'https://moovies-mpd.netlify.app/';
+        const BASE_URL_NETLIFY = 'https://moovies-mpd.netlify.app/info?';
         const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0YmM5NGE4NTk4ODgzZjNhYTgyM2IxZWZmNjUzNmE5ZSIsIm5iZiI6MTc2OTAxNTQ2OS44NDgsInN1YiI6IjY5NzEwOGFkYmM1ODc1OWVkYzA4ZGE2ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IyDx0X9qH6RIAPdxwODeMSZKMBgMxu07Gg6TgZZOCMw';
 
-        let moviesData = []; // Stockage local pour le filtrage
-        const genresMap = new Set(); // Pour remplir le select dynamiquement
+        let moviesData = []; 
+        const genresMap = new Set();
 
         async function loadCatalog() {
             try {
@@ -82,7 +82,6 @@
                     return;
                 }
 
-                // Récupération parallèle
                 const promises = ids.map(id => fetchTMDB(id));
                 const results = await Promise.all(promises);
                 
@@ -91,7 +90,7 @@
                 populateGenres();
 
             } catch (error) {
-                document.getElementById('catalog').innerHTML = "⚠️ Erreur GitHub : " + error.message;
+                document.getElementById('catalog').innerHTML = "⚠️ Erreur de chargement : " + error.message;
             }
         }
 
@@ -104,7 +103,6 @@
                 
                 if (!data.title) return null;
 
-                // On ajoute les genres au Set global
                 data.genres.forEach(g => genresMap.add(g.name));
 
                 return {
@@ -124,6 +122,7 @@
 
             movies.forEach(movie => {
                 const card = document.createElement('a');
+                // Lien modifié ici pour pointer vers /info?ID
                 card.href = `${BASE_URL_NETLIFY}${movie.id}`;
                 card.className = 'movie-card';
                 card.dataset.title = movie.title.toLowerCase();
