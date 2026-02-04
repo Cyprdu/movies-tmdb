@@ -3,71 +3,600 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Catalogue Moovies</title>
+    <title>Moovies - Catalogue Premium</title>
     <style>
-        :root { --bg: #0b0b0b; --card: #161616; --accent: #e50914; --input: #222; }
-        body { background: var(--bg); color: white; font-family: 'Helvetica Neue', Arial, sans-serif; margin: 0; padding: 20px; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         
-        header { max-width: 1400px; margin: 0 auto 40px; text-align: center; }
-        h1 { color: var(--accent); text-transform: uppercase; letter-spacing: 4px; margin-bottom: 30px; }
-
-        /* Barre de recherche et Filtres */
-        .controls { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-bottom: 30px; }
-        #searchBar { 
-            padding: 12px 20px; width: 300px; border-radius: 25px; border: none; 
-            background: var(--input); color: white; outline: none; font-size: 1em;
-        }
-        #genreFilter { 
-            padding: 10px 20px; border-radius: 25px; border: none; 
-            background: var(--input); color: white; outline: none; cursor: pointer;
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #141414;
+            --bg-card: #1a1a1a;
+            --accent-red: #e50914;
+            --accent-gold: #ffa724;
+            --text-primary: #ffffff;
+            --text-secondary: #b3b3b3;
+            --text-muted: #808080;
+            --border: #2a2a2a;
+            --hover: #2d2d2d;
         }
 
-        /* Grille */
-        #catalog { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
-            gap: 20px; max-width: 1400px; margin: 0 auto; 
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
         }
-        
-        .movie-card { 
-            background: var(--card); border-radius: 8px; overflow: hidden; 
-            transition: transform 0.3s ease; text-decoration: none; color: inherit; display: block;
-            box-shadow: 0 8px 15px rgba(0,0,0,0.5);
-        }
-        
-        .movie-card.hidden { display: none; }
-        .movie-card:hover { transform: scale(1.05); border: 1px solid var(--accent); }
-        .movie-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; }
-        
-        .info { padding: 10px; text-align: center; }
-        .title { display: block; font-weight: bold; font-size: 0.85em; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .meta { color: #888; font-size: 0.75em; }
 
-        .loader { text-align: center; font-size: 1.2em; color: #666; margin-top: 50px; width: 100%; }
+        /* Header & Navigation */
+        .header {
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            padding: 20px 0;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .nav-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 30px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--accent-red), var(--accent-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 2px;
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 14px 50px 14px 20px;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 50px;
+            color: var(--text-primary);
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--accent-red);
+            background: var(--bg-secondary);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 18px;
+        }
+
+        .view-toggles {
+            display: flex;
+            gap: 10px;
+            background: var(--bg-card);
+            padding: 6px;
+            border-radius: 30px;
+        }
+
+        .view-btn {
+            padding: 8px 16px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 20px;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .view-btn.active {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            background: var(--bg-secondary);
+            padding: 15px 0;
+            margin-top: 80px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stats-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent-gold);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        /* Sidebar Categories */
+        .main-layout {
+            display: flex;
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 30px 40px;
+            gap: 30px;
+        }
+
+        .sidebar {
+            width: 280px;
+            position: sticky;
+            top: 120px;
+            height: fit-content;
+        }
+
+        .filter-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .filter-title {
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+        }
+
+        .genre-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .genre-item {
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 2px solid transparent;
+        }
+
+        .genre-item:hover {
+            background: var(--hover);
+            border-color: var(--accent-red);
+            transform: translateX(5px);
+        }
+
+        .genre-item.active {
+            background: var(--accent-red);
+            border-color: var(--accent-red);
+        }
+
+        .genre-count {
+            background: rgba(255,255,255,0.1);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        /* Sort Options */
+        .sort-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sort-btn {
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border: 2px solid transparent;
+            border-radius: 10px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .sort-btn:hover {
+            background: var(--hover);
+            border-color: var(--accent-gold);
+        }
+
+        .sort-btn.active {
+            background: var(--accent-gold);
+            border-color: var(--accent-gold);
+            color: var(--bg-primary);
+            font-weight: 600;
+        }
+
+        /* Content Area */
+        .content {
+            flex: 1;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .results-info {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Grid Views */
+        .catalog-grid {
+            display: grid;
+            gap: 24px;
+        }
+
+        .grid-large {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        }
+
+        .grid-medium {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        }
+
+        .grid-compact {
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+        }
+
+        /* Movie Cards */
+        .movie-card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            border: 2px solid transparent;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .movie-card:hover {
+            transform: translateY(-8px);
+            border-color: var(--accent-red);
+            box-shadow: 0 20px 40px rgba(229, 9, 20, 0.3);
+        }
+
+        .movie-card.hidden {
+            display: none;
+        }
+
+        .poster-container {
+            position: relative;
+            overflow: hidden;
+            aspect-ratio: 2/3;
+        }
+
+        .movie-poster {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .movie-card:hover .movie-poster {
+            transform: scale(1.1);
+        }
+
+        .poster-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.9) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            display: flex;
+            align-items: flex-end;
+            padding: 16px;
+        }
+
+        .movie-card:hover .poster-overlay {
+            opacity: 1;
+        }
+
+        .quick-info {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .movie-info {
+            padding: 16px;
+        }
+
+        .movie-title {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .movie-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .year-badge {
+            color: var(--accent-gold);
+            font-weight: 600;
+        }
+
+        .genre-badge {
+            padding: 3px 8px;
+            background: rgba(229, 9, 20, 0.2);
+            border-radius: 5px;
+            font-size: 11px;
+            color: var(--accent-red);
+        }
+
+        /* Loader */
+        .loader {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-secondary);
+        }
+
+        .loader-spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid var(--border);
+            border-top-color: var(--accent-red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .sidebar {
+                width: 240px;
+            }
+        }
+
+        @media (max-width: 968px) {
+            .main-layout {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                width: 100%;
+                position: static;
+            }
+
+            .filter-section {
+                display: flex;
+                gap: 20px;
+                overflow-x: auto;
+                padding: 16px;
+            }
+
+            .genre-list {
+                flex-direction: row;
+                min-width: max-content;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .nav-container {
+                padding: 0 20px;
+                flex-wrap: wrap;
+            }
+
+            .search-container {
+                order: 3;
+                max-width: 100%;
+                flex-basis: 100%;
+            }
+
+            .main-layout {
+                padding: 20px;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-red);
+        }
     </style>
 </head>
 <body>
 
-    <header>
-        <h1>MON CATALOGUE</h1>
-        <div class="controls">
-            <input type="text" id="searchBar" placeholder="Rechercher un film..." oninput="filterMovies()">
-            <select id="genreFilter" onchange="filterMovies()">
-                <option value="all">Toutes les catégories</option>
-            </select>
+    <!-- Header -->
+    <header class="header">
+        <div class="nav-container">
+            <div class="logo">MOOVIES</div>
+            
+            <div class="search-container">
+                <input type="text" class="search-box" id="searchBar" placeholder="Rechercher un film par titre..." oninput="filterMovies()">
+                <span class="search-icon">🔍</span>
+            </div>
+
+            <div class="view-toggles">
+                <button class="view-btn active" onclick="changeView('large')">Large</button>
+                <button class="view-btn" onclick="changeView('medium')">Moyen</button>
+                <button class="view-btn" onclick="changeView('compact')">Compact</button>
+            </div>
         </div>
     </header>
 
-    <div id="catalog" class="loader">Chargement des films...</div>
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+        <div class="stats-container">
+            <div class="stat-item">
+                <div>
+                    <div class="stat-value" id="totalMovies">0</div>
+                    <div class="stat-label">Films disponibles</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div>
+                    <div class="stat-value" id="totalGenres">0</div>
+                    <div class="stat-label">Genres</div>
+                </div>
+            </div>
+            <div class="stat-item">
+                <div>
+                    <div class="stat-value" id="visibleMovies">0</div>
+                    <div class="stat-label">Résultats affichés</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="main-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Genres -->
+            <div class="filter-section">
+                <div class="filter-title">📁 Genres</div>
+                <div class="genre-list" id="genreList">
+                    <div class="genre-item active" onclick="selectGenre('all', this)">
+                        <span>Tous les films</span>
+                        <span class="genre-count" id="count-all">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sort Options -->
+            <div class="filter-section">
+                <div class="filter-title">🔄 Trier par</div>
+                <div class="sort-options">
+                    <button class="sort-btn active" onclick="sortMovies('title', this)">Titre (A-Z)</button>
+                    <button class="sort-btn" onclick="sortMovies('year-desc', this)">Année (récent)</button>
+                    <button class="sort-btn" onclick="sortMovies('year-asc', this)">Année (ancien)</button>
+                    <button class="sort-btn" onclick="sortMovies('random', this)">Aléatoire</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Content -->
+        <main class="content">
+            <div class="section-header">
+                <h2 class="section-title" id="sectionTitle">Tous les films</h2>
+                <div class="results-info" id="resultsInfo">Chargement...</div>
+            </div>
+
+            <div id="catalog" class="catalog-grid grid-large">
+                <div class="loader">
+                    <div class="loader-spinner"></div>
+                    <p>Chargement du catalogue...</p>
+                </div>
+            </div>
+        </main>
+    </div>
 
     <script>
         const API_GITHUB = 'https://api.github.com/repos/Cyprdu/movies-tmdb/contents/';
         const BASE_URL_NETLIFY = 'https://moovies-mpd.netlify.app/info?';
         const TMDB_TOKEN = 'eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI0YmM5NGE4NTk4ODgzZjNhYTgyM2IxZWZmNjUzNmE5ZSIsIm5iZiI6MTc2OTAxNTQ2OS44NDgsInN1YiI6IjY5NzEwOGFkYmM1ODc1OWVkYzA4ZGE2ZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.IyDx0X9qH6RIAPdxwODeMSZKMBgMxu07Gg6TgZZOCMw';
 
-        let moviesData = []; 
-        const genresMap = new Set();
+        let moviesData = [];
+        let genresMap = new Map();
+        let currentGenre = 'all';
+        let currentSort = 'title';
+        let currentView = 'large';
 
+        // Chargement du catalogue
         async function loadCatalog() {
             try {
                 const response = await fetch(API_GITHUB);
@@ -78,7 +607,7 @@
                     .map(f => f.name.split('.')[0]);
 
                 if (ids.length === 0) {
-                    document.getElementById('catalog').innerHTML = "Aucun film trouvé.";
+                    document.getElementById('catalog').innerHTML = '<div class="empty-state"><div class="empty-icon">🎬</div><p>Aucun film trouvé dans le catalogue.</p></div>';
                     return;
                 }
 
@@ -86,14 +615,24 @@
                 const results = await Promise.all(promises);
                 
                 moviesData = results.filter(m => m !== null);
-                renderCatalog(moviesData);
+                
+                // Calculer les stats de genres
+                moviesData.forEach(movie => {
+                    movie.genres.forEach(genre => {
+                        genresMap.set(genre, (genresMap.get(genre) || 0) + 1);
+                    });
+                });
+
+                updateStats();
                 populateGenres();
+                renderCatalog();
 
             } catch (error) {
-                document.getElementById('catalog').innerHTML = "⚠️ Erreur de chargement : " + error.message;
+                document.getElementById('catalog').innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><p>Erreur de chargement : ${error.message}</p></div>`;
             }
         }
 
+        // Récupération des données TMDB
         async function fetchTMDB(id) {
             try {
                 const res = await fetch(`https://api.themoviedb.org/3/movie/${id}?language=fr-FR`, {
@@ -103,8 +642,6 @@
                 
                 if (!data.title) return null;
 
-                data.genres.forEach(g => genresMap.add(g.name));
-
                 return {
                     id: id,
                     title: data.title,
@@ -112,52 +649,83 @@
                     year: data.release_date ? data.release_date.split('-')[0] : 'N/A',
                     genres: data.genres.map(g => g.name)
                 };
-            } catch (e) { return null; }
+            } catch (e) { 
+                return null; 
+            }
         }
 
-        function renderCatalog(movies) {
-            const catalog = document.getElementById('catalog');
-            catalog.innerHTML = '';
-            catalog.classList.remove('loader');
-
-            movies.forEach(movie => {
-                const card = document.createElement('a');
-                // Lien modifié ici pour pointer vers /info?ID
-                card.href = `${BASE_URL_NETLIFY}${movie.id}`;
-                card.className = 'movie-card';
-                card.dataset.title = movie.title.toLowerCase();
-                card.dataset.genres = movie.genres.join('|').toLowerCase();
-                
-                card.innerHTML = `
-                    <img src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}">
-                    <div class="info">
-                        <span class="title">${movie.title}</span>
-                        <span class="meta">${movie.year} • ${movie.genres[0] || 'Film'}</span>
-                    </div>
-                `;
-                catalog.appendChild(card);
-            });
+        // Mise à jour des statistiques
+        function updateStats() {
+            document.getElementById('totalMovies').textContent = moviesData.length;
+            document.getElementById('totalGenres').textContent = genresMap.size;
+            updateVisibleCount();
         }
 
+        function updateVisibleCount() {
+            const visible = document.querySelectorAll('.movie-card:not(.hidden)').length;
+            document.getElementById('visibleMovies').textContent = visible;
+            document.getElementById('resultsInfo').textContent = `${visible} film${visible > 1 ? 's' : ''} affiché${visible > 1 ? 's' : ''}`;
+        }
+
+        // Population des genres
         function populateGenres() {
-            const select = document.getElementById('genreFilter');
-            const sortedGenres = Array.from(genresMap).sort();
-            sortedGenres.forEach(genre => {
-                const opt = document.createElement('option');
-                opt.value = genre.toLowerCase();
-                opt.textContent = genre;
-                select.appendChild(opt);
+            const genreList = document.getElementById('genreList');
+            const sortedGenres = Array.from(genresMap.entries()).sort((a, b) => b[1] - a[1]);
+            
+            // Mise à jour du compteur "Tous"
+            document.getElementById('count-all').textContent = moviesData.length;
+
+            sortedGenres.forEach(([genre, count]) => {
+                const item = document.createElement('div');
+                item.className = 'genre-item';
+                item.onclick = () => selectGenre(genre.toLowerCase(), item);
+                item.innerHTML = `
+                    <span>${genre}</span>
+                    <span class="genre-count">${count}</span>
+                `;
+                genreList.appendChild(item);
             });
         }
 
+        // Sélection de genre
+        function selectGenre(genre, element) {
+            currentGenre = genre;
+            document.querySelectorAll('.genre-item').forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+            
+            const genreName = genre === 'all' ? 'Tous les films' : genre.charAt(0).toUpperCase() + genre.slice(1);
+            document.getElementById('sectionTitle').textContent = genreName;
+            
+            filterMovies();
+        }
+
+        // Tri des films
+        function sortMovies(sortType, element) {
+            currentSort = sortType;
+            document.querySelectorAll('.sort-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            
+            renderCatalog();
+        }
+
+        // Changement de vue
+        function changeView(view) {
+            currentView = view;
+            document.querySelectorAll('.view-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            const catalog = document.getElementById('catalog');
+            catalog.className = `catalog-grid grid-${view}`;
+        }
+
+        // Filtrage des films
         function filterMovies() {
             const searchTerm = document.getElementById('searchBar').value.toLowerCase();
-            const selectedGenre = document.getElementById('genreFilter').value;
             const cards = document.querySelectorAll('.movie-card');
 
             cards.forEach(card => {
                 const titleMatch = card.dataset.title.includes(searchTerm);
-                const genreMatch = selectedGenre === 'all' || card.dataset.genres.includes(selectedGenre);
+                const genreMatch = currentGenre === 'all' || card.dataset.genres.includes(currentGenre);
                 
                 if (titleMatch && genreMatch) {
                     card.classList.remove('hidden');
@@ -165,8 +733,66 @@
                     card.classList.add('hidden');
                 }
             });
+
+            updateVisibleCount();
         }
 
+        // Rendu du catalogue
+        function renderCatalog() {
+            const catalog = document.getElementById('catalog');
+            catalog.innerHTML = '';
+            catalog.className = `catalog-grid grid-${currentView}`;
+
+            let sortedMovies = [...moviesData];
+
+            // Application du tri
+            switch(currentSort) {
+                case 'title':
+                    sortedMovies.sort((a, b) => a.title.localeCompare(b.title));
+                    break;
+                case 'year-desc':
+                    sortedMovies.sort((a, b) => b.year.localeCompare(a.year));
+                    break;
+                case 'year-asc':
+                    sortedMovies.sort((a, b) => a.year.localeCompare(b.year));
+                    break;
+                case 'random':
+                    sortedMovies.sort(() => Math.random() - 0.5);
+                    break;
+            }
+
+            sortedMovies.forEach(movie => {
+                const card = document.createElement('a');
+                card.href = `${BASE_URL_NETLIFY}${movie.id}`;
+                card.className = 'movie-card';
+                card.dataset.title = movie.title.toLowerCase();
+                card.dataset.genres = movie.genres.join('|').toLowerCase();
+                
+                card.innerHTML = `
+                    <div class="poster-container">
+                        <img class="movie-poster" src="https://image.tmdb.org/t/p/w500${movie.poster}" alt="${movie.title}">
+                        <div class="poster-overlay">
+                            <div class="quick-info">
+                                ${movie.genres.slice(0, 2).map(g => `<span class="badge">${g}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="movie-info">
+                        <div class="movie-title">${movie.title}</div>
+                        <div class="movie-meta">
+                            <span class="year-badge">${movie.year}</span>
+                            <span>•</span>
+                            <span class="genre-badge">${movie.genres[0] || 'Film'}</span>
+                        </div>
+                    </div>
+                `;
+                catalog.appendChild(card);
+            });
+
+            updateVisibleCount();
+        }
+
+        // Initialisation
         loadCatalog();
     </script>
 </body>
