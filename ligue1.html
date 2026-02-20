@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Lecteur Vidéo - Déchiffrement Réussi</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.compiled.js"></script>
+    <style>
+        body { 
+            background-color: #0f0f0f; 
+            color: white; 
+            font-family: Arial, sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            margin: 0; 
+            padding: 20px;
+        }
+        video { 
+            width: 100%; 
+            max-width: 1200px; 
+            border: 2px solid #4CAF50; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        h2 { color: #4CAF50; }
+    </style>
+</head>
+<body>
+    <h2>Lecteur DASH avec Clé Directe (ClearKey)</h2>
+    
+    <video id="video" controls autoplay></video>
+
+    <script>
+        async function initApp() {
+            // Initialisation du lecteur
+            const video = document.getElementById('video');
+            const player = new shaka.Player(video);
+
+            // Gestion des erreurs
+            player.addEventListener('error', (event) => {
+                console.error("Erreur Shaka Player:", event.detail);
+                alert("Erreur de lecture. Vérifiez la console (F12).");
+            });
+
+            // L'URL de votre flux vidéo
+            const manifestUri = 'https://dice-live-eu.cdnfastly.endeavorstreaming.net/1771695216_H25m104Fbk5MMpk7_31fa04c76a34de697de5f42bda714f6d7fd519b3/id=832687d1-4e88-4be7-af96-576fc2ddcc5f/data=dWlkPXNSYnhVbnxlOGZmNWIyZS0yYzZkLTRmODctODJjZi00ZWE0MzdhNGM5OGUmaXA9MmEwMTplMGE6ZWExOjI3MjA6NmE0NDoyZGIwOmQ3ODM6NGVjNiZleHA9MTc3MTY5NTI0NSZlaWQ9Mjk2MzczJmNpZD1kY2UubGlndWV1biZvaWQ9MzQ2JnR5cGU9TElWRQ/dash/live/2019662~/dash/live/2019662/296373-316951/manifest-d.mpd';
+
+            // Injection de votre paire KID:KEY
+            player.configure({
+                drm: {
+                    clearKeys: {
+                        'd99effb979a4482a82dbab8576bca393': 'b85774149e9c4dd88767bd42fec27e79'
+                    }
+                }
+            });
+
+            try {
+                // Chargement de la vidéo
+                await player.load(manifestUri);
+                console.log('Succès ! La vidéo est déchiffrée et prête.');
+            } catch (e) {
+                console.error('Erreur lors du chargement de la vidéo:', e);
+            }
+        }
+
+        // Lancement au chargement de la page
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
