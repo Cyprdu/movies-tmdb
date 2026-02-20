@@ -45,10 +45,18 @@
         .skip-btn{width:50px;height:50px}
         .bottom-bar{padding:0 40px 35px 40px;background:linear-gradient(to top,rgb(0 0 0 / .9) 0%,transparent 100%);display:flex;flex-direction:column;gap:10px;pointer-events:auto;z-index:100}
         
-        /* Modifs Badge Live */
-        .time-display{font-size:14px;color:#ccc;font-weight:500;margin-left:2px}
-        .live-badge {background-color: #E50914; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; display: inline-flex; align-items: center; justify-content: center;}
+        /* Modifs Badge Live & Décalage */
+        .time-display{font-size:14px;color:#ccc;font-weight:500;margin-left:2px; display:flex; align-items:center; gap:10px;}
+        .live-badge {background-color: #E50914; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease;}
         .live-badge::before {content: ''; display: inline-block; width: 6px; height: 6px; background-color: #fff; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite;}
+        
+        /* État "Pas en direct" (grisé) */
+        .live-badge.not-live {background-color: rgb(255 255 255 / .2); color: #aaa; cursor: pointer;}
+        .live-badge.not-live::before {animation: none; background-color: #aaa;}
+        .live-badge.not-live:hover {background-color: rgb(255 255 255 / .3); color: #fff; transform: scale(1.05);}
+        
+        .live-offset {font-variant-numeric: tabular-nums; font-family: monospace; font-size: 13px;}
+        
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
         .seek-container{width:100%;height:4px;background:rgb(255 255 255 / .25);cursor:pointer;position:relative;border-radius:2px;transition:height 0.15s}
@@ -126,7 +134,8 @@
 
             <div class="bottom-bar">
                 <div class="time-display" id="time-display">
-                    <span class="live-badge">DIRECT</span>
+                    <span class="live-badge" id="live-badge-btn" title="Retour au direct">DIRECT</span>
+                    <span class="live-offset" id="live-offset-text"></span>
                 </div>
                 <div class="seek-container" id="seek-container">
                     <div class="seek-fill" id="seek-fill"></div>
@@ -160,6 +169,9 @@
         const subtitleContainer = document.getElementById('subtitle-container');
         const securityWarning = document.getElementById('security-warning');
         const movieTitle = document.getElementById('movie-title');
+        
+        const liveBadgeBtn = document.getElementById('live-badge-btn');
+        const liveOffsetText = document.getElementById('live-offset-text');
 
         let player;
         let uiTimer;
@@ -174,6 +186,17 @@
             high: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 20V4L8.115 7.934A.5.5 0 0 1 7.867 8H3.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h4.367a.5.5 0 0 1 .248.066L15 20z"/><path fill="#fff" d="M17.5 12a2 2 0 0 1-2 2v-4a2 2 0 0 1 2 2z"/><path fill="#fff" fill-rule="evenodd" d="M18.536 7.08a.75.75 0 0 1 1.053.125A7.72 7.72 0 0 1 21.25 12a7.72 7.72 0 0 1-1.661 4.795.75.75 0 1 1-1.178-.929A6.22 6.22 0 0 0 19.75 12c0-1.46-.5-2.802-1.339-3.866a.75.75 0 0 1 .125-1.053z" clip-rule="evenodd"/><path fill="#fff" fill-rule="evenodd" d="M20.524 4.438a.75.75 0 0 1 1.055.103 11.705 11.705 0 0 1 2.671 7.46c0 2.83-1.002 5.43-2.67 7.458a.75.75 0 1 1-1.16-.953A10.205 10.205 0 0 0 22.75 12a10.2 10.2 0 0 0-2.33-6.506.75.75 0 0 1 .104-1.056z" clip-rule="evenodd"/></svg>',
             max: '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" fill="none" viewBox="0 0 25 24"><path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 20V4L8.115 7.934A.5.5 0 0 1 7.867 8H3.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h4.367a.5.5 0 0 1 .248.066L15 20z"/><path fill="#fff" d="M17.5 12a2 2 0 0 1-2 2v-4a2 2 0 0 1 2 2z"/><path fill="#fff" fill-rule="evenodd" d="M18.536 7.08a.75.75 0 0 1 1.053.125A7.72 7.72 0 0 1 21.25 12a7.72 7.72 0 0 1-1.661 4.795.75.75 0 1 1-1.178-.929A6.22 6.22 0 0 0 19.75 12c0-1.46-.5-2.802-1.339-3.866a.75.75 0 0 1 .125-1.053z" clip-rule="evenodd"/><path fill="#fff" fill-rule="evenodd" d="M20.524 4.438a.75.75 0 0 1 1.055.103 11.705 11.705 0 0 1 2.671 7.46c0 2.83-1.002 5.43-2.67 7.458a.75.75 0 1 1-1.16-.953A10.205 10.205 0 0 0 22.75 12a10.2 10.2 0 0 0-2.33-6.506.75.75 0 0 1 .104-1.056z" clip-rule="evenodd"/></svg>'
         };
+
+        // Formater le temps de décalage au format -X:XX:XX
+        function formatOffset(seconds) {
+            if (seconds >= 0) return "";
+            const absSec = Math.abs(Math.floor(seconds));
+            let h = Math.floor(absSec / 3600);
+            let m = Math.floor((absSec % 3600) / 60);
+            let s = Math.floor(absSec % 60);
+            if (h > 0) return `-${h}:${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+            return `-${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+        }
 
         function getStorageKey(key) {
             const safeName = MOVIE_CONFIG.channel_name.replace(/\s+/g, '_');
@@ -379,13 +402,41 @@
             saveState();
         });
 
+        // Clique sur le badge pour revenir au direct
+        liveBadgeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!playerLoaded || !player) return;
+            const seekRange = player.seekRange();
+            if (seekRange) {
+                video.currentTime = seekRange.end;
+                if (video.paused) togglePlay();
+                showUI();
+            }
+        });
+
+        // Mise à jour continue de la barre et du statut direct
         video.ontimeupdate = () => {
             if (!playerLoaded || !player) return;
             const seekRange = player.seekRange();
             if (seekRange) {
-                const duration = seekRange.end - seekRange.start;
-                const current = video.currentTime - seekRange.start;
-                seekFill.style.width = duration > 0 ? (current / duration) * 100 + "%" : "100%";
+                const liveEdge = seekRange.end;
+                const current = video.currentTime;
+                
+                // Barre de progression
+                const duration = liveEdge - seekRange.start;
+                const currentPos = current - seekRange.start;
+                seekFill.style.width = duration > 0 ? (currentPos / duration) * 100 + "%" : "100%";
+
+                // Gestion du badge "Direct"
+                const offset = current - liveEdge;
+                // On donne 15 secondes de marge (buffer) pour toujours considérer qu'on est au direct
+                if (offset > -15) {
+                    liveBadgeBtn.classList.remove('not-live');
+                    liveOffsetText.innerText = "";
+                } else {
+                    liveBadgeBtn.classList.add('not-live');
+                    liveOffsetText.innerText = formatOffset(offset);
+                }
             }
         };
 
