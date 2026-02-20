@@ -2,69 +2,283 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Lecteur Vidéo - Déchiffrement Réussi</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.compiled.js"></script>
+    <title>Lecteur Live</title>
+    <link rel="icon" type="image/png" href="favico.png">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
-        body { 
-            background-color: #0f0f0f; 
-            color: white; 
-            font-family: Arial, sans-serif; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            margin: 0; 
-            padding: 20px;
-        }
-        video { 
-            width: 100%; 
-            max-width: 1200px; 
-            border: 2px solid #4CAF50; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
-        }
-        h2 { color: #4CAF50; }
+        body,html{margin:0;padding:0;background:#000;height:100%;font-family:'Roboto',sans-serif;overflow:hidden;color:#fff;user-select:none;-webkit-user-select:none}
+        body.hide-cursor{cursor:none!important}
+        #player-container{position:relative;width:100%;height:100%;background:#000;overflow:hidden}
+        video{width:100%;height:100%;display:block;object-fit:contain}
+        #click-layer{position:absolute;top:0;left:0;width:100%;height:100%;z-index:5}
+        #ui-layer{position:absolute;top:0;left:0;width:100%;height:100%;z-index:50;display:flex;flex-direction:column;justify-content:space-between;opacity:0;transition:opacity 0.2s ease-out;pointer-events:none}
+        #ui-layer.visible{opacity:1}
+        #subtitle-container{position:absolute;width:100%;bottom:100px;display:flex;justify-content:center;pointer-events:none!important;z-index:200}
+        #subtitle-container span{font-size:clamp(24px, 4vw, 42px);color:#fff;text-shadow:0 0 8px rgb(0 0 0 / .95);font-weight:500;padding:4px 12px;text-align:center}
+        
+        .top-bar{padding:25px 40px;background:linear-gradient(to bottom,rgb(0 0 0 / .8) 0%,transparent 100%);display:flex;justify-content:space-between;align-items:center;position:relative;z-index:100;pointer-events:auto}
+        .top-title{position:absolute;left:50%;top:30px;transform:translateX(-50%);font-size:18px;color:#fff;font-weight:700;text-shadow:0 1px 4px rgb(0 0 0 / .8)}
+        
+        .top-icons{display:flex;gap:24px;align-items:center}
+        .icon-btn{width:25px;height:25px;color:rgb(255 255 255 / .7);cursor:pointer;transition:transform 0.15s;display:flex;align-items:center;justify-content:center}
+        .icon-btn:hover{transform:scale(1.15);color:#fff}
+        .icon-btn svg{width:100%;height:100%;fill:currentColor}
+        
+        .volume-container{position:relative;display:flex;flex-direction:column;align-items:center;pointer-events:auto}
+        .vol-slider-wrapper{position:absolute;top:36px;width:40px;height:0;background:rgb(30 30 30 / .95);border-radius:4px;transition:height 0.2s;display:flex;align-items:center;justify-content:center;z-index:200;overflow:hidden}
+        .volume-container:hover .vol-slider-wrapper{height:130px}
+        .vol-slider-wrapper input[type=range]{transform:rotate(-90deg);width:100px;cursor:pointer}
+
+        .center-controls{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:80px;pointer-events:auto;z-index:60}
+        .center-btn{cursor:pointer;transition:transform 0.15s;color:rgb(255 255 255 / .85)}
+        .center-btn:hover{transform:scale(1.1);color:#fff}
+
+        .bottom-bar{padding:0 40px 35px 40px;background:linear-gradient(to top,rgb(0 0 0 / .9) 0%,transparent 100%);display:flex;align-items:center;pointer-events:auto;z-index:100}
+        .live-badge{background:#ff0000;color:#fff;padding:4px 12px;border-radius:4px;font-weight:900;font-size:14px;letter-spacing:1px;display:flex;align-items:center;gap:6px}
+        .live-dot{width:8px;height:8px;background:#fff;border-radius:50%;animation:pulse 1.5s infinite}
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        .menu-popup{position:absolute;top:70px;right:40px;background:rgb(40 40 40 / .97);backdrop-filter:blur(10px);border-radius:4px;padding:8px 0;min-width:300px;display:none;flex-direction:column;z-index:2000;pointer-events:auto}
+        .menu-header{padding:12px 20px;color:#fff;font-weight:700;font-size:16px}
+        .menu-popup button{background:none;border:none;color:#bbb;text-align:left;padding:12px 20px 12px 50px;cursor:pointer;font-size:14px;width:100%;position:relative}
+        .menu-popup button.active{color:#fff;font-weight:600;background:rgb(255 255 255 / .08)}
+        .menu-popup button.active::before{content:'✓';position:absolute;left:20px;color:#fff;font-weight:bold}
+        .menu-subtext{font-size:11px;color:#888;display:block}
+        .menu-separator{height:1px;background:rgb(255 255 255 / .1);margin:8px 0}
+        .menu-section-title{padding:8px 20px;color:#aaa;font-size:11px;font-weight:600;text-transform:uppercase}
     </style>
 </head>
-<body>
-    <h2>Lecteur DASH avec Clé Directe (ClearKey)</h2>
+<body id="main-body" oncontextmenu="return false;">
+
+<div id="player-container">
+    <video id="video" autoplay></video>
+    <div id="subtitle-container"></div>
+    <div id="click-layer"></div>
+
+    <div id="ui-layer">
+        <div class="top-bar">
+            <div></div>
+            <div class="top-title" id="movie-title">NOM DE LA CHAINE</div>
+            <div class="top-icons">
+                <div class="icon-btn" id="subs-btn" title="Audio & Sous-titres">
+                    <svg viewBox="0 0 25 25"><path d="M20.773 2.207h-16a4 4 0 0 0-4 4v12a4 4 0 0 0 4 4h16a4 4 0 0 0 4-4v-12a4 4 0 0 0-4-4zm-16 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-12a2 2 0 0 0-2-2h-16zm3 9a1 1 0 0 1 1-1h8a1 1 0 1 1 0 2h-8a1 1 0 0 1-1-1zm-2 3a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2h-2zm5 1a1 1 0 0 1 1-1h8a1 1 0 1 1 0 2h-8a1 1 0 0 1-1-1z"/></svg>
+                </div>
+                <div class="volume-container">
+                    <div class="icon-btn" id="vol-btn">
+                        <svg id="vol-icon" viewBox="0 0 25 24"><path d="M15 20V4L8.115 7.934A.5.5 0 0 1 7.867 8H3.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h4.367a.5.5 0 0 1 .248.066L15 20z"/></svg>
+                    </div>
+                    <div class="vol-slider-wrapper">
+                        <input type="range" min="0" max="1" step="0.05" value="1" id="vol-range">
+                    </div>
+                </div>
+                <div class="icon-btn" id="settings-btn" title="Qualité">
+                    <svg viewBox="0 0 25 25"><path d="M12.5 15.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 13a1.6 1.6 0 0 0 .1 1.5l.6 1.1c.2.3.1.7-.2 1l-1.4 1.4c-.3.3-.7.4-1 .2l-1.1-.6a1.6 1.6 0 0 0-1.5-.1 1.6 1.6 0 0 0-1 1.4l-.1 1.3c0 .4-.4.7-.8.7h-2c-.4 0-.8-.3-.8-.7l-.1-1.3a1.6 1.6 0 0 0-1-1.4 1.6 1.6 0 0 0-1.5.1l-1.1.6c-.3.2-.7.1-1-.2L5.1 17c-.3-.3-.4-.7-.2-1l.6-1.1a1.6 1.6 0 0 0 .1-1.5 1.6 1.6 0 0 0-1.4-1l-1.3-.1c-.4 0-.7-.4-.7-.8v-2c0-.4.3-.8.7-.8l1.3-.1a1.6 1.6 0 0 0 1.4-1 1.6 1.6 0 0 0-.1-1.5l-.6-1.1c-.2-.3-.1-.7.2-1l1.4-1.4c.3-.3.7-.4 1-.2l1.1.6a1.6 1.6 0 0 0 1.5.1 1.6 1.6 0 0 0 1-1.4l.1-1.3c0-.4.4-.7.8-.7h2c.4 0 .8.3.8.7l.1 1.3a1.6 1.6 0 0 0 1 1.4 1.6 1.6 0 0 0 1.5-.1l1.1-.6c.3-.2.7-.1 1 .2l1.4 1.4c.3.3.4.7.2 1l-.6 1.1a1.6 1.6 0 0 0-.1 1.5 1.6 1.6 0 0 0 1.4 1l1.3.1c.4 0 .7.4.7.8v2c0 .4-.3.8-.7.8l-1.3.1a1.6 1.6 0 0 0-1.4 1z"/></svg>
+                </div>
+                <div class="icon-btn" id="pip-btn">
+                    <svg viewBox="0 0 24 24"><rect width="9" height="6" x="11" y="11.99" rx="1"/><rect width="22" height="18" x="1" y="3" stroke="#fff" stroke-width="2" rx="3"/></svg>
+                </div>
+                <div class="icon-btn" id="fullscreen-btn">
+                    <svg viewBox="0 0 25 25"><path d="M4.746 8.056V6.294L18.73 20.278h-1.762a1.111 1.111 0 1 0 0 2.222h4.444a1.11 1.11 0 0 0 1.111-1.111v-4.445a1.111 1.111 0 0 0-2.222 0v1.762L6.317 4.722h1.762a1.111 1.111 0 1 0 0-2.222H3.635c-.614 0-1.112.497-1.112 1.111v4.445a1.111 1.111 0 1 0 2.223 0z"/></svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="center-controls">
+            <div class="center-btn" id="center-play-btn">
+                <svg id="icon-play" width="67" height="67" viewBox="0 0 67 67"><path fill="#fff" d="M20.28 9.65c-2.205-1.268-4.026-.228-4.026 2.307v43.805c0 2.535 1.82 3.574 4.027 2.307l38.471-21.903a2.556 2.556 0 0 0 0-4.614L20.28 9.65z"/></svg>
+                <svg id="icon-pause" width="67" height="67" viewBox="0 0 67 67" style="display:none"><path fill="#fff" d="M46.332 5.773a4.125 4.125 0 0 0-4.125 4.125v46.75a4.127 4.127 0 0 0 8.25 0V9.898a4.125 4.125 0 0 0-4.125-4.125zM25.707 9.898v46.75a4.125 4.125 0 1 1-8.25 0V9.898a4.123 4.123 0 0 1 8.25 0z"/></svg>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <div class="live-badge">
+                <div class="live-dot"></div> DIRECT
+            </div>
+        </div>
+
+        <div class="menu-popup" id="menu-subs"></div>
+        <div class="menu-popup" id="menu-settings"></div>
+    </div>
+</div>
+
+<script>
+const NOM_DE_LA_CHAINE = "MA CHAÎNE EN DIRECT"; // Modifiez ici le nom
+
+const MOVIE_CONFIG = {
+    "mpd_url": "https://dice-live-eu.cdnfastly.endeavorstreaming.net/1771695216_H25m104Fbk5MMpk7_31fa04c76a34de697de5f42bda714f6d7fd519b3/id=832687d1-4e88-4be7-af96-576fc2ddcc5f/data=dWlkPXNSYnhVbnxlOGZmNWIyZS0yYzZkLTRmODctODJjZi00ZWE0MzdhNGM5OGUmaXA9MmEwMTplMGE6ZWExOjI3MjA6NmE0NDoyZGIwOmQ3ODM6NGVjNiZleHA9MTc3MTY5NTI0NSZlaWQ9Mjk2MzczJmNpZD1kY2UubGlndWV1biZvaWQ9MzQ2JnR5cGU9TElWRQ/dash/live/2019662~/dash/live/2019662/296373-316951/manifest-d.mpd",
+    "drm_key": {
+        "d99effb979a4482a82dbab8576bca393": "b85774149e9c4dd88767bd42fec27e79"
+    }
+};
+
+const video = document.getElementById('video');
+const uiLayer = document.getElementById('ui-layer');
+const movieTitle = document.getElementById('movie-title');
+const volRange = document.getElementById('vol-range');
+let player, uiTimer, isMenuOpen = false;
+
+movieTitle.textContent = NOM_DE_LA_CHAINE;
+
+async function init() {
+    shaka.polyfill.installAll();
+    if (shaka.Player.isBrowserSupported()) {
+        player = new shaka.Player(video);
+        player.configure({
+            drm: { clearKeys: MOVIE_CONFIG.drm_key },
+            streaming: { lowLatencyMode: true }
+        });
+
+        try {
+            await player.load(MOVIE_CONFIG.mpd_url);
+            showUI();
+        } catch (e) { console.error('Erreur:', e); }
+    }
+}
+
+function togglePlay() {
+    if (video.paused) {
+        video.play();
+        document.getElementById('icon-play').style.display = 'none';
+        document.getElementById('icon-pause').style.display = 'block';
+    } else {
+        video.pause();
+        document.getElementById('icon-play').style.display = 'block';
+        document.getElementById('icon-pause').style.display = 'none';
+    }
+    showUI();
+}
+
+function showUI() {
+    uiLayer.classList.add('visible');
+    document.body.classList.remove('hide-cursor');
+    clearTimeout(uiTimer);
+    if (!video.paused && !isMenuOpen) {
+        uiTimer = setTimeout(() => {
+            uiLayer.classList.remove('visible');
+            document.body.classList.add('hide-cursor');
+        }, 5000);
+    }
+}
+
+function getAudioName(track, allTracks) {
+    const audioLangs = [...new Set(allTracks.map(t => t.language))];
+    if (audioLangs.length <= 1) return "Piste Originale";
     
-    <video id="video" controls autoplay></video>
+    const names = { 'fr': 'Français', 'en': 'Anglais', 'es': 'Espagnol' };
+    return names[track.language] || track.language.toUpperCase();
+}
 
-    <script>
-        async function initApp() {
-            // Initialisation du lecteur
-            const video = document.getElementById('video');
-            const player = new shaka.Player(video);
+function buildMenu(id) {
+    const menu = document.getElementById(id);
+    menu.innerHTML = '';
+    if (!player) return;
 
-            // Gestion des erreurs
-            player.addEventListener('error', (event) => {
-                console.error("Erreur Shaka Player:", event.detail);
-                alert("Erreur de lecture. Vérifiez la console (F12).");
-            });
+    if (id === 'menu-subs') {
+        menu.innerHTML = '<div class="menu-header">Audio & Sous-titres</div>';
+        
+        // Section Audio
+        const audioSection = document.createElement('div');
+        audioSection.className = 'menu-section-title';
+        audioSection.innerText = 'Audio';
+        menu.appendChild(audioSection);
 
-            // L'URL de votre flux vidéo
-            const manifestUri = 'https://dice-live-eu.cdnfastly.endeavorstreaming.net/1771695216_H25m104Fbk5MMpk7_31fa04c76a34de697de5f42bda714f6d7fd519b3/id=832687d1-4e88-4be7-af96-576fc2ddcc5f/data=dWlkPXNSYnhVbnxlOGZmNWIyZS0yYzZkLTRmODctODJjZi00ZWE0MzdhNGM5OGUmaXA9MmEwMTplMGE6ZWExOjI3MjA6NmE0NDoyZGIwOmQ3ODM6NGVjNiZleHA9MTc3MTY5NTI0NSZlaWQ9Mjk2MzczJmNpZD1kY2UubGlndWV1biZvaWQ9MzQ2JnR5cGU9TElWRQ/dash/live/2019662~/dash/live/2019662/296373-316951/manifest-d.mpd';
-
-            // Injection de votre paire KID:KEY
-            player.configure({
-                drm: {
-                    clearKeys: {
-                        'd99effb979a4482a82dbab8576bca393': 'b85774149e9c4dd88767bd42fec27e79'
-                    }
-                }
-            });
-
-            try {
-                // Chargement de la vidéo
-                await player.load(manifestUri);
-                console.log('Succès ! La vidéo est déchiffrée et prête.');
-            } catch (e) {
-                console.error('Erreur lors du chargement de la vidéo:', e);
+        const tracks = player.getVariantTracks();
+        const seenLangs = new Set();
+        
+        tracks.forEach(track => {
+            if (!seenLangs.has(track.language)) {
+                seenLangs.add(track.language);
+                const btn = document.createElement('button');
+                btn.innerText = getAudioName(track, tracks);
+                if (track.active) btn.className = 'active';
+                btn.onclick = () => { player.selectAudioLanguage(track.language); closeMenus(); };
+                menu.appendChild(btn);
             }
-        }
+        });
 
-        // Lancement au chargement de la page
-        document.addEventListener('DOMContentLoaded', initApp);
-    </script>
+        // Section Sous-titres
+        const hr = document.createElement('div');
+        hr.className = 'menu-separator';
+        menu.appendChild(hr);
+        
+        const subSection = document.createElement('div');
+        subSection.className = 'menu-section-title';
+        subSection.innerText = 'Sous-titres';
+        menu.appendChild(subSection);
+
+        const offBtn = document.createElement('button');
+        offBtn.innerText = "Désactivé";
+        if (!player.isTextTrackVisible()) offBtn.className = 'active';
+        offBtn.onclick = () => { player.setTextTrackVisibility(false); closeMenus(); };
+        menu.appendChild(offBtn);
+
+        player.getTextTracks().forEach(track => {
+            const btn = document.createElement('button');
+            btn.innerText = track.language.toUpperCase();
+            if (player.isTextTrackVisible() && track.active) btn.className = 'active';
+            btn.onclick = () => { 
+                player.selectTextLanguage(track.language); 
+                player.setTextTrackVisibility(true); 
+                closeMenus(); 
+            };
+            menu.appendChild(btn);
+        });
+    } else {
+        menu.innerHTML = '<div class="menu-header">Qualité</div>';
+        const tracks = player.getVariantTracks().sort((a,b) => b.height - a.height);
+        const seenH = new Set();
+        tracks.forEach(t => {
+            if (!seenH.has(t.height)) {
+                seenH.add(t.height);
+                const btn = document.createElement('button');
+                btn.innerHTML = `${t.height}p <span class="menu-subtext">${Math.round(t.bandwidth/1000)} kbps</span>`;
+                if (t.active) btn.className = 'active';
+                btn.onclick = () => { 
+                    player.configure({abr: {enabled: false}});
+                    player.selectVariantTrack(t, true); 
+                    closeMenus(); 
+                };
+                menu.appendChild(btn);
+            }
+        });
+    }
+}
+
+function closeMenus() {
+    document.querySelectorAll('.menu-popup').forEach(m => m.style.display = 'none');
+    isMenuOpen = false;
+    showUI();
+}
+
+// Events
+document.getElementById('click-layer').addEventListener('mousemove', showUI);
+document.getElementById('click-layer').addEventListener('click', togglePlay);
+document.getElementById('center-play-btn').addEventListener('click', (e) => { e.stopPropagation(); togglePlay(); });
+document.getElementById('subs-btn').addEventListener('click', (e) => { 
+    e.stopPropagation(); 
+    isMenuOpen = true; 
+    buildMenu('menu-subs'); 
+    document.getElementById('menu-subs').style.display = 'flex'; 
+});
+document.getElementById('settings-btn').addEventListener('click', (e) => { 
+    e.stopPropagation(); 
+    isMenuOpen = true; 
+    buildMenu('menu-settings'); 
+    document.getElementById('menu-settings').style.display = 'flex'; 
+});
+volRange.addEventListener('input', (e) => { video.volume = e.target.value; });
+document.getElementById('fullscreen-btn').addEventListener('click', () => {
+    if (!document.fullscreenElement) document.getElementById('player-container').requestFullscreen();
+    else document.exitFullscreen();
+});
+document.getElementById('pip-btn').addEventListener('click', () => video.requestPictureInPicture());
+
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.menu-popup') && !e.target.closest('.icon-btn')) closeMenus();
+});
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
 </body>
 </html>
