@@ -525,7 +525,7 @@
             initEPG();
 
             shaka.polyfill.installAll();
-            if (shaka.Player.isBrowserSupported()) {
+if (shaka.Player.isBrowserSupported()) {
                 player = new shaka.Player(video);
                 player.configure({
                     streaming: { alwaysStreamText: true },
@@ -533,6 +533,24 @@
                     drm: { clearKeys: MOVIE_CONFIG.drm_key },
                     abr: { enabled: true }
                 });
+
+                // 👇 --- AJOUTEZ CE BLOC EXACTEMENT ICI --- 👇
+                player.getNetworkingEngine().registerRequestFilter(function(type, request) {
+                    // On intercepte les requêtes vers le manifeste (MPD) et les segments vidéo
+                    if (type == shaka.net.NetworkingEngine.RequestType.MANIFEST || 
+                        type == shaka.net.NetworkingEngine.RequestType.SEGMENT) {
+                        
+                        // Ajoutez votre token Bearer complet
+                        request.headers['Authorization'] = 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ2ZXJzaW9uIjo0LCJpYXQiOjE3NzE2ODg4NjcsImV4cCI6MTc3MTgyOTExOSwidXNlcl9pZCI6ImR6djdKVldRZ0JOeTl4TlciLCJyZWdpb24iOiJGUi1WIiwiZnJlZSI6eyJhdXRoX3R5cGUiOiJmcmVlb2EifSwiZGV2aWNlX3R5cGUiOiJ1bmtub3duIiwibHYiOjUsInR2X3BsYW4iOjIwLCJhY2NvdW50X3Byb3ZpZGVyIjoiZnJlZSJ9.CVw8sAhijNQ-C86-zYT8eD_Y155sztJUPjOUiqFyQK8';
+                        
+                        // Les en-têtes OQEE (ajoutez les mêmes que dans votre script Python)
+                        request.headers['X-Fbx-Rights-Token'] = 'eyJhbGciOiJIUzI1NiIsImtpZCI6ImZyMSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NzE2ODg4NjgsImV4cCI6MTc3MTc2MTQ0NywidXNlcl9pZCI6ImR6djdKVldRZ0JOeTl4TlciLCJyaWdodHMiOnsidWlkIjozMTYzNDU2OCwiY2hhbm5lbHMiOltdLCJwYWNrcyI6Wzk4XX0sImNhbmFsX3JpZ2h0cyI6eyJjaGFubmVscyI6e319LCJzZXJ2aWNlcyI6WyJmcmVlYXZvZCJdLCJhY2NvdW50X3Byb3ZpZGVyIjoiZnJlZSIsInR2X3BsYW4iOjIwLCJpZmYiOjMxNjM0NTY4LCJpZmMiOm51bGwsImhhc19wdXJjaGFzZV9jb2RlIjp0cnVlLCJoYXNfcGFyZW50YWxfY29kZSI6ZmFsc2V9.BP0uH4yiPpDlsxCtkQ04r3RYaPHFwRvL-Z1PFxHi_jM.vQjf3hjPHLQ-amR9J6-UBcBUCWHf2_QKqs2MRGCizeo';
+                        request.headers['X-Oqee-Profile'] = 'ey5j5NqNTD8A7mpR';
+                        request.headers['X-Oqee-Account-Provider'] = 'free';
+                        request.headers['X-Oqee-Platform'] = 'web';
+                    }
+                });
+                // 👆 ------------------------------------- 👆
 
                 try {
                     await player.load(MOVIE_CONFIG.mpd_url);
