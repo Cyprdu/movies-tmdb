@@ -260,11 +260,11 @@
 
             shaka.polyfill.installAll();
             if (shaka.Player.isBrowserSupported()) {
-                player = new shaka.Player(video);
+               player = new shaka.Player(video);
                 player.configure({
                     streaming: { alwaysStreamText: true },
                     textDisplayFactory: () => new shaka.text.UITextDisplayer(video, subtitleContainer),
-                    drm: { clearKeys: MOVIE_CONFIG.drm_key },
+                    drm: { clearKeys: MOVIE_CONFIG.drm_key }, // <-- L'ANCIENNE MÉTHODE
                     abr: { enabled: true }
                 });
 
