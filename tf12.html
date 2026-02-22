@@ -530,12 +530,7 @@ if (shaka.Player.isBrowserSupported()) {
                 player.configure({
                     streaming: { alwaysStreamText: true },
                     textDisplayFactory: () => new shaka.text.UITextDisplayer(video, subtitleContainer),
-                    drm: {
-                        // ON PASSE EN PILOTE AUTOMATIQUE DIRECTEMENT CHEZ FREE
-                        servers: {
-                            'com.widevine.alpha': 'https://license.oqee.net/api/v1/live/license/widevine'
-                        }
-                    },
+                    drm: { clearKeys: MOVIE_CONFIG.drm_key }, // <-- L'ANCIENNE MÉTHODE
                     abr: { enabled: true }
                 });
 
