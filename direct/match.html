@@ -418,9 +418,9 @@
         <!-- Écran affiché pendant le cast -->
         <div id="cast-screen">
             <div class="cast-icon-wrap">
-                <svg viewBox="0 0 24 24" fill="none">
-                    <path d="M21 3H3C1.9 3 1 3.9 1 5V8C2.67 8 4.17 8.67 5.29 9.71C6.4 10.75 7.17 12.18 7.41 13.8C7.47 14.22 7.5 14.61 7.5 15C7.5 16.42 7.07 17.75 6.32 18.85C5.91 19.46 5.41 20 4.83 20.45L4.5 20.66C4.96 21.5 5.85 22 6.85 22H21C22.1 22 23 21.1 23 20V5C23 3.9 22.1 3 21 3ZM21 20H8.54C9.45 19.07 10.12 17.9 10.5 16.6C10.82 15.47 10.94 14.25 10.76 13.04C10.42 10.84 9.19 8.92 7.5 7.66V5H21V20Z" fill="white"/>
-                    <path d="M1 10V12C3.76 12 6.23 13.11 8.01 14.9C9.79 16.69 10.9 19.16 10.9 21.9H12.9C12.9 17.09 10.88 12.77 7.67 9.57C6.62 8.52 5.42 7.65 4.1 7C3.1 6.5 2.07 6.17 1 6.05V10Z" fill="white"/>
+                <!-- Icône Cast standard Material Design -->
+                <svg viewBox="0 0 24 24" fill="white" width="36" height="36">
+                    <path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5c-1.1 0-2 .9-2 2v3h2v-3h14v10h-5v2h5c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-18 0v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11z"/>
                 </svg>
             </div>
             <h2>Lecture sur le téléviseur</h2>
@@ -438,12 +438,10 @@
                 <div class="top-icons">
 
                     <!-- Cast -->
+                    <!-- Icône Cast standard Material Design (même icône que Chrome/Android) -->
                     <div class="icon-btn hidden-cast" id="cast-btn" title="Caster sur un téléviseur">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M21 3H3C1.9 3 1 3.9 1 5V8C2.67 8 4.17 8.67 5.29 9.71C6.4 10.75 7.17 12.18 7.41 13.8C7.47 14.22 7.5 14.61 7.5 15C7.5 16.42 7.07 17.75 6.32 18.85C5.91 19.46 5.41 20 4.83 20.45L4.5 20.66C4.96 21.5 5.85 22 6.85 22H21C22.1 22 23 21.1 23 20V5C23 3.9 22.1 3 21 3ZM21 20H8.54C9.45 19.07 10.12 17.9 10.5 16.6C10.82 15.47 10.94 14.25 10.76 13.04C10.42 10.84 9.19 8.92 7.5 7.66V5H21V20Z" fill="currentColor"/>
-                            <path d="M1 10V12C3.76 12 6.23 13.11 8.01 14.9C9.79 16.69 10.9 19.16 10.9 21.9H12.9C12.9 17.09 10.88 12.77 7.67 9.57C6.62 8.52 5.42 7.65 4.1 7C3.1 6.5 2.07 6.17 1 6.05V10Z" fill="currentColor"/>
-                            <path d="M1 14V16C1.65 16 2.3 16.12 2.91 16.38C3.52 16.63 4.07 17 4.53 17.46C4.99 17.92 5.36 18.48 5.61 19.08C5.87 19.69 6 20.34 6 21H8C8 19.14 7.26 17.36 5.94 16.05C4.63 14.73 2.85 14 1 14Z" fill="currentColor"/>
-                            <path d="M1 18V21H4C3.99 20.2 3.68 19.44 3.12 18.87C2.55 18.31 1.79 18 1 18Z" fill="currentColor"/>
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+                            <path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5c-1.1 0-2 .9-2 2v3h2v-3h14v10h-5v2h5c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-18 0v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11z"/>
                         </svg>
                     </div>
 
@@ -548,7 +546,7 @@
         channelName: "Ligue 1+",
         mpdUrl: "https://dice-live-eu.cdnfastly.endeavorstreaming.net/1772304555_iW1vRFDqXBoR4vnX_ecbac6b31486dc921c77cea2f8b2d038ee879e63/id=731e3fda-b19e-4343-8faf-666c000d8d4b/data=dWlkPXNSYnhVbnxlOGZmNWIyZS0yYzZkLTRmODctODJjZi00ZWE0MzdhNGM5OGUmaXA9MmEwMTplMGE6ZWExOjI3MjA6MzAwODo1N2Y3OjRiMzg6MTViNSZleHA9MTc3MjMwNDU4NSZlaWQ9Mjk2MzczJmNpZD1kY2UubGlndWV1biZvaWQ9MzQ2JnR5cGU9TElWRQ/dash/live/2001563~/dash/live/2001563/296373-317402/manifest-d.mpd",
         drmKeys: { "d99effb979a4482a82dbab8576bca393": "b85774149e9c4dd88767bd42fec27e79" },
-        castAppId: "07AEE832",
+        castAppId: "CC1AD845", // Default Media Receiver Google — fonctionne sans app receiver custom
     };
 
     // ==========================================
