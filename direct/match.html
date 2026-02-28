@@ -15,8 +15,17 @@
         body.hide-cursor *{cursor:none!important}
         @media screen and (display-mode:picture-in-picture){body{display:none!important}}
         #player-container{position:relative;width:100%;height:100%;background:#000;overflow:hidden}
-        video{width:100%;height:100%;display:block;object-fit:contain}
-        #click-layer{position:absolute;top:0;left:0;width:100%;height:100%;z-index:5}
+        video{width:100%;height:100%;display:block;object-fit:contain;position:relative;z-index:1}
+        
+        /* --- NOUVEAU : L'ÉCRAN DE CAST --- */
+        #cast-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg, #111 0%, #000 100%);z-index:10;display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;}
+        #cast-overlay.active{display:flex;}
+        #cast-overlay svg{width:80px;height:80px;margin-bottom:20px;opacity:0.8;animation:pulseCast 2s infinite;}
+        #cast-overlay h2{font-size:24px;font-weight:500;margin:0;letter-spacing:0.5px;}
+        #cast-overlay p{font-size:15px;color:#aaa;margin-top:10px;}
+        @keyframes pulseCast { 0% { opacity: 0.6; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0.6; transform: scale(0.95); } }
+
+        #click-layer{position:absolute;top:0;left:0;width:100%;height:100%;z-index:15}
         body.hide-cursor #click-layer{cursor:none!important}
         #ui-layer{position:absolute;top:0;left:0;width:100%;height:100%;z-index:50;display:flex;flex-direction:column;justify-content:space-between;opacity:0;transition:opacity 0.2s ease-out;pointer-events:none}
         #ui-layer.visible{opacity:1}
@@ -48,18 +57,13 @@
         .skip-btn{width:50px;height:50px}
         .bottom-bar{padding:0 40px 35px 40px;background:linear-gradient(to top,rgb(0 0 0 / .9) 0%,transparent 100%);display:flex;flex-direction:column;gap:10px;pointer-events:auto;z-index:100}
         
-        /* Modifs Badge Live & Décalage */
         .time-display{font-size:14px;color:#ccc;font-weight:500;margin-left:2px; display:flex; align-items:center; gap:10px;}
         .live-badge {background-color: #E50914; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease;}
         .live-badge::before {content: ''; display: inline-block; width: 6px; height: 6px; background-color: #fff; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite;}
-        
-        /* État "Pas en direct" (grisé) */
         .live-badge.not-live {background-color: rgb(255 255 255 / .2); color: #aaa; cursor: pointer;}
         .live-badge.not-live::before {animation: none; background-color: #aaa;}
         .live-badge.not-live:hover {background-color: rgb(255 255 255 / .3); color: #fff; transform: scale(1.05);}
-        
         .live-offset {font-variant-numeric: tabular-nums; font-family: monospace; font-size: 13px;}
-        
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
 
         .seek-container{width:100%;height:4px;background:rgb(255 255 255 / .25);cursor:pointer;position:relative;border-radius:2px;transition:height 0.15s}
@@ -78,21 +82,27 @@
         .menu-separator{height:1px;background:rgb(255 255 255 / .1);margin:8px 0;width:100%}
         #security-warning{position:absolute;top:0;left:0;width:100%;height:100%;background:#000;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;text-align:center}
         
-        /* Modificateurs du bouton Cast */
-        #cast-btn { display: flex; opacity: 0.3; cursor: default; } /* Grisé par défaut */
-        #cast-btn.ready { opacity: 1; cursor: pointer; } /* Blanc si dispo */
-        #cast-btn.casting { opacity: 1; color: #E50914 !important; } /* Rouge si en cours */
+        /* Modifs Bouton Cast: Toujours visible, s'allume en rouge si actif */
+        #cast-btn { display: flex; cursor: pointer; } 
+        #cast-btn.casting { color: #E50914 !important; }
         #cast-btn.casting svg path { fill: #E50914 !important; }
     </style>
 </head>
 <body id="main-body" oncontextmenu="return false;">
     <div id="security-warning">
         <h1>Lecture impossible</h1>
-        <p>Votre navigateur ou environnement n'est pas sécurisé pour la lecture de ce contenu.</p>
+        <p>Votre navigateur n'est pas sécurisé pour la lecture de ce contenu.</p>
     </div>
     
     <div id="player-container">
         <video id="video"></video>
+        
+        <div id="cast-overlay">
+            <svg fill="none" viewBox="0 0 24 24" width="24"><path d="M21 3H3C2.46 3 1.96 3.21 1.58 3.58C1.21 3.96 1 4.46 1 5V8C1.68 8.00 2.34 8.05 3 8.15V5H21V19H13.84C13.94 19.65 13.99 20.31 14 21H21C21.53 21 22.03 20.78 22.41 20.41C22.78 20.03 23 19.53 23 19V5C23 4.46 22.78 3.96 22.41 3.58C22.03 3.21 21.53 3 21 3ZM1 10V12C2.18 12 3.35 12.23 4.44 12.68C5.53 13.13 6.52 13.80 7.36 14.63C8.19 15.47 8.86 16.46 9.31 17.55C9.76 18.64 10 19.81 10 21H12C12 18.08 10.84 15.28 8.77 13.22C6.71 11.15 3.91 10 1 10ZM1 14V16C1.65 16 2.30 16.12 2.91 16.38C3.52 16.63 4.07 17.00 4.53 17.46C4.99 17.92 5.36 18.48 5.61 19.08C5.87 19.69 6 20.34 6 21H8C8 19.14 7.26 17.36 5.94 16.05C4.63 14.73 2.85 14 1 14ZM1 18V21H4C3.99 20.20 3.68 19.44 3.12 18.87C2.55 18.31 1.79 18.00 1 18Z" fill="#fff"></path></svg>
+            <h2>Lecture en cours sur le téléviseur</h2>
+            <p>Utilisez les contrôles ci-dessous pour gérer la lecture.</p>
+        </div>
+
         <div id="subtitle-container"></div>
         <div id="click-layer"></div>
         
@@ -102,7 +112,7 @@
                 <div class="top-title" id="movie-title">Chargement...</div>
                 <div class="top-icons">
                     
-                    <div class="icon-btn" id="cast-btn" title="Regarder sur un téléviseur">
+                    <div class="icon-btn" id="cast-btn" title="Caster sur un téléviseur">
                         <svg fill="none" height="24" viewBox="0 0 24 24" width="24">
                             <path d="M21 3H3C2.46 3 1.96 3.21 1.58 3.58C1.21 3.96 1 4.46 1 5V8C1.68 8.00 2.34 8.05 3 8.15V5H21V19H13.84C13.94 19.65 13.99 20.31 14 21H21C21.53 21 22.03 20.78 22.41 20.41C22.78 20.03 23 19.53 23 19V5C23 4.46 22.78 3.96 22.41 3.58C22.03 3.21 21.53 3 21 3ZM1 10V12C2.18 12 3.35 12.23 4.44 12.68C5.53 13.13 6.52 13.80 7.36 14.63C8.19 15.47 8.86 16.46 9.31 17.55C9.76 18.64 10 19.81 10 21H12C12 18.08 10.84 15.28 8.77 13.22C6.71 11.15 3.91 10 1 10ZM1 14V16C1.65 16 2.30 16.12 2.91 16.38C3.52 16.63 4.07 17.00 4.53 17.46C4.99 17.92 5.36 18.48 5.61 19.08C5.87 19.69 6 20.34 6 21H8C8 19.14 7.26 17.36 5.94 16.05C4.63 14.73 2.85 14 1 14ZM1 18V21H4C3.99 20.20 3.68 19.44 3.12 18.87C2.55 18.31 1.79 18.00 1 18Z" fill="#fff"></path>
                         </svg>
@@ -190,6 +200,7 @@
         const liveOffsetText = document.getElementById('live-offset-text');
         
         const castBtn = document.getElementById('cast-btn');
+        const castOverlay = document.getElementById('cast-overlay');
 
         let player;
         let castProxy;
@@ -281,41 +292,51 @@
                 player = new shaka.Player(video);
                 
                 // ----------------------------------------------------
-                // TRY/CATCH SUR LE CAST PROXY POUR ÉVITER LE CRASH
+                // GESTION DU CAST - FORCAGE DU MENU & UI SPECIALE
                 // ----------------------------------------------------
                 try {
                     castProxy = new shaka.cast.CastProxy(video, player, '07AEE832');
                     castProxy.start();
 
+                    // Écoute des changements de statut (en cours de cast ou non)
                     castProxy.addEventListener('caststatuschanged', () => {
-                        if (castProxy.canCast()) {
-                            castBtn.classList.add('ready');
+                        if (castProxy.isCasting()) {
+                            // On est connecté à la TV !
+                            castBtn.classList.add('casting');
+                            castOverlay.classList.add('active'); // Affiche l'écran d'attente
                         } else {
-                            castBtn.classList.remove('ready');
+                            // On n'est plus connecté
+                            castBtn.classList.remove('casting');
+                            castOverlay.classList.remove('active'); // Cache l'écran d'attente
                         }
                         
-                        if (castProxy.isCasting()) {
-                            castBtn.classList.add('casting');
+                        // Met à jour l'icône Play/Pause au cas où la TV était en pause
+                        if (video.paused) {
+                            iconPlay.style.display = 'block';
+                            iconPause.style.display = 'none';
                         } else {
-                            castBtn.classList.remove('casting');
+                            iconPlay.style.display = 'none';
+                            iconPause.style.display = 'block';
                         }
                     });
 
+                    // Clic sur le bouton Cast
                     castBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        if (!castProxy.canCast()) {
-                            alert("Chromecast n'est pas disponible : vérifiez que vous utilisez Chrome, qu'un téléviseur est sur le même réseau et que vous êtes en HTTPS.");
-                            return;
-                        }
                         if (castProxy.isCasting()) {
+                            // Si déjà en cours, on propose de se déconnecter
                             castProxy.suggestDisconnect();
                         } else {
-                            castProxy.cast();
+                            // Sinon, on FORCÉ l'ouverture du menu natif du navigateur
+                            try {
+                                castProxy.cast();
+                            } catch (err) {
+                                console.error("Erreur lors de l'appel à Cast :", err);
+                            }
                         }
                     });
                 } catch (e) {
-                    console.warn("L'initialisation du Cast a échoué mais le lecteur continue :", e);
-                    // Le bouton restera simplement grisé et inutilisable
+                    console.warn("L'initialisation du module Cast a échoué :", e);
                 }
                 // ----------------------------------------------------
 
