@@ -1,14 +1,3 @@
-
-
-
-
-
-
-
-
-
-
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -16,12 +5,8 @@
     <title>Lecteur Live</title>
     <link rel="icon" type="image/png" href="favico.png">
     
-    <!--
-        ORDRE CRITIQUE :
-        1. Shaka Player en premier
-        2. Cast Framework en DERNIER (defer), il appellera window.__onGCastApiAvailable quand prêt
-    -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+    <script defer src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
     
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
@@ -32,12 +17,13 @@
         #player-container{position:relative;width:100%;height:100%;background:#000;overflow:hidden}
         video{width:100%;height:100%;display:block;object-fit:contain;position:relative;z-index:1}
         
-        #cast-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#111 0%,#000 100%);z-index:10;display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;}
+        /* --- NOUVEAU : L'ÉCRAN DE CAST --- */
+        #cast-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg, #111 0%, #000 100%);z-index:10;display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;text-align:center;}
         #cast-overlay.active{display:flex;}
-        #cast-overlay .cast-icon{width:80px;height:80px;margin-bottom:20px;opacity:.8;animation:pulseCast 2s infinite;}
-        #cast-overlay h2{font-size:24px;font-weight:500;margin:0;letter-spacing:.5px;}
+        #cast-overlay svg{width:80px;height:80px;margin-bottom:20px;opacity:0.8;animation:pulseCast 2s infinite;}
+        #cast-overlay h2{font-size:24px;font-weight:500;margin:0;letter-spacing:0.5px;}
         #cast-overlay p{font-size:15px;color:#aaa;margin-top:10px;}
-        @keyframes pulseCast{0%{opacity:.6;transform:scale(.95)}50%{opacity:1;transform:scale(1.05)}100%{opacity:.6;transform:scale(.95)}}
+        @keyframes pulseCast { 0% { opacity: 0.6; transform: scale(0.95); } 50% { opacity: 1; transform: scale(1.05); } 100% { opacity: 0.6; transform: scale(0.95); } }
 
         #click-layer{position:absolute;top:0;left:0;width:100%;height:100%;z-index:15}
         body.hide-cursor #click-layer{cursor:none!important}
@@ -45,53 +31,59 @@
         #ui-layer.visible{opacity:1}
         #subtitle-container{position:absolute;width:100%;bottom:100px;display:flex;justify-content:center;pointer-events:none!important;z-index:200;transition:bottom 0.2s ease-out}
         #subtitle-container.controls-visible{bottom:140px}
-        #subtitle-container span{font-size:clamp(24px,4vw,42px);color:#fff;text-shadow:0 0 8px rgb(0 0 0/.95),0 0 12px rgb(0 0 0/.8);background:#fff0;font-weight:500;padding:4px 12px;white-space:pre-line;text-align:center}
-        .top-bar{padding:25px 40px;background:linear-gradient(to bottom,rgb(0 0 0/.8) 0%,transparent 100%);display:flex;justify-content:space-between;align-items:center;position:relative;z-index:100;pointer-events:auto}
+        #subtitle-container span{font-size:clamp(24px, 4vw, 42px);color:#fff;text-shadow:0 0 8px rgb(0 0 0 / .95),0 0 12px rgb(0 0 0 / .8);background:#fff0;font-weight:500;padding:4px 12px;white-space:pre-line;text-align:center}
+        .top-bar{padding:25px 40px;background:linear-gradient(to bottom,rgb(0 0 0 / .8) 0%,transparent 100%);display:flex;justify-content:space-between;align-items:center;position:relative;z-index:100;pointer-events:auto}
         .top-left{display:flex;align-items:center;gap:15px;font-size:15px;color:#ccc;font-weight:500;width:100px}
-        .top-title{position:absolute;left:50%;top:30px;transform:translateX(-50%);font-size:18px;color:#fff;text-shadow:0 1px 4px rgb(0 0 0/.8);pointer-events:none;font-weight:700}
+        .top-title{position:absolute;left:50%;top:30px;transform:translateX(-50%);font-size:18px;color:#fff;text-shadow:0 1px 4px rgb(0 0 0 / .8);pointer-events:none;font-weight:700}
         .top-icons{display:flex;gap:24px;align-items:center}
-        .icon-btn{width:25px;height:25px;color:rgb(255 255 255/.7);cursor:pointer;transition:transform .15s,color .15s;display:flex;align-items:center;justify-content:center;position:relative}
+        .icon-btn{width:25px;height:25px;color:rgb(255 255 255 / .7);cursor:pointer;transition:transform 0.15s,color 0.15s;display:flex;align-items:center;justify-content:center;position:relative}
         .icon-btn:hover{transform:scale(1.15);color:#fff}
         .icon-btn svg{width:100%;height:100%}
-        .top-icons-separator{width:1px;height:22px;background:rgb(255 255 255/.5)}
+        .icon-btn svg path,.icon-btn svg rect,.icon-btn svg circle{transition:stroke 0.15s,fill 0.15s}
+        .icon-btn svg path[fill="#fff"],.icon-btn svg rect[fill="#fff"],.icon-btn svg circle[fill="#fff"]{fill:currentColor}
+        .icon-btn svg path[stroke="#fff"],.icon-btn svg rect[stroke="#fff"]{stroke:currentColor}
+        .top-icons-separator{width:1px;height:22px;background:rgb(255 255 255 / .5)}
         .volume-container{position:relative;display:flex;flex-direction:column;align-items:center;pointer-events:auto}
-        .vol-slider-wrapper{position:absolute;top:36px;width:40px;height:0;background:rgb(30 30 30/.95);border-radius:4px;transition:height .2s ease-out;display:flex;align-items:center;justify-content:center;z-index:200;overflow:hidden;box-shadow:0 4px 12px rgb(0 0 0/.6)}
+        .vol-slider-wrapper{position:absolute;top:36px;width:40px;height:0;background:rgb(30 30 30 / .95);border-radius:4px;transition:height 0.2s ease-out;display:flex;align-items:center;justify-content:center;z-index:200;overflow:hidden;box-shadow:0 4px 12px rgb(0 0 0 / .6)}
         .volume-container:hover .vol-slider-wrapper,.vol-slider-wrapper:hover{height:130px}
-        .vol-slider-wrapper input[type=range]{transform:rotate(-90deg);width:100px;height:4px;background:rgb(255 255 255/.2);border-radius:2px;outline:none;-webkit-appearance:none;cursor:pointer}
-        input[type=range]::-webkit-slider-thumb{width:14px;height:14px;background:#fff;border-radius:50%;-webkit-appearance:none;cursor:pointer;box-shadow:0 0 3px rgb(0 0 0/.5)}
+        .vol-slider-wrapper input[type=range]{transform:rotate(-90deg);width:100px;height:4px;background:rgb(255 255 255 / .2);border-radius:2px;outline:none;-webkit-appearance:none;cursor:pointer}
+        input[type=range]::-webkit-slider-thumb{width:14px;height:14px;background:#fff;border-radius:50%;-webkit-appearance:none;cursor:pointer;box-shadow:0 0 3px rgb(0 0 0 / .5)}
         .center-controls{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:80px;pointer-events:auto;z-index:60}
-        .center-btn{cursor:pointer;transition:transform .15s;color:rgb(255 255 255/.85);display:flex;align-items:center;justify-content:center}
+        .center-btn{cursor:pointer;transition:transform 0.15s;color:rgb(255 255 255 / .85);display:flex;align-items:center;justify-content:center}
         .center-btn:hover{transform:scale(1.1);color:#fff}
-        .center-btn svg{filter:drop-shadow(0 2px 8px rgb(0 0 0/.8))}
+        .center-btn svg{filter:drop-shadow(0 2px 8px rgb(0 0 0 / .8))}
+        .center-btn svg path,.center-btn svg rect{transition:fill 0.15s}
+        .center-btn svg path[fill="#fff"],.center-btn svg rect[fill="#fff"]{fill:currentColor}
         .skip-btn{width:50px;height:50px}
-        .bottom-bar{padding:0 40px 35px 40px;background:linear-gradient(to top,rgb(0 0 0/.9) 0%,transparent 100%);display:flex;flex-direction:column;gap:10px;pointer-events:auto;z-index:100}
-        .time-display{font-size:14px;color:#ccc;font-weight:500;margin-left:2px;display:flex;align-items:center;gap:10px;}
-        .live-badge{background-color:#E50914;color:#fff;padding:2px 8px;border-radius:4px;font-weight:700;font-size:13px;letter-spacing:.5px;display:inline-flex;align-items:center;justify-content:center;transition:all .2s ease;}
-        .live-badge::before{content:'';display:inline-block;width:6px;height:6px;background-color:#fff;border-radius:50%;margin-right:6px;animation:pulse 1.5s infinite;}
-        .live-badge.not-live{background-color:rgb(255 255 255/.2);color:#aaa;cursor:pointer;}
-        .live-badge.not-live::before{animation:none;background-color:#aaa;}
-        .live-badge.not-live:hover{background-color:rgb(255 255 255/.3);color:#fff;transform:scale(1.05);}
-        .live-offset{font-variant-numeric:tabular-nums;font-family:monospace;font-size:13px;}
-        @keyframes pulse{0%{opacity:1}50%{opacity:.3}100%{opacity:1}}
-        .seek-container{width:100%;height:4px;background:rgb(255 255 255/.25);cursor:pointer;position:relative;border-radius:2px;transition:height .15s}
+        .bottom-bar{padding:0 40px 35px 40px;background:linear-gradient(to top,rgb(0 0 0 / .9) 0%,transparent 100%);display:flex;flex-direction:column;gap:10px;pointer-events:auto;z-index:100}
+        
+        .time-display{font-size:14px;color:#ccc;font-weight:500;margin-left:2px; display:flex; align-items:center; gap:10px;}
+        .live-badge {background-color: #E50914; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease;}
+        .live-badge::before {content: ''; display: inline-block; width: 6px; height: 6px; background-color: #fff; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite;}
+        .live-badge.not-live {background-color: rgb(255 255 255 / .2); color: #aaa; cursor: pointer;}
+        .live-badge.not-live::before {animation: none; background-color: #aaa;}
+        .live-badge.not-live:hover {background-color: rgb(255 255 255 / .3); color: #fff; transform: scale(1.05);}
+        .live-offset {font-variant-numeric: tabular-nums; font-family: monospace; font-size: 13px;}
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+        .seek-container{width:100%;height:4px;background:rgb(255 255 255 / .25);cursor:pointer;position:relative;border-radius:2px;transition:height 0.15s}
         .seek-container:hover{height:6px}
         .seek-fill{height:100%;background:#fff;width:0%;border-radius:2px;position:relative}
-        .seek-fill::after{content:'';position:absolute;right:-7px;top:50%;transform:translateY(-50%);width:15px;height:15px;background:#fff;border-radius:50%;opacity:0;transition:opacity .15s;box-shadow:0 1px 4px rgb(0 0 0/.5)}
+        .seek-fill::after{content:'';position:absolute;right:-7px;top:50%;transform:translateY(-50%);width:15px;height:15px;background:#fff;border-radius:50%;opacity:0;transition:opacity 0.15s;box-shadow:0 1px 4px rgb(0 0 0 / .5)}
         .seek-container:hover .seek-fill::after{opacity:1}
-        .menu-popup{position:absolute;top:70px;right:40px;background:rgb(40 40 40/.97);backdrop-filter:blur(10px);border-radius:4px;padding:8px 0;min-width:340px;display:none;flex-direction:column;z-index:2000;box-shadow:0 8px 24px rgb(0 0 0/.6);pointer-events:auto}
+        .menu-popup{position:absolute;top:70px;right:40px;background:rgb(40 40 40 / .97);backdrop-filter:blur(10px);border-radius:4px;padding:8px 0;min-width:340px;display:none;flex-direction:column;z-index:2000;box-shadow:0 8px 24px rgb(0 0 0 / .6);pointer-events:auto}
         .menu-header{padding:12px 20px;color:#fff;font-weight:700;font-size:16px;margin-bottom:4px}
         .menu-section-title{padding:8px 20px;color:#aaa;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-        .menu-popup button{background:#fff0;border:none;color:#bbb;text-align:left;padding:12px 20px 12px 50px;cursor:pointer;font-size:14px;font-weight:400;display:flex;flex-direction:column;width:100%;transition:background .15s,color .15s;position:relative}
-        .menu-popup button:hover{background:rgb(255 255 255/.1);color:#fff}
-        .menu-popup button.active{color:#fff;font-weight:600;background:rgb(255 255 255/.08)}
+        .menu-popup button{background:#fff0;border:none;color:#bbb;text-align:left;padding:12px 20px 12px 50px;cursor:pointer;font-size:14px;font-weight:400;display:flex;flex-direction:column;width:100%;transition:background 0.15s,color 0.15s;position:relative}
+        .menu-popup button:hover{background:rgb(255 255 255 / .1);color:#fff}
+        .menu-popup button.active{color:#fff;font-weight:600;background:rgb(255 255 255 / .08)}
         .menu-popup button.active::before{content:'';position:absolute;left:20px;top:50%;transform:translateY(-50%);width:19px;height:15px;background-image:url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDE5IDE1Ij48dGl0bGU+UmVjdGFuZ2xlIDUwICsgUmVjdGFuZ2xlIDUwIENvcHk8L3RpdGxlPjxnIGZpbGw9IiNGRkYiIGZpbGwtcnVsZT0iZXZlbm9kZCI+PHBhdGggZD0iTTIuMTIxIDZsNi4zNjQgNi4zNjQtMi4xMjEgMi4xMjJMMCA4LjEyMnoiLz48cGF0aCBkPSJNMTguNzI4IDIuMTIxTDcuMTIgMTMuNzI4IDUgMTEuNjA3IDE2LjYwNyAwbDIuMTIgMi4xMjF6Ii8+PC9nPjwvc3ZnPg==);background-size:contain;background-repeat:no-repeat}
         .menu-subtext{font-size:12px;color:#888;margin-top:3px;font-weight:400}
-        .menu-separator{height:1px;background:rgb(255 255 255/.1);margin:8px 0;width:100%}
+        .menu-separator{height:1px;background:rgb(255 255 255 / .1);margin:8px 0;width:100%}
         #security-warning{position:absolute;top:0;left:0;width:100%;height:100%;background:#000;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;text-align:center}
         
-        /* Bouton Cast : caché jusqu'à ce que l'API soit prête, rouge si actif */
-        #cast-btn { display: none; cursor: pointer; }
-        #cast-btn.ready { display: flex; }
+        /* Modifs Bouton Cast: Toujours visible, s'allume en rouge si actif */
+        #cast-btn { display: flex; cursor: pointer; } 
         #cast-btn.casting { color: #E50914 !important; }
         #cast-btn.casting svg path { fill: #E50914 !important; }
     </style>
@@ -106,10 +98,7 @@
         <video id="video"></video>
         
         <div id="cast-overlay">
-            <!-- Icône Cast standard Material Design -->
-            <svg class="cast-icon" viewBox="0 0 24 24" fill="#fff">
-                <path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5c-1.1 0-2 .9-2 2v3h2V9h14v10h-5v2h5c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-18 0v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11z"/>
-            </svg>
+            <svg fill="none" viewBox="0 0 24 24" width="24"><path d="M21 3H3C2.46 3 1.96 3.21 1.58 3.58C1.21 3.96 1 4.46 1 5V8C1.68 8.00 2.34 8.05 3 8.15V5H21V19H13.84C13.94 19.65 13.99 20.31 14 21H21C21.53 21 22.03 20.78 22.41 20.41C22.78 20.03 23 19.53 23 19V5C23 4.46 22.78 3.96 22.41 3.58C22.03 3.21 21.53 3 21 3ZM1 10V12C2.18 12 3.35 12.23 4.44 12.68C5.53 13.13 6.52 13.80 7.36 14.63C8.19 15.47 8.86 16.46 9.31 17.55C9.76 18.64 10 19.81 10 21H12C12 18.08 10.84 15.28 8.77 13.22C6.71 11.15 3.91 10 1 10ZM1 14V16C1.65 16 2.30 16.12 2.91 16.38C3.52 16.63 4.07 17.00 4.53 17.46C4.99 17.92 5.36 18.48 5.61 19.08C5.87 19.69 6 20.34 6 21H8C8 19.14 7.26 17.36 5.94 16.05C4.63 14.73 2.85 14 1 14ZM1 18V21H4C3.99 20.20 3.68 19.44 3.12 18.87C2.55 18.31 1.79 18.00 1 18Z" fill="#fff"></path></svg>
             <h2>Lecture en cours sur le téléviseur</h2>
             <p>Utilisez les contrôles ci-dessous pour gérer la lecture.</p>
         </div>
@@ -123,10 +112,9 @@
                 <div class="top-title" id="movie-title">Chargement...</div>
                 <div class="top-icons">
                     
-                    <!-- Bouton Cast : icône Material Design standard -->
                     <div class="icon-btn" id="cast-btn" title="Caster sur un téléviseur">
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
-                            <path d="M1 18v3h3c0-1.66-1.34-3-3-3zm0-4v2c2.76 0 5 2.24 5 5h2c0-3.87-3.13-7-7-7zm18-7H5c-1.1 0-2 .9-2 2v3h2V9h14v10h-5v2h5c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm-18 0v2c4.97 0 9 4.03 9 9h2c0-6.08-4.93-11-11-11z"/>
+                        <svg fill="none" height="24" viewBox="0 0 24 24" width="24">
+                            <path d="M21 3H3C2.46 3 1.96 3.21 1.58 3.58C1.21 3.96 1 4.46 1 5V8C1.68 8.00 2.34 8.05 3 8.15V5H21V19H13.84C13.94 19.65 13.99 20.31 14 21H21C21.53 21 22.03 20.78 22.41 20.41C22.78 20.03 23 19.53 23 19V5C23 4.46 22.78 3.96 22.41 3.58C22.03 3.21 21.53 3 21 3ZM1 10V12C2.18 12 3.35 12.23 4.44 12.68C5.53 13.13 6.52 13.80 7.36 14.63C8.19 15.47 8.86 16.46 9.31 17.55C9.76 18.64 10 19.81 10 21H12C12 18.08 10.84 15.28 8.77 13.22C6.71 11.15 3.91 10 1 10ZM1 14V16C1.65 16 2.30 16.12 2.91 16.38C3.52 16.63 4.07 17.00 4.53 17.46C4.99 17.92 5.36 18.48 5.61 19.08C5.87 19.69 6 20.34 6 21H8C8 19.14 7.26 17.36 5.94 16.05C4.63 14.73 2.85 14 1 14ZM1 18V21H4C3.99 20.20 3.68 19.44 3.12 18.87C2.55 18.31 1.79 18.00 1 18Z" fill="#fff"></path>
                         </svg>
                     </div>
 
@@ -194,12 +182,6 @@
             }
         };
 
-        // ── CAST APP ID ──────────────────────────────────────────────────────────
-        // "CC1AD845" = Default Media Receiver Google (supporte DASH/HLS nativement,
-        // aucune app receiver custom requise → plus de page blanche).
-        const CAST_APP_ID = 'CC1AD845';
-        // ────────────────────────────────────────────────────────────────────────
-
         const body = document.getElementById('main-body');
         const video = document.getElementById('video');
         const uiLayer = document.getElementById('ui-layer');
@@ -213,8 +195,10 @@
         const subtitleContainer = document.getElementById('subtitle-container');
         const securityWarning = document.getElementById('security-warning');
         const movieTitle = document.getElementById('movie-title');
+        
         const liveBadgeBtn = document.getElementById('live-badge-btn');
         const liveOffsetText = document.getElementById('live-offset-text');
+        
         const castBtn = document.getElementById('cast-btn');
         const castOverlay = document.getElementById('cast-overlay');
 
@@ -236,15 +220,16 @@
         function formatOffset(seconds) {
             if (seconds >= 0) return "";
             const absSec = Math.abs(Math.floor(seconds));
-            const h = Math.floor(absSec / 3600);
-            const m = Math.floor((absSec % 3600) / 60);
-            const s = Math.floor(absSec % 60);
-            if (h > 0) return `-${h}:${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`;
-            return `-${m < 10 ? '0'+m : m}:${s < 10 ? '0'+s : s}`;
+            let h = Math.floor(absSec / 3600);
+            let m = Math.floor((absSec % 3600) / 60);
+            let s = Math.floor(absSec % 60);
+            if (h > 0) return `-${h}:${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
+            return `-${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}`;
         }
 
         function getStorageKey(key) {
-            return `live_${MOVIE_CONFIG.channel_name.replace(/\s+/g,'_')}_${key}`;
+            const safeName = MOVIE_CONFIG.channel_name.replace(/\s+/g, '_');
+            return `live_${safeName}_${key}`;
         }
 
         function saveState() {
@@ -298,68 +283,6 @@
             return track.language ? track.language.toUpperCase() : 'Audio';
         }
 
-        // ════════════════════════════════════════════════════════════════════════
-        // CAST : initialisé depuis __onGCastApiAvailable (après player.load)
-        // ════════════════════════════════════════════════════════════════════════
-        function initCastProxy() {
-            if (castProxy) return; // déjà initialisé
-            if (!window.cast || !window.cast.framework) return;
-            if (!player) return;
-
-            try {
-                // CastProxy proxifie complètement video + player vers la Chromecast.
-                // Toutes les commandes (play/pause/seek/volume) passent automatiquement
-                // par le proxy quand isCasting() === true.
-                castProxy = new shaka.cast.CastProxy(video, player, CAST_APP_ID);
-
-                castProxy.addEventListener('caststatuschanged', () => {
-                    const casting = castProxy.isCasting();
-                    castBtn.classList.toggle('casting', casting);
-                    castOverlay.classList.toggle('active', casting);
-                    // Resync l'icône play/pause (la TV peut avoir changé l'état)
-                    iconPlay.style.display  = video.paused ? 'block' : 'none';
-                    iconPause.style.display = video.paused ? 'none'  : 'block';
-                });
-
-                // Rendre le bouton visible maintenant que l'API est prête
-                castBtn.classList.add('ready');
-
-                // Clic : ouvre le dialogue de sélection de TV du navigateur,
-                // ou déconnecte si déjà en train de caster
-                castBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    if (!castProxy) return;
-                    if (castProxy.isCasting()) {
-                        castProxy.suggestDisconnect();
-                    } else {
-                        // cast() retourne une Promise — obligatoire de l'awaiter/catcher
-                        castProxy.cast().catch((err) => {
-                            // Code 8006 = utilisateur a annulé le dialogue → pas une erreur
-                            if (err && err.code !== 8006) {
-                                console.warn('Cast error:', err);
-                            }
-                        });
-                    }
-                });
-
-            } catch (err) {
-                console.warn('Impossible d\'initialiser CastProxy:', err);
-            }
-        }
-
-        // Ce callback est appelé automatiquement par le Cast Framework quand il est prêt.
-        // On attend aussi que player soit initialisé avant de créer le proxy.
-        window['__onGCastApiAvailable'] = function(isAvailable) {
-            if (isAvailable) {
-                // Si player est déjà prêt, on init tout de suite
-                if (player) {
-                    initCastProxy();
-                }
-                // Sinon initCastProxy() sera appelé à la fin de player.load()
-            }
-        };
-        // ════════════════════════════════════════════════════════════════════════
-
         async function init() {
             if (!checkSecurity()) return;
             movieTitle.textContent = MOVIE_CONFIG.channel_name;
@@ -367,6 +290,55 @@
             shaka.polyfill.installAll();
             if (shaka.Player.isBrowserSupported()) {
                 player = new shaka.Player(video);
+                
+                // ----------------------------------------------------
+                // GESTION DU CAST - FORCAGE DU MENU & UI SPECIALE
+                // ----------------------------------------------------
+                try {
+                    castProxy = new shaka.cast.CastProxy(video, player, '07AEE832');
+                    castProxy.start();
+
+                    // Écoute des changements de statut (en cours de cast ou non)
+                    castProxy.addEventListener('caststatuschanged', () => {
+                        if (castProxy.isCasting()) {
+                            // On est connecté à la TV !
+                            castBtn.classList.add('casting');
+                            castOverlay.classList.add('active'); // Affiche l'écran d'attente
+                        } else {
+                            // On n'est plus connecté
+                            castBtn.classList.remove('casting');
+                            castOverlay.classList.remove('active'); // Cache l'écran d'attente
+                        }
+                        
+                        // Met à jour l'icône Play/Pause au cas où la TV était en pause
+                        if (video.paused) {
+                            iconPlay.style.display = 'block';
+                            iconPause.style.display = 'none';
+                        } else {
+                            iconPlay.style.display = 'none';
+                            iconPause.style.display = 'block';
+                        }
+                    });
+
+                    // Clic sur le bouton Cast
+                    castBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (castProxy.isCasting()) {
+                            // Si déjà en cours, on propose de se déconnecter
+                            castProxy.suggestDisconnect();
+                        } else {
+                            // Sinon, on FORCÉ l'ouverture du menu natif du navigateur
+                            try {
+                                castProxy.cast();
+                            } catch (err) {
+                                console.error("Erreur lors de l'appel à Cast :", err);
+                            }
+                        }
+                    });
+                } catch (e) {
+                    console.warn("L'initialisation du module Cast a échoué :", e);
+                }
+                // ----------------------------------------------------
 
                 player.configure({
                     streaming: { alwaysStreamText: true },
@@ -385,16 +357,16 @@
                         const savedSub = localStorage.getItem(getStorageKey('lang_sub'));
                         const savedAudio = localStorage.getItem(getStorageKey('lang_audio'));
                         const savedSubsVisible = localStorage.getItem(getStorageKey('subs_visible'));
+
                         if (savedAudio) player.selectAudioLanguage(savedAudio);
                         else player.selectAudioLanguage('fr');
+
                         if (savedSub) player.selectTextLanguage(savedSub);
                         else player.selectTextLanguage('fr');
+
                         if (savedSubsVisible === 'false') player.setTextTrackVisibility(false);
                         else player.setTextTrackVisibility(true);
                     }, 500);
-
-                    // Tenter l'init Cast (si __onGCastApiAvailable a déjà été appelé)
-                    initCastProxy();
 
                 } catch (e) {
                     console.error('Erreur de chargement de la vidéo :', e);
@@ -406,19 +378,20 @@
         window.addEventListener('keydown', (e) => {
             if (!playerLoaded) return;
             showUI();
-            switch(e.code) {
-                case 'Space':      e.preventDefault(); togglePlay(); break;
+            switch(e.code){
+                case 'Space': e.preventDefault(); togglePlay(); break;
                 case 'ArrowRight': e.preventDefault(); skip(10); break;
-                case 'ArrowLeft':  e.preventDefault(); skip(-10); break;
-                case 'ArrowUp':    e.preventDefault(); changeVolume(0.1); break;
-                case 'ArrowDown':  e.preventDefault(); changeVolume(-0.1); break;
+                case 'ArrowLeft': e.preventDefault(); skip(-10); break;
+                case 'ArrowUp': e.preventDefault(); changeVolume(0.1); break;
+                case 'ArrowDown': e.preventDefault(); changeVolume(-0.1); break;
             }
         });
 
         function changeVolume(delta) {
-            video.volume = Math.min(1, Math.max(0, video.volume + delta));
+            let newVol = Math.min(1, Math.max(0, video.volume + delta));
+            video.volume = newVol;
             video.muted = false;
-            volRange.value = video.volume;
+            volRange.value = newVol;
             updateVolumeIcon();
             saveState();
         }
@@ -525,9 +498,11 @@
             if (seekRange) {
                 const liveEdge = seekRange.end;
                 const current = video.currentTime;
+                
                 const duration = liveEdge - seekRange.start;
                 const currentPos = current - seekRange.start;
                 seekFill.style.width = duration > 0 ? (currentPos / duration) * 100 + "%" : "100%";
+
                 const offset = current - liveEdge;
                 if (offset > -15) {
                     liveBadgeBtn.classList.remove('not-live');
@@ -539,10 +514,10 @@
             }
         };
 
-        document.getElementById('seek-container').addEventListener('click', (e) => {
+        seekContainer.addEventListener('click', (e) => {
             if (!playerLoaded || !player) return;
             e.stopPropagation();
-            const rect = document.getElementById('seek-container').getBoundingClientRect();
+            const rect = seekContainer.getBoundingClientRect();
             const seekRange = player.seekRange();
             if (seekRange) {
                 const duration = seekRange.end - seekRange.start;
@@ -577,15 +552,22 @@
 
             if (id === 'menu-subs') {
                 menu.innerHTML = '<div class="menu-header">Sous-titres & Audio</div>';
+                
                 const subsSection = document.createElement('div');
                 subsSection.className = 'menu-section-title';
                 subsSection.innerText = 'Sous-titres';
                 menu.appendChild(subsSection);
+
                 const offBtn = document.createElement('button');
                 offBtn.innerText = "Désactivé";
                 if (!player.isTextTrackVisible()) offBtn.className = 'active';
-                offBtn.onclick = () => { player.setTextTrackVisibility(false); saveState(); closeAllMenus(); };
+                offBtn.onclick = () => {
+                    player.setTextTrackVisibility(false);
+                    saveState();
+                    closeAllMenus();
+                };
                 menu.appendChild(offBtn);
+
                 const textTracks = player.getTextTracks();
                 if (textTracks && textTracks.length > 0) {
                     textTracks.forEach(track => {
@@ -593,33 +575,51 @@
                         const langName = track.language === 'fr' ? 'Français' : track.language === 'en' ? 'English' : track.language.toUpperCase();
                         btn.innerText = langName;
                         const currentTrack = player.isTextTrackVisible() ? player.getTextLanguages()[0] : null;
-                        if (player.isTextTrackVisible() && currentTrack === track.language) btn.className = 'active';
-                        btn.onclick = () => { player.selectTextLanguage(track.language); player.setTextTrackVisibility(true); saveState(); closeAllMenus(); };
+                        if (player.isTextTrackVisible() && currentTrack === track.language) {
+                            btn.className = 'active';
+                        }
+                        btn.onclick = () => {
+                            player.selectTextLanguage(track.language);
+                            player.setTextTrackVisibility(true);
+                            saveState();
+                            closeAllMenus();
+                        };
                         menu.appendChild(btn);
                     });
                 }
+
                 const hr = document.createElement('div');
                 hr.className = 'menu-separator';
                 menu.appendChild(hr);
+
                 const audioSection = document.createElement('div');
                 audioSection.className = 'menu-section-title';
                 audioSection.innerText = 'Audio';
                 menu.appendChild(audioSection);
+
                 const audioTracks = player.getVariantTracks();
                 const audioLangs = [...new Set(audioTracks.map(t => t.language))];
+                
                 audioLangs.forEach(lang => {
                     const btn = document.createElement('button');
                     let langName;
+                    
                     if (audioLangs.length === 1) {
                         langName = 'Piste Originale';
                     } else {
                         const track = audioTracks.find(t => t.language === lang);
                         langName = getAudioTrackDisplayName(track);
                     }
+
                     btn.innerText = langName;
                     const current = audioTracks.find(t => t.active);
                     if (current && current.language === lang) btn.className = 'active';
-                    btn.onclick = () => { player.selectAudioLanguage(lang); saveState(); closeAllMenus(); };
+                    
+                    btn.onclick = () => {
+                        player.selectAudioLanguage(lang);
+                        saveState();
+                        closeAllMenus();
+                    };
                     menu.appendChild(btn);
                 });
 
@@ -631,12 +631,22 @@
                     if (t.height && !seen.has(t.height)) {
                         seen.add(t.height);
                         const btn = document.createElement('button');
-                        let label = "Bonne", desc = "Consomme environ 0,38 Go par heure";
-                        if (t.height >= 790) { label = "Optimale"; desc = "Consomme environ 1,17 Go par heure"; }
-                        else if (t.height === 720) { label = "Très bonne"; desc = "Consomme environ 0,86 Go par heure"; }
+                        let label = "Bonne";
+                        let desc = "Consomme environ 0,38 Go par heure";
+                        if (t.height >= 790) {
+                            label = "Optimale";
+                            desc = "Consomme environ 1,17 Go par heure";
+                        } else if (t.height === 720) {
+                            label = "Très bonne";
+                            desc = "Consomme environ 0,86 Go par heure";
+                        }
                         btn.innerHTML = `${label}<span class="menu-subtext">${desc}</span>`;
                         if (t.active) btn.className = 'active';
-                        btn.onclick = () => { player.configure({ abr: { enabled: false } }); player.selectVariantTrack(t, true); closeAllMenus(); };
+                        btn.onclick = () => {
+                            player.configure({ abr: { enabled: false } });
+                            player.selectVariantTrack(t, true);
+                            closeAllMenus();
+                        };
                         menu.appendChild(btn);
                     }
                 });
@@ -644,28 +654,24 @@
         }
 
         document.addEventListener('DOMContentLoaded', init);
-
+        
         document.getElementById('center-play-btn').addEventListener('click', (e) => { e.stopPropagation(); togglePlay(); });
         document.getElementById('skip-back').addEventListener('click', (e) => { e.stopPropagation(); skip(-10); });
         document.getElementById('skip-forward').addEventListener('click', (e) => { e.stopPropagation(); skip(10); });
+        
         document.getElementById('subs-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleMenu('menu-subs'); });
         document.getElementById('settings-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleMenu('menu-settings'); });
+        
         document.getElementById('pip-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             if (!playerLoaded) return;
             if (document.pictureInPictureElement) document.exitPictureInPicture();
             else video.requestPictureInPicture();
         });
+        
         document.getElementById('fullscreen-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleFullscreen(); });
-
+        
         updateVolumeIcon();
     </script>
-
-    <!--
-        Cast Framework chargé EN DERNIER (après tout le JS).
-        Il appellera window.__onGCastApiAvailable() une fois prêt.
-        Ne jamais le mettre en <head> ou avant Shaka.
-    -->
-    <script defer src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
 </body>
 </html>
