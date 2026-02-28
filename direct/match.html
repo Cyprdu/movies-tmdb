@@ -1,11 +1,13 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <title>Lecteur Live</title>
     <link rel="icon" type="image/png" href="favico.png">
+    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+    <script src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
         body,html{margin:0;padding:0;background:#000;height:100%;font-family:'Roboto',sans-serif;overflow:hidden;color:#fff;user-select:none;-webkit-user-select:none}
@@ -75,6 +77,10 @@
         .menu-subtext{font-size:12px;color:#888;margin-top:3px;font-weight:400}
         .menu-separator{height:1px;background:rgb(255 255 255 / .1);margin:8px 0;width:100%}
         #security-warning{position:absolute;top:0;left:0;width:100%;height:100%;background:#000;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:9999;text-align:center}
+        
+        /* Classe active pour le bouton cast */
+        #cast-btn.casting { color: #E50914 !important; }
+        #cast-btn.casting svg path { fill: #E50914 !important; }
     </style>
 </head>
 <body id="main-body" oncontextmenu="return false;">
@@ -93,6 +99,13 @@
                 <div class="top-left"></div>
                 <div class="top-title" id="movie-title">Chargement...</div>
                 <div class="top-icons">
+                    
+                    <div class="icon-btn" id="cast-btn" title="Regarder sur un téléviseur" style="display: none;">
+                        <svg fill="none" height="24" viewBox="0 0 24 24" width="24">
+                            <path d="M21 3H3C2.46 3 1.96 3.21 1.58 3.58C1.21 3.96 1 4.46 1 5V8C1.68 8.00 2.34 8.05 3 8.15V5H21V19H13.84C13.94 19.65 13.99 20.31 14 21H21C21.53 21 22.03 20.78 22.41 20.41C22.78 20.03 23 19.53 23 19V5C23 4.46 22.78 3.96 22.41 3.58C22.03 3.21 21.53 3 21 3ZM1 10V12C2.18 12 3.35 12.23 4.44 12.68C5.53 13.13 6.52 13.80 7.36 14.63C8.19 15.47 8.86 16.46 9.31 17.55C9.76 18.64 10 19.81 10 21H12C12 18.08 10.84 15.28 8.77 13.22C6.71 11.15 3.91 10 1 10ZM1 14V16C1.65 16 2.30 16.12 2.91 16.38C3.52 16.63 4.07 17.00 4.53 17.46C4.99 17.92 5.36 18.48 5.61 19.08C5.87 19.69 6 20.34 6 21H8C8 19.14 7.26 17.36 5.94 16.05C4.63 14.73 2.85 14 1 14ZM1 18V21H4C3.99 20.20 3.68 19.44 3.12 18.87C2.55 18.31 1.79 18.00 1 18Z" fill="#fff"></path>
+                        </svg>
+                    </div>
+
                     <div class="icon-btn" id="subs-btn" title="Sous-titres & Audio">
                         <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="none" viewBox="0 0 25 25"><path fill="#fff" fill-rule="evenodd" d="M20.773 2.207h-16a4 4 0 0 0-4 4v12a4 4 0 0 0 4 4h16a4 4 0 0 0 4-4v-12a4 4 0 0 0-4-4zm-16 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-12a2 2 0 0 0-2-2h-16zm3 9a1 1 0 0 1 1-1h8a1 1 0 1 1 0 2h-8a1 1 0 0 1-1-1zm-2 3a1 1 0 1 0 0 2h2a1 1 0 1 0 0-2h-2zm5 1a1 1 0 0 1 1-1h8a1 1 0 1 1 0 2h-8a1 1 0 0 1-1-1z" clip-rule="evenodd"/></svg>
                     </div>
@@ -151,9 +164,9 @@
     <script>
         const MOVIE_CONFIG = {
             "channel_name": "Ligue 1+",
-            "mpd_url": "https://spottonefootball.akamaized.net/dash/live/2118044/6306781_1318721/manifest.mpd?hdntl=exp=1772376310~acl=*%2fdash%2flive%2f2118044*%2f6306781_1318721%2f*~data=hdntl,oug%3d1,country%3dFR~hmac=61c8d91dbe707703f2958cfb30094a5b6112f13a20493750a0c255ddb03896fc&cid=28387&ecid=8188589&pid=5&dtid=1&sid=073509171911&gc=DxY&gsd=CBbt&grm=1&hdnea=exp=1772289969~acl=*/dash/live/2118044*/6306781_1318721/*~data=oug=1,country=FR~hmac=02ec1f62a3dd149376ae70229f57e13de8b18842e59b520f6feb856b023135ad&content=2118996",
+            "mpd_url": "https://dice-live-eu.cdnfastly.endeavorstreaming.net/1772304555_iW1vRFDqXBoR4vnX_ecbac6b31486dc921c77cea2f8b2d038ee879e63/id=731e3fda-b19e-4343-8faf-666c000d8d4b/data=dWlkPXNSYnhVbnxlOGZmNWIyZS0yYzZkLTRmODctODJjZi00ZWE0MzdhNGM5OGUmaXA9MmEwMTplMGE6ZWExOjI3MjA6MzAwODo1N2Y3OjRiMzg6MTViNSZleHA9MTc3MjMwNDU4NSZlaWQ9Mjk2MzczJmNpZD1kY2UubGlndWV1biZvaWQ9MzQ2JnR5cGU9TElWRQ/dash/live/2001563~/dash/live/2001563/296373-317402/manifest-d.mpd",
             "drm_key": {
-                "07b87b7b6b183d788adc336503d39088":"20a985780ecfac01702ea0ed53cdbafd"
+                "d99effb979a4482a82dbab8576bca393": "b85774149e9c4dd88767bd42fec27e79"
             }
         };
 
@@ -173,8 +186,11 @@
         
         const liveBadgeBtn = document.getElementById('live-badge-btn');
         const liveOffsetText = document.getElementById('live-offset-text');
+        
+        const castBtn = document.getElementById('cast-btn');
 
         let player;
+        let castProxy;
         let uiTimer;
         let clickTimer;
         let isMenuOpen = false;
@@ -188,7 +204,6 @@
             max: '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" fill="none" viewBox="0 0 25 24"><path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 20V4L8.115 7.934A.5.5 0 0 1 7.867 8H3.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h4.367a.5.5 0 0 1 .248.066L15 20z"/><path fill="#fff" d="M17.5 12a2 2 0 0 1-2 2v-4a2 2 0 0 1 2 2z"/><path fill="#fff" fill-rule="evenodd" d="M18.536 7.08a.75.75 0 0 1 1.053.125A7.72 7.72 0 0 1 21.25 12a7.72 7.72 0 0 1-1.661 4.795.75.75 0 1 1-1.178-.929A6.22 6.22 0 0 0 19.75 12c0-1.46-.5-2.802-1.339-3.866a.75.75 0 0 1 .125-1.053z" clip-rule="evenodd"/><path fill="#fff" fill-rule="evenodd" d="M20.524 4.438a.75.75 0 0 1 1.055.103 11.705 11.705 0 0 1 2.671 7.46c0 2.83-1.002 5.43-2.67 7.458a.75.75 0 1 1-1.16-.953A10.205 10.205 0 0 0 22.75 12a10.2 10.2 0 0 0-2.33-6.506.75.75 0 0 1 .104-1.056z" clip-rule="evenodd"/></svg>'
         };
 
-        // Formater le temps de décalage au format -X:XX:XX
         function formatOffset(seconds) {
             if (seconds >= 0) return "";
             const absSec = Math.abs(Math.floor(seconds));
@@ -261,11 +276,38 @@
 
             shaka.polyfill.installAll();
             if (shaka.Player.isBrowserSupported()) {
-               player = new shaka.Player(video);
+                player = new shaka.Player(video);
+                
+                // ----------------------------------------------------
+                // NOUVEAU: Initialisation du Cast Proxy
+                // L'ID '07AEE832' est l'application par défaut Shaka
+                // ----------------------------------------------------
+                castProxy = new shaka.cast.CastProxy(video, player, '07AEE832');
+                castProxy.start();
+
+                castProxy.addEventListener('caststatuschanged', () => {
+                    castBtn.style.display = castProxy.canCast() ? 'flex' : 'none';
+                    if (castProxy.isCasting()) {
+                        castBtn.classList.add('casting');
+                    } else {
+                        castBtn.classList.remove('casting');
+                    }
+                });
+
+                castBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (castProxy.isCasting()) {
+                        castProxy.suggestDisconnect();
+                    } else {
+                        castProxy.cast();
+                    }
+                });
+                // ----------------------------------------------------
+
                 player.configure({
                     streaming: { alwaysStreamText: true },
                     textDisplayFactory: () => new shaka.text.UITextDisplayer(video, subtitleContainer),
-                    drm: { clearKeys: MOVIE_CONFIG.drm_key }, // <-- L'ANCIENNE MÉTHODE
+                    drm: { clearKeys: MOVIE_CONFIG.drm_key },
                     abr: { enabled: true }
                 });
 
@@ -403,7 +445,6 @@
             saveState();
         });
 
-        // Clique sur le badge pour revenir au direct
         liveBadgeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (!playerLoaded || !player) return;
@@ -415,7 +456,6 @@
             }
         });
 
-        // Mise à jour continue de la barre et du statut direct
         video.ontimeupdate = () => {
             if (!playerLoaded || !player) return;
             const seekRange = player.seekRange();
@@ -423,14 +463,11 @@
                 const liveEdge = seekRange.end;
                 const current = video.currentTime;
                 
-                // Barre de progression
                 const duration = liveEdge - seekRange.start;
                 const currentPos = current - seekRange.start;
                 seekFill.style.width = duration > 0 ? (currentPos / duration) * 100 + "%" : "100%";
 
-                // Gestion du badge "Direct"
                 const offset = current - liveEdge;
-                // On donne 15 secondes de marge (buffer) pour toujours considérer qu'on est au direct
                 if (offset > -15) {
                     liveBadgeBtn.classList.remove('not-live');
                     liveOffsetText.innerText = "";
