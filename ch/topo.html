@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecteur Audio Sécurisé Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            background-color: #121212;
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .player-container {
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            width: 400px;
+            text-align: center;
+        }
+
+        .track-info h2 { margin: 0 0 5px 0; font-size: 1.2rem; font-weight: 600; }
+        .track-info p { margin: 0 0 20px 0; font-size: 0.9rem; color: #a0a0a0; }
+
+        .progress-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 0.85rem;
+            color: #b3b3b3;
+        }
+
+        .progress-bar {
+            -webkit-appearance: none;
+            width: 70%;
+            height: 6px;
+            background: #404040;
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .progress-bar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #1db954; /* Vert style Spotify */
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .progress-bar::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .btn:hover { color: #1db954; }
+        
+        .btn-play {
+            background: #1db954;
+            color: #121212;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+        }
+
+        .btn-play:hover { background: #1ed760; color: #121212; transform: scale(1.05); }
+
+        .volume-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            color: #a0a0a0;
+        }
+
+        .volume-bar {
+            -webkit-appearance: none;
+            width: 100px;
+            height: 4px;
+            background: #404040;
+            border-radius: 2px;
+            outline: none;
+            cursor: pointer;
+        }
+        
+        .volume-bar::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+        }
+
+        #status {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #ff5555; /* Rouge pour les erreurs, sera vert si OK */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="player-container">
+        <div class="track-info">
+            <h2>Piste Chiffrée</h2>
+            <p>Ade7429759_chiffre.m4a</p>
+        </div>
+
+        <audio id="audioElement"></audio>
+
+        <div class="progress-container">
+            <span id="currentTime">0:00</span>
+            <input type="range" id="progressBar" class="progress-bar" value="0" step="0.1" min="0">
+            <span id="totalTime">0:00</span>
+        </div>
+
+        <div class="controls">
+            <button class="btn" id="btnBackward"><i class="fas fa-backward"></i></button>
+            <button class="btn btn-play" id="btnPlay"><i class="fas fa-play" id="playIcon"></i></button>
+            <button class="btn" id="btnForward"><i class="fas fa-forward"></i></button>
+        </div>
+
+        <div class="volume-container">
+            <i class="fas fa-volume-up"></i>
+            <input type="range" id="volumeBar" class="volume-bar" value="1" min="0" max="1" step="0.05">
+        </div>
+
+        <div id="status">Chargement du moteur de déchiffrement...</div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const audio = document.getElementById('audioElement');
+        const playBtn = document.getElementById('btnPlay');
+        const playIcon = document.getElementById('playIcon');
+        const progressBar = document.getElementById('progressBar');
+        const volumeBar = document.getElementById('volumeBar');
+        const currentTimeEl = document.getElementById('currentTime');
+        const totalTimeEl = document.getElementById('totalTime');
+        const statusEl = document.getElementById('status');
+        const btnForward = document.getElementById('btnForward');
+        const btnBackward = document.getElementById('btnBackward');
+
+        // Formater le temps (secondes -> mm:ss)
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            const min = Math.floor(seconds / 60);
+            const sec = Math.floor(seconds % 60);
+            return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+        }
+
+        // Initialisation de Shaka Player
+        async function initPlayer() {
+            shaka.polyfill.installAll();
+
+            if (!shaka.Player.isBrowserSupported()) {
+                statusEl.textContent = "Votre navigateur ne supporte pas la lecture sécurisée.";
+                return;
+            }
+
+            const player = new shaka.Player(audio);
+
+            // GESTION DU CHIFFREMENT (CLEARKEY)
+            player.configure({
+                drm: {
+                    clearKeys: {
+                        // KID : KEY
+                        '9f3c7a6b2e14d8c5f0a1b9e37c6d4a2f': 'c4a8f1d39b7e2c6a5d0f8b3e17a9c254'
+                    }
+                }
+            });
+
+            player.addEventListener('error', onErrorEvent);
+
+            try {
+                // Chargement de votre fichier chiffré
+                await player.load('Ade7429759_chiffre.m4a');
+                statusEl.style.color = "#1db954";
+                statusEl.textContent = "Fichier déchiffré et prêt à l'écoute.";
+            } catch (e) {
+                onError(e);
+            }
+        }
+
+        // Gestion des erreurs
+        function onErrorEvent(event) { onError(event.detail); }
+        function onError(error) {
+            console.error('Code Erreur Shaka:', error.code, 'Objet:', error);
+            statusEl.style.color = "#ff5555";
+            statusEl.textContent = "Erreur de chargement ou de déchiffrement (voir console).";
+        }
+
+        // --- Logique de l'interface utilisateur ---
+
+        // Play / Pause
+        playBtn.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play();
+                playIcon.classList.remove('fa-play');
+                playIcon.classList.add('fa-pause');
+            } else {
+                audio.pause();
+                playIcon.classList.remove('fa-pause');
+                playIcon.classList.add('fa-play');
+            }
+        });
+
+        // Mise à jour de la barre de progression
+        audio.addEventListener('timeupdate', () => {
+            progressBar.value = audio.currentTime;
+            currentTimeEl.textContent = formatTime(audio.currentTime);
+        });
+
+        // Durée totale chargée
+        audio.addEventListener('loadedmetadata', () => {
+            progressBar.max = audio.duration;
+            totalTimeEl.textContent = formatTime(audio.duration);
+        });
+
+        // Clic sur la barre de progression
+        progressBar.addEventListener('input', () => {
+            audio.currentTime = progressBar.value;
+        });
+
+        // Contrôle du volume
+        volumeBar.addEventListener('input', () => {
+            audio.volume = volumeBar.value;
+        });
+
+        // Boutons Avancer / Reculer (10 secondes)
+        btnForward.addEventListener('click', () => { audio.currentTime = Math.min(audio.duration, audio.currentTime + 10); });
+        btnBackward.addEventListener('click', () => { audio.currentTime = Math.max(0, audio.currentTime - 10); });
+
+        // Lancer l'initialisation
+        document.addEventListener('DOMContentLoaded', initPlayer);
+    </script>
+</body>
+</html>
