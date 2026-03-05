@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lectures du Jour - AELF</title>
+    <style>
+        :root {
+            --bg-color: #f9f6f0;
+            --text-color: #333;
+            --primary-color: #6b4c3a;
+            --card-bg: #ffffff;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        h1, h2, h3 {
+            color: var(--primary-color);
+            text-align: center;
+        }
+
+        .infos-liturgiques {
+            text-align: center;
+            font-style: italic;
+            margin-bottom: 30px;
+            color: #555;
+        }
+
+        .section {
+            background-color: var(--card-bg);
+            padding: 25px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
+        .section h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* Style spécifique pour les numéros de versets renvoyés par l'API */
+        .verse_number {
+            font-size: 0.75em;
+            color: #888;
+            vertical-align: super;
+            margin-right: 3px;
+        }
+
+        #loader {
+            text-align: center;
+            font-style: italic;
+            color: #777;
+        }
+
+        .error {
+            color: #d9534f;
+            text-align: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Lectures du Jour</h1>
+    <h2 id="date-display">Chargement de la date...</h2>
+    <div id="infos" class="infos-liturgiques"></div>
+
+    <div id="content">
+        <p id="loader">Récupération des textes depuis l'AELF en cours...</p>
+    </div>
+
+    <script>
+        async function chargerLecturesDuJour() {
+            try {
+                // 1. Obtenir la date du jour au format YYYY-MM-DD
+                const aujourdhui = new Date();
+                const annee = aujourdhui.getFullYear();
+                const mois = String(aujourdhui.getMonth() + 1).padStart(2, '0');
+                const jour = String(aujourdhui.getDate()).padStart(2, '0');
+                const dateAPI = `${annee}-${mois}-${jour}`;
+
+                // Afficher la date formatée en français
+                const optionsDate = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                document.getElementById('date-display').textContent = aujourdhui.toLocaleDateString('fr-FR', optionsDate);
+
+                // 2. Appeler l'API AELF
+                const url = `https://api.aelf.org/v1/lectures/${dateAPI}/france`;
+                const reponse = await fetch(url, {
+                    headers: { 'accept': '*/*' }
+                });
+
+                if (!reponse.ok) {
+                    throw new Error(`Erreur HTTP: ${reponse.status}`);
+                }
+
+                const donnees = await reponse.json();
+                afficherLectures(donnees);
+
+            } catch (erreur) {
+                document.getElementById('content').innerHTML = `
+                    <div class="section error">
+                        <p>Impossible de charger les lectures du jour.</p>
+                        <p>Détail de l'erreur : ${erreur.message}</p>
+                    </div>`;
+            }
+        }
+
+        function afficherLectures(donnees) {
+            const contentDiv = document.getElementById('content');
+            contentDiv.innerHTML = ''; // Retirer le message de chargement
+
+            const lectures = donnees.lectures;
+            const infos = donnees.informations;
+
+            // Affichage des informations liturgiques
+            if (infos) {
+                let texteInfos = infos.ligne1;
+                if (infos.couleur) {
+                    texteInfos += ` (Couleur : ${infos.couleur})`;
+                }
+                document.getElementById('infos').textContent = texteInfos;
+            }
+
+            // Fonction utilitaire pour créer et injecter une section HTML
+            function ajouterSection(titre, contenuHTML) {
+                if (contenuHTML && contenuHTML.trim() !== '') {
+                    const section = document.createElement('div');
+                    section.className = 'section';
+                    
+                    if (titre) {
+                        const h3 = document.createElement('h3');
+                        h3.textContent = titre;
+                        section.appendChild(h3);
+                    }
+                    
+                    const contenu = document.createElement('div');
+                    contenu.innerHTML = contenuHTML;
+                    section.appendChild(contenu);
+                    
+                    contentDiv.appendChild(section);
+                }
+            }
+
+            // --- Injection des différentes parties selon le JSON de l'AELF ---
+
+            // Introduction
+            if (lectures.introduction) {
+                ajouterSection('Introduction', lectures.introduction);
+            }
+
+            // Hymne
+            if (lectures.hymne && lectures.hymne.texte) {
+                const titreHymne = lectures.hymne.titre ? `Hymne : ${lectures.hymne.titre}` : 'Hymne';
+                ajouterSection(titreHymne, lectures.hymne.texte);
+            }
+
+            // Psaumes
+            for (let i = 1; i <= 3; i++) {
+                const psaume = lectures[`psaume_${i}`];
+                if (psaume && psaume.texte) {
+                    ajouterSection(`Psaume ${psaume.reference || i}`, psaume.texte);
+                }
+            }
+
+            // Lecture principale
+            if (lectures.lecture && lectures.lecture.texte) {
+                const titreLecture = lectures.lecture.titre ? `${lectures.lecture.reference} - ${lectures.lecture.titre}` : `Lecture (${lectures.lecture.reference})`;
+                ajouterSection(titreLecture, lectures.lecture.texte);
+                
+                // Répons de la lecture
+                if (lectures.repons_lecture) {
+                    ajouterSection('Répons', lectures.repons_lecture);
+                }
+            }
+
+            // Texte Patristique
+            if (lectures.texte_patristique) {
+                ajouterSection(lectures.titre_patristique || 'Texte Patristique', lectures.texte_patristique);
+                
+                // Répons patristique
+                if (lectures.repons_patristique) {
+                    ajouterSection('Répons', lectures.repons_patristique);
+                }
+            }
+
+            // Oraison finale
+            if (lectures.oraison) {
+                ajouterSection('Oraison', lectures.oraison);
+            }
+        }
+
+        // Lancer le script au chargement de la page
+        chargerLecturesDuJour();
+    </script>
+</body>
+</html>
