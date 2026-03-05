@@ -94,7 +94,7 @@
                 document.getElementById('date-display').textContent = aujourdhui.toLocaleDateString('fr-FR', optionsDate);
 
                 // 2. Appeler l'API AELF
-                const url = `https://api.aelf.org/v1/lectures/${dateAPI}/france`;
+                const url = `https://api.aelf.org/v1/messes/${dateAPI}/france`;
                 const reponse = await fetch(url, {
                     headers: { 'accept': '*/*' }
                 });
