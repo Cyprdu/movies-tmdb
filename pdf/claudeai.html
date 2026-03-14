@@ -83,7 +83,7 @@ main{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 145px)}
 .sdiag{display:flex;flex-direction:column;gap:.35rem;max-height:190px;overflow-y:auto}
 .sdiag::-webkit-scrollbar{width:3px}
 .sdiag::-webkit-scrollbar-thumb{background:rgba(201,168,76,.3);border-radius:2px}
-.sr{display:grid;grid-template-columns:50px 1fr 1fr;gap:.35rem;align-items:center;font-size:.6rem;padding:.32rem .48rem;background:rgba(255,255,255,.02);border-radius:2px;transition:background .2s}
+.sr{display:grid;grid-template-columns:45px 1fr auto 1fr;gap:.35rem;align-items:center;font-size:.6rem;padding:.32rem .48rem;background:rgba(255,255,255,.02);border-radius:2px;transition:background .2s}
 .sr:hover{background:rgba(201,168,76,.04)}
 .srl{color:var(--muted);letter-spacing:.08em}
 .sp{display:flex;align-items:center;justify-content:center;gap:.25rem}
@@ -495,10 +495,10 @@ s2TD:"Impression recto-verso automatique",s2HD:"Votre imprimante va tout imprime
 s4TM:"Étape 3 — Impression des Versos",s4HM:"Avec les feuilles correctement retournées, lancez les versos.",
 s4TD:"Impression terminée !",s4HD:"Votre livret est prêt à être plié et agrafé au centre.",
 pi1:"<strong>Pages impaires</strong> — les rectos de vos feuilles A4.",
-pi1b:"L'imprimante sort la dernière page en dernier. La page 1 sera donc <strong>en haut de la pile</strong>.",
+pi1b:"Le PDF rectos est généré en ordre inversé : la <strong>feuille 1</strong> (pages 8|1) s'imprime en dernier et se retrouve <strong>en haut de la pile</strong>. ✓",
 pw1:"Vérifiez que les feuilles sont dans l'ordre numérique avant de retourner la pile.",
 pi2:"<strong>Pages paires</strong> — les versos de vos feuilles.",
-pi2b:"Avec les feuilles retournées correctement, les versos s'imprimeront dans l'ordre parfait.",
+pi2b:"Le PDF versos est également en ordre inversé. Après retournement, la <strong>feuille 2</strong> (verso) est sur le dessus — elle s'imprimera en premier, puis la feuille 1. L'ordre est parfait. ✓",
 piD:"Lancez l'impression du PDF complet avec l'option <strong>Recto-verso / Reliure sur le bord long</strong> activée.",
 fin:"🎉 Votre livret est imprimé ! Pliez les feuilles en deux et agrafez au centre.",
 sumM:["Imprimer les rectos (pages impaires)","Vérifier l'ordre des feuilles","Retourner la pile","Imprimer les versos (pages paires)","Plier et agrafer au centre"],
@@ -532,10 +532,10 @@ s2TD:"Automatic duplex printing",s2HD:"Your printer will handle everything autom
 s4TM:"Step 3 — Print Back Sides (Even pages)",s4HM:"With sheets correctly flipped, now print the back sides.",
 s4TD:"Printing complete!",s4HD:"Your booklet is ready to fold and staple.",
 pi1:"<strong>Odd pages</strong> — the fronts of your A4 sheets.",
-pi1b:"The printer outputs the last page last, so page 1 will be <strong>on top of the stack</strong>.",
+pi1b:"The recto PDF is generated in reverse sheet order so sheet 1 (pages 8|1) prints last and lands <strong>on top of the tray</strong>. ✓",
 pw1:"Check that the sheets are in numeric order before flipping the stack.",
 pi2:"<strong>Even pages</strong> — the backs of your sheets.",
-pi2b:"With sheets correctly flipped, the printer will fill backs in the perfect order.",
+pi2b:"The verso PDF is also reversed. After flipping, <strong>sheet 2 verso is on top</strong> — it prints first, then sheet 1. Perfect order. ✓",
 piD:"Print the full PDF with <strong>Duplex / Long-edge binding</strong> enabled.",
 fin:"🎉 Your booklet is printed! Fold the sheets in half and staple the center.",
 sumM:["Print front sides (odd pages)","Check sheet order","Flip the stack","Print back sides (even pages)","Fold and staple"],
@@ -808,15 +808,22 @@ function updateImp(){
 }
 
 function mkRow(lbl,l,r,total){
+  // l = left half of A4, r = right half of A4
   const row=document.createElement('div'); row.className='sr';
   const ll=document.createElement('div'); ll.className='srl'; ll.textContent=lbl;
-  const lc=document.createElement('div'); lc.className='sp';
-  const lb=document.createElement('div'); lb.className='pb'; lb.textContent=l>total?'—':l; if(l>total)lb.style.opacity='.3';
-  lc.innerHTML='<span style="font-size:.48rem;color:var(--muted);margin-right:.2rem">◀</span>'; lc.appendChild(lb);
-  const rc=document.createElement('div'); rc.className='sp';
-  const rb=document.createElement('div'); rb.className='pb'; rb.textContent=r>total?'—':r; if(r>total)rb.style.opacity='.3';
-  rc.appendChild(rb); rc.insertAdjacentHTML('beforeend','<span style="font-size:.48rem;color:var(--muted);margin-left:.2rem">▶</span>');
-  row.appendChild(ll); row.appendChild(lc); row.appendChild(rc); return row;
+  // Left half cell
+  const lc=document.createElement('div'); lc.className='sp'; lc.style.flexDirection='column'; lc.style.gap='.1rem';
+  const lb=document.createElement('div'); lb.className='pb'; lb.textContent=l>total?'—':l; if(l>total)lb.style.opacity='.25';
+  const ltag=document.createElement('div'); ltag.style.cssText='font-size:.4rem;letter-spacing:.12em;color:var(--muted);text-align:center'; ltag.textContent='G';
+  lc.appendChild(lb); lc.appendChild(ltag);
+  // Center fold indicator
+  const mid=document.createElement('div'); mid.style.cssText='font-size:.7rem;color:rgba(201,168,76,.3);flex-shrink:0'; mid.textContent='┊';
+  // Right half cell
+  const rc=document.createElement('div'); rc.className='sp'; rc.style.flexDirection='column'; rc.style.gap='.1rem';
+  const rb=document.createElement('div'); rb.className='pb'; rb.textContent=r>total?'—':r; if(r>total)rb.style.opacity='.25';
+  const rtag=document.createElement('div'); rtag.style.cssText='font-size:.4rem;letter-spacing:.12em;color:var(--muted);text-align:center'; rtag.textContent='D';
+  rc.appendChild(rb); rc.appendChild(rtag);
+  row.appendChild(ll); row.appendChild(lc); row.appendChild(mid); row.appendChild(rc); return row;
 }
 
 // ══════ STATUS & PROGRESS ══════
@@ -890,15 +897,30 @@ async function buildSplitPdfs(){
   const n=src.getPageCount();
   const{sheets}=computeOrder(n);
   const W=841.89,H=595.28,hw=W/2;
-  // Recto doc
+
+  // ── Simplex recto pass ──────────────────────────────────────────────────
+  // Goal: after printing, Feuille 1 must be on TOP of the tray.
+  // Printers output last-page-last (page N of the doc ends up on top).
+  // So we print rectos in REVERSE sheet order: [FN recto … F2 recto, F1 recto]
+  // → F1 recto is the last page printed → lands on top. ✓
   const rDoc=await PDFDocument.create();
-  for(const sh of sheets) await addPage(rDoc,src,sh.r[0],sh.r[1],W,H,hw,n);
+  for(const sh of [...sheets].reverse()) await addPage(rDoc,src,sh.r[0],sh.r[1],W,H,hw,n);
   rectoUrl=URL.createObjectURL(new Blob([await rDoc.save()],{type:'application/pdf'}));
-  // Verso doc — reversed so after manual flip+stack the order is correct
+
+  // ── Simplex verso pass ──────────────────────────────────────────────────
+  // After printing rectos, the stack (top→bottom) is: [F1 recto, F2 recto, … FN recto]
+  // User flips the entire stack left-to-right (like closing a book).
+  // New stack (top→bottom): [FN recto face-down (verso up), … F2, F1 verso up]
+  // Wait — standard "flip along short edge" (portrait):
+  //   top of tray after flip = last sheet that was printed = FN recto, now verso-side up.
+  // Printer takes from top → prints FN verso first, then … F1 verso last.
+  // So verso doc order = REVERSE sheet order again: [FN verso … F1 verso]
+  // This ensures each sheet gets the right verso printed on its back. ✓
   const vDoc=await PDFDocument.create();
   for(const sh of [...sheets].reverse()) await addPage(vDoc,src,sh.v[0],sh.v[1],W,H,hw,n);
   versoUrl=URL.createObjectURL(new Blob([await vDoc.save()],{type:'application/pdf'}));
-  // Full duplex doc
+
+  // ── Full duplex doc: driver handles flip — just alternate recto/verso ───
   const dDoc=await PDFDocument.create();
   for(const sh of sheets){
     await addPage(dDoc,src,sh.r[0],sh.r[1],W,H,hw,n);
