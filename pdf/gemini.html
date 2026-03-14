@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Livret A5 | Imposition Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #312e81, #0f172a);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            overflow: hidden;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 3rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Effets de lueur en arrière-plan pour le côté ultra pro */
+        .glow {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            background: var(--primary);
+            border-radius: 50%;
+            filter: blur(100px);
+            opacity: 0.15;
+            z-index: 1;
+            top: -50px;
+            left: -50px;
+            pointer-events: none;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            margin-bottom: 2.5rem;
+            font-size: 1rem;
+            font-weight: 300;
+            line-height: 1.5;
+        }
+
+        .drop-zone {
+            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .drop-zone input[type="file"] {
+            display: none;
+        }
+
+        .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+            margin-top: 2rem;
+            display: none;
+            width: 100%;
+        }
+
+        .btn:hover {
+            background: var(--primary-hover);
+            transform: scale(1.02);
+        }
+
+        .status {
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            min-height: 24px;
+        }
+
+        /* Animation de chargement */
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glow"></div>
+
+    <div class="container">
+        <h1>Créateur de Livret</h1>
+        <p class="subtitle">Transformez votre PDF classique en un livret A5 (imposition automatique) prêt à être imprimé et plié.</p>
+
+        <label class="drop-zone" id="dropZone">
+            <span class="icon">📄</span>
+            <span id="fileName">Glissez-déposez votre PDF ici<br><small style="color:var(--text-muted)">ou cliquez pour parcourir</small></span>
+            <input type="file" id="fileInput" accept="application/pdf">
+        </label>
+
+        <div class="status" id="statusText"></div>
+
+        <button class="btn" id="downloadBtn">Télécharger le livret prêt à imprimer</button>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const fileNameDisplay = document.getElementById('fileName');
+        const statusText = document.getElementById('statusText');
+        const downloadBtn = document.getElementById('downloadBtn');
+
+        let generatedPdfBytes = null;
+        let originalFileName = "";
+
+        // Gestion du Glisser-Déposer et des animations UI
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        });
+
+        fileInput.addEventListener('change', function() {
+            handleFiles(this.files);
+        });
+
+        function handleFiles(files) {
+            if (files.length > 0 && files[0].type === "application/pdf") {
+                const file = files[0];
+                originalFileName = file.name.replace('.pdf', '');
+                fileNameDisplay.innerHTML = `<strong style="color:white">${file.name}</strong>`;
+                downloadBtn.style.display = "none";
+                processPDF(file);
+            } else {
+                statusText.innerHTML = "<span style='color: #ef4444;'>Veuillez sélectionner un fichier PDF valide.</span>";
+            }
+        }
+
+        // Le cœur de la logique mathématique et de création du PDF
+        async function processPDF(file) {
+            try {
+                statusText.innerHTML = "<div class='loader'></div> Création de la mise en page magique...";
+                
+                const arrayBuffer = await file.arrayBuffer();
+                const { PDFDocument } = PDFLib;
+                
+                // 1. Charger le document source
+                const pdfDoc = await PDFDocument.load(arrayBuffer);
+                let pageCount = pdfDoc.getPageCount();
+
+                // 2. Ajouter des pages blanches pour avoir un multiple de 4 (crucial pour les livrets)
+                const remainder = pageCount % 4;
+                if (remainder !== 0) {
+                    const pagesToAdd = 4 - remainder;
+                    for (let i = 0; i < pagesToAdd; i++) {
+                        pdfDoc.addPage();
+                    }
+                    pageCount += pagesToAdd;
+                }
+
+                // 3. Créer le nouveau document (Format Paysage A4)
+                const newPdfDoc = await PDFDocument.create();
+                const sheetCount = pageCount / 4;
+
+                // Dimensions A4 paysage en points (standard PDF)
+                const A4_WIDTH = 841.89;
+                const A4_HEIGHT = 595.28;
+                const A5_WIDTH = A4_WIDTH / 2; // Exactement la moitié
+
+                // 4. L'algorithme d'imposition (exactement comme votre exemple)
+                for (let i = 0; i < sheetCount; i++) {
+                    // Calcul des numéros de page pour le RECTO
+                    let leftRecto = pageCount - 2 * i;
+                    let rightRecto = 1 + 2 * i;
+
+                    // Calcul des numéros de page pour le VERSO
+                    let leftVerso = 2 + 2 * i;
+                    let rightVerso = pageCount - 1 - 2 * i;
+
+                    // Ajouter les deux faces de la feuille
+                    await addSpread(pdfDoc, newPdfDoc, leftRecto, rightRecto, A4_WIDTH, A4_HEIGHT, A5_WIDTH);
+                    await addSpread(pdfDoc, newPdfDoc, leftVerso, rightVerso, A4_WIDTH, A4_HEIGHT, A5_WIDTH);
+                }
+
+                // 5. Sauvegarder le résultat
+                generatedPdfBytes = await newPdfDoc.save();
+                
+                statusText.innerHTML = "<span style='color: #10b981;'>✨ Imposition terminée avec succès !</span>";
+                downloadBtn.style.display = "block";
+
+            } catch (error) {
+                console.error(error);
+                statusText.innerHTML = "<span style='color: #ef4444;'>Une erreur est survenue lors du traitement.</span>";
+            }
+        }
+
+        // Fonction utilitaire pour dessiner une feuille A4 avec 2 pages A5
+        async function addSpread(sourcePdf, targetPdf, leftNum, rightNum, a4w, a4h, a5w) {
+            const page = targetPdf.addPage([a4w, a4h]);
+
+            // Embed des pages (pdf-lib utilise un index basé sur 0, d'où le -1)
+            const [leftEmbedded] = await targetPdf.embedPages([sourcePdf.getPage(leftNum - 1)]);
+            const [rightEmbedded] = await targetPdf.embedPages([sourcePdf.getPage(rightNum - 1)]);
+
+            // Mise à l'échelle pour s'assurer que ça rentre dans du A5
+            const leftDims = leftEmbedded.scaleToFit(a5w, a4h);
+            const rightDims = rightEmbedded.scaleToFit(a5w, a4h);
+
+            // Centrage vertical et horizontal dans leurs moitiés respectives
+            const leftX = (a5w - leftDims.width) / 2;
+            const leftY = (a4h - leftDims.height) / 2;
+
+            const rightX = a5w + (a5w - rightDims.width) / 2;
+            const rightY = (a4h - rightDims.height) / 2;
+
+            page.drawPage(leftEmbedded, { ...leftDims, x: leftX, y: leftY });
+            page.drawPage(rightEmbedded, { ...rightDims, x: rightX, y: rightY });
+        }
+
+        // Action du bouton de téléchargement
+        downloadBtn.addEventListener('click', () => {
+            if (!generatedPdfBytes) return;
+            
+            const blob = new Blob([generatedPdfBytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${originalFileName}_livret_A5.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+    </script>
+</body>
+</html>
