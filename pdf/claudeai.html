@@ -736,10 +736,18 @@ frm.addEventListener('click',resetF);
 async function handleFile(file){
   pdfFile=file; showSt('Lecture…','inf');
   const r=new FileReader();
+  r.onerror=()=>{showSt('Impossible de lire le fichier.','err');resetF();};
   r.onload=async e=>{
     try{
-      pdfBytes=new Uint8Array(e.target.result);
-      const doc=await PDFDocument.load(pdfBytes);
+      // Keep a plain ArrayBuffer copy for pdf.js (needs fresh view), Uint8Array for pdf-lib
+      const buf=e.target.result;
+      if(!buf||buf.byteLength===0){showSt('Fichier vide ou illisible.','err');resetF();return;}
+      pdfBytes=new Uint8Array(buf.slice(0)); // copy for pdf-lib
+      // Validate PDF header
+      const sig=new Uint8Array(buf,0,Math.min(10,buf.byteLength));
+      const hdr=String.fromCharCode(...sig);
+      if(!hdr.includes('%PDF')){showSt('Ce fichier ne semble pas être un PDF valide.','err');resetF();return;}
+      const doc=await PDFDocument.load(pdfBytes,{ignoreEncryption:true,updateMetadata:false});
       totalPages=doc.getPageCount();
       const kb=Math.round(file.size/1024);
       fnm.textContent=file.name;
@@ -747,7 +755,11 @@ async function handleFile(file){
       finfo.classList.add('vis'); dz.style.display='none';
       updateImp(); sstat.classList.remove('vis'); bgen.disabled=false;
       renderThumbs();
-    }catch(er){showSt('Erreur lecture PDF','err');resetF();}
+    }catch(er){
+      console.error(er);
+      showSt('Erreur : '+er.message,'err');
+      resetF();
+    }
   };
   r.readAsArrayBuffer(file);
 }
@@ -763,7 +775,7 @@ function resetF(){
 async function renderThumbs(){
   if(!pdfBytes) return; thumbs=[];
   try{
-    const pd=await pdfjsLib.getDocument({data:pdfBytes}).promise;
+    const pd=await pdfjsLib.getDocument({data:pdfBytes.slice(0)}).promise;
     for(let i=1;i<=Math.min(pd.numPages,50);i++){
       const pg=await pd.getPage(i); const vp=pg.getViewport({scale:.25});
       const c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height;
@@ -819,7 +831,7 @@ async function genBooklet(){
   bdl.classList.remove('vis'); bwiz.classList.remove('vis');
   showSt('Initialisation…','inf'); setPg(5);
   try{
-    const src=await PDFDocument.load(pdfBytes); const n=src.getPageCount();
+    const src=await PDFDocument.load(pdfBytes.slice(0),{ignoreEncryption:true,updateMetadata:false}); const n=src.getPageCount();
     const{sheets}=computeOrder(n); const out=await PDFDocument.create();
     const W=841.89,H=595.28,hw=W/2; let step=0; const tot=sheets.length*2;
     showSt('Calcul de l\'imposition…','inf'); setPg(15);
