@@ -5,1233 +5,1116 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BookForge — Générateur de Livrets A5</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap');
-
-  :root {
-    --ink: #0f0e0c;
-    --paper: #faf8f4;
-    --cream: #f2ede4;
-    --gold: #c9a84c;
-    --gold-light: #e8c97a;
-    --rust: #8b3a2a;
-    --sage: #4a5c4e;
-    --muted: #7a7060;
-    --border: #d8d0c0;
-    --shadow: rgba(15,14,12,0.12);
-  }
-
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    background: var(--ink);
-    color: var(--paper);
-    font-family: 'DM Mono', monospace;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* ── GRAIN OVERLAY ── */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-    pointer-events: none;
-    z-index: 1000;
-    opacity: 0.6;
-  }
-
-  /* ── HEADER ── */
-  header {
-    position: relative;
-    padding: 5rem 4rem 3rem;
-    border-bottom: 1px solid rgba(201,168,76,0.2);
-    overflow: hidden;
-  }
-
-  header::after {
-    content: '';
-    position: absolute;
-    top: -60px; right: -60px;
-    width: 320px; height: 320px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(201,168,76,0.08) 0%, transparent 70%);
-    pointer-events: none;
-  }
-
-  .logo-mark {
-    display: flex;
-    align-items: baseline;
-    gap: 0.6rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .logo-mark span:first-child {
-    font-family: 'Playfair Display', serif;
-    font-weight: 900;
-    font-size: clamp(2.8rem, 5vw, 4.5rem);
-    letter-spacing: -0.02em;
-    color: var(--paper);
-    line-height: 1;
-  }
-
-  .logo-mark span:last-child {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.25em;
-    color: var(--gold);
-    text-transform: uppercase;
-    padding: 0.2em 0.6em;
-    border: 1px solid var(--gold);
-    border-radius: 2px;
-    margin-left: 0.4rem;
-    vertical-align: middle;
-  }
-
-  .tagline {
-    font-family: 'Cormorant Garamond', serif;
-    font-style: italic;
-    font-weight: 300;
-    font-size: 1.15rem;
-    color: var(--muted);
-    letter-spacing: 0.04em;
-    margin-top: 0.3rem;
-  }
-
-  /* ── MAIN LAYOUT ── */
-  main {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-    min-height: calc(100vh - 180px);
-  }
-
-  /* ── LEFT PANEL ── */
-  .panel-left {
-    padding: 4rem;
-    border-right: 1px solid rgba(201,168,76,0.15);
-    display: flex;
-    flex-direction: column;
-    gap: 2.5rem;
-  }
-
-  .section-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.6rem;
-    letter-spacing: 0.35em;
-    text-transform: uppercase;
-    color: var(--gold);
-    margin-bottom: 1.2rem;
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-  }
-
-  .section-label::before {
-    content: '';
-    display: inline-block;
-    width: 20px; height: 1px;
-    background: var(--gold);
-  }
-
-  /* ── DROP ZONE ── */
-  .drop-zone {
-    position: relative;
-    border: 1px solid rgba(201,168,76,0.3);
-    border-radius: 4px;
-    padding: 3.5rem 2rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.35s ease;
-    background: rgba(201,168,76,0.02);
-    overflow: hidden;
-  }
-
-  .drop-zone::before {
-    content: '';
-    position: absolute;
-    inset: 6px;
-    border: 1px dashed rgba(201,168,76,0.15);
-    border-radius: 2px;
-    pointer-events: none;
-    transition: border-color 0.3s ease;
-  }
-
-  .drop-zone:hover, .drop-zone.drag-over {
-    border-color: var(--gold);
-    background: rgba(201,168,76,0.05);
-  }
-
-  .drop-zone:hover::before, .drop-zone.drag-over::before {
-    border-color: rgba(201,168,76,0.4);
-  }
-
-  .drop-icon {
-    width: 52px;
-    height: 52px;
-    margin: 0 auto 1.5rem;
-    position: relative;
-  }
-
-  .drop-icon svg {
-    width: 100%;
-    height: 100%;
-    stroke: var(--gold);
-    stroke-width: 1.2;
-    fill: none;
-  }
-
-  .drop-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.35rem;
-    font-weight: 700;
-    color: var(--paper);
-    margin-bottom: 0.5rem;
-  }
-
-  .drop-sub {
-    font-size: 0.72rem;
-    letter-spacing: 0.08em;
-    color: var(--muted);
-    line-height: 1.7;
-  }
-
-  .drop-sub strong {
-    color: var(--gold);
-    font-weight: 400;
-  }
-
-  #file-input { display: none; }
-
-  /* ── FILE INFO ── */
-  .file-info {
-    display: none;
-    align-items: center;
-    gap: 1.2rem;
-    padding: 1.2rem 1.6rem;
-    background: rgba(201,168,76,0.06);
-    border: 1px solid rgba(201,168,76,0.2);
-    border-radius: 3px;
-    animation: slideIn 0.4s ease;
-  }
-
-  .file-info.visible { display: flex; }
-
-  @keyframes slideIn {
-    from { opacity: 0; transform: translateY(-8px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .file-icon {
-    width: 36px; height: 36px;
-    background: rgba(201,168,76,0.1);
-    border-radius: 3px;
-    display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .file-icon svg { stroke: var(--gold); width: 18px; height: 18px; }
-
-  .file-details { flex: 1; min-width: 0; }
-  .file-name {
-    font-size: 0.8rem;
-    color: var(--paper);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    margin-bottom: 0.2rem;
-  }
-  .file-meta { font-size: 0.65rem; color: var(--muted); letter-spacing: 0.05em; }
-
-  .file-remove {
-    cursor: pointer;
-    color: var(--muted);
-    padding: 4px;
-    border-radius: 2px;
-    transition: color 0.2s;
-    background: none; border: none;
-    line-height: 1;
-  }
-  .file-remove:hover { color: var(--rust); }
-
-  /* ── SETTINGS ── */
-  .settings-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1.2rem;
-  }
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .field.full { grid-column: 1 / -1; }
-
-  .field label {
-    font-size: 0.62rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  .field select, .field input[type="text"] {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(201,168,76,0.2);
-    color: var(--paper);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.78rem;
-    padding: 0.7rem 1rem;
-    border-radius: 3px;
-    outline: none;
-    transition: border-color 0.25s;
-    -webkit-appearance: none;
-    appearance: none;
-    cursor: pointer;
-  }
-
-  .field select:focus, .field input[type="text"]:focus {
-    border-color: var(--gold);
-  }
-
-  .field select option {
-    background: #1a1916;
-  }
-
-  /* Toggle */
-  .toggle-group {
-    display: flex;
-    border: 1px solid rgba(201,168,76,0.2);
-    border-radius: 3px;
-    overflow: hidden;
-  }
-
-  .toggle-group label {
-    flex: 1;
-    text-align: center;
-    padding: 0.65rem 0.5rem;
-    font-size: 0.68rem;
-    letter-spacing: 0.1em;
-    cursor: pointer;
-    transition: all 0.25s;
-    color: var(--muted);
-    user-select: none;
-  }
-
-  .toggle-group input[type="radio"] { display: none; }
-
-  .toggle-group input[type="radio"]:checked + label {
-    background: rgba(201,168,76,0.12);
-    color: var(--gold);
-  }
-
-  /* ── IMPOSITION PREVIEW ── */
-  .imposition-preview {
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(201,168,76,0.12);
-    border-radius: 4px;
-    padding: 1.6rem;
-  }
-
-  .preview-title {
-    font-family: 'Playfair Display', serif;
-    font-size: 0.95rem;
-    color: var(--paper);
-    margin-bottom: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .preview-title span {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.6rem;
-    letter-spacing: 0.15em;
-    color: var(--muted);
-  }
-
-  .sheet-diagram {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    max-height: 220px;
-    overflow-y: auto;
-  }
-
-  .sheet-diagram::-webkit-scrollbar { width: 3px; }
-  .sheet-diagram::-webkit-scrollbar-track { background: transparent; }
-  .sheet-diagram::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.3); border-radius: 2px; }
-
-  .sheet-row {
-    display: grid;
-    grid-template-columns: 60px 1fr 1fr;
-    gap: 0.5rem;
-    align-items: center;
-    font-size: 0.65rem;
-    padding: 0.4rem 0.6rem;
-    background: rgba(255,255,255,0.02);
-    border-radius: 2px;
-    transition: background 0.2s;
-  }
-
-  .sheet-row:hover { background: rgba(201,168,76,0.04); }
-
-  .sheet-row-label {
-    color: var(--muted);
-    letter-spacing: 0.1em;
-  }
-
-  .sheet-page {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.4rem;
-  }
-
-  .page-box {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px; height: 36px;
-    border: 1px solid rgba(201,168,76,0.25);
-    border-radius: 2px;
-    font-size: 0.7rem;
-    color: var(--paper);
-    background: rgba(201,168,76,0.05);
-    position: relative;
-    transition: all 0.2s;
-  }
-
-  .page-box:hover {
-    border-color: var(--gold);
-    background: rgba(201,168,76,0.1);
-  }
-
-  .sheet-separator {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    color: var(--muted);
-    font-size: 0.55rem;
-    letter-spacing: 0.15em;
-    margin: 0.2rem 0;
-  }
-
-  .sheet-separator::before, .sheet-separator::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: rgba(201,168,76,0.1);
-  }
-
-  /* ── CTA BUTTON ── */
-  .cta-wrapper {
-    margin-top: auto;
-    padding-top: 1rem;
-  }
-
-  .btn-generate {
-    width: 100%;
-    padding: 1.1rem 2rem;
-    background: var(--gold);
-    color: var(--ink);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    font-weight: 500;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
-  }
-
-  .btn-generate::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .btn-generate:hover:not(:disabled) {
-    background: var(--gold-light);
-    transform: translateY(-1px);
-    box-shadow: 0 8px 30px rgba(201,168,76,0.25);
-  }
-
-  .btn-generate:hover::before { opacity: 1; }
-
-  .btn-generate:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
-    transform: none;
-  }
-
-  .btn-generate.loading {
-    color: transparent;
-  }
-
-  .btn-generate.loading::after {
-    content: '';
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    width: 18px; height: 18px;
-    border: 2px solid var(--ink);
-    border-top-color: transparent;
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-  }
-
-  @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
-
-  /* ── RIGHT PANEL ── */
-  .panel-right {
-    padding: 4rem;
-    display: flex;
-    flex-direction: column;
-    gap: 2.5rem;
-  }
-
-  /* ── VISUAL EXPLANATION ── */
-  .explainer {
-    flex: 1;
-  }
-
-  .explainer h2 {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(1.6rem, 2.5vw, 2.2rem);
-    font-weight: 700;
-    line-height: 1.2;
-    color: var(--paper);
-    margin-bottom: 0.8rem;
-  }
-
-  .explainer h2 em {
-    font-style: italic;
-    color: var(--gold);
-  }
-
-  .explainer p {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 1rem;
-    font-weight: 300;
-    color: var(--muted);
-    line-height: 1.8;
-    margin-bottom: 2rem;
-  }
-
-  /* ── IMPOSITION VISUAL ── */
-  .imposition-visual {
-    position: relative;
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(201,168,76,0.1);
-    border-radius: 6px;
-    padding: 2rem;
-    overflow: hidden;
-  }
-
-  .imposition-visual::before {
-    content: 'IMPOSITION';
-    position: absolute;
-    top: 1rem; right: 1.5rem;
-    font-size: 0.55rem;
-    letter-spacing: 0.3em;
-    color: rgba(201,168,76,0.25);
-  }
-
-  .a4-sheet {
-    width: 100%;
-    aspect-ratio: 297/210;
-    border: 1.5px solid rgba(201,168,76,0.4);
-    border-radius: 3px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    position: relative;
-    background: rgba(255,255,255,0.01);
-    overflow: hidden;
-  }
-
-  .a4-sheet::before {
-    content: '';
-    position: absolute;
-    left: 50%; top: 0; bottom: 0;
-    width: 1px;
-    background: rgba(201,168,76,0.3);
-    z-index: 2;
-  }
-
-  .a4-page {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 0.3rem;
-    padding: 1rem;
-    position: relative;
-  }
-
-  .a4-page:first-child { border-right: none; }
-
-  .page-label-num {
-    font-family: 'Playfair Display', serif;
-    font-size: clamp(1.2rem, 2.5vw, 2rem);
-    font-weight: 700;
-    color: var(--paper);
-    line-height: 1;
-  }
-
-  .page-label-text {
-    font-size: 0.55rem;
-    letter-spacing: 0.2em;
-    color: var(--gold);
-    text-transform: uppercase;
-  }
-
-  .fold-arrow {
-    position: absolute;
-    left: 50%; top: 50%;
-    transform: translate(-50%, -50%);
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    font-size: 0.55rem;
-    letter-spacing: 0.15em;
-    color: rgba(201,168,76,0.5);
-    white-space: nowrap;
-    z-index: 3;
-    padding: 0.2rem 0.6rem;
-    background: rgba(15,14,12,0.8);
-  }
-
-  /* ── STATUS ── */
-  .status-panel {
-    display: none;
-    padding: 1.2rem 1.6rem;
-    border-radius: 3px;
-    font-size: 0.72rem;
-    letter-spacing: 0.06em;
-    animation: slideIn 0.3s ease;
-    line-height: 1.6;
-  }
-
-  .status-panel.visible { display: block; }
-
-  .status-panel.info {
-    background: rgba(74,92,78,0.12);
-    border: 1px solid rgba(74,92,78,0.3);
-    color: #8aab8f;
-  }
-
-  .status-panel.success {
-    background: rgba(201,168,76,0.08);
-    border: 1px solid rgba(201,168,76,0.25);
-    color: var(--gold);
-  }
-
-  .status-panel.error {
-    background: rgba(139,58,42,0.12);
-    border: 1px solid rgba(139,58,42,0.3);
-    color: #d4836e;
-  }
-
-  .progress-bar {
-    height: 2px;
-    background: rgba(255,255,255,0.06);
-    border-radius: 1px;
-    margin-top: 0.8rem;
-    overflow: hidden;
-    display: none;
-  }
-
-  .progress-bar.visible { display: block; }
-
-  .progress-fill {
-    height: 100%;
-    background: var(--gold);
-    border-radius: 1px;
-    transition: width 0.4s ease;
-    width: 0%;
-  }
-
-  /* ── SPECS ── */
-  .specs {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.8rem;
-  }
-
-  .spec-item {
-    padding: 1rem;
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(201,168,76,0.1);
-    border-radius: 3px;
-    text-align: center;
-  }
-
-  .spec-num {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--paper);
-    line-height: 1;
-    margin-bottom: 0.3rem;
-  }
-
-  .spec-label {
-    font-size: 0.58rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--muted);
-  }
-
-  /* ── FOOTER ── */
-  footer {
-    border-top: 1px solid rgba(201,168,76,0.1);
-    padding: 1.5rem 4rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .footer-note {
-    font-size: 0.62rem;
-    letter-spacing: 0.1em;
-    color: rgba(122,112,96,0.5);
-  }
-
-  .footer-tech {
-    display: flex;
-    gap: 1rem;
-  }
-
-  .tech-badge {
-    font-size: 0.58rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: rgba(201,168,76,0.3);
-    padding: 0.25em 0.6em;
-    border: 1px solid rgba(201,168,76,0.12);
-    border-radius: 2px;
-  }
-
-  /* ── DOWNLOAD BTN ── */
-  .btn-download {
-    display: none;
-    width: 100%;
-    padding: 1rem 2rem;
-    background: transparent;
-    color: var(--gold);
-    font-family: 'DM Mono', monospace;
-    font-size: 0.72rem;
-    font-weight: 500;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    border: 1px solid var(--gold);
-    border-radius: 3px;
-    cursor: pointer;
-    text-decoration: none;
-    text-align: center;
-    transition: all 0.3s ease;
-    margin-top: 0.8rem;
-    animation: slideIn 0.4s ease;
-  }
-
-  .btn-download.visible { display: block; }
-  .btn-download:hover {
-    background: rgba(201,168,76,0.08);
-    box-shadow: 0 4px 20px rgba(201,168,76,0.12);
-  }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 900px) {
-    main { grid-template-columns: 1fr; }
-    .panel-left { border-right: none; border-bottom: 1px solid rgba(201,168,76,0.15); }
-    header { padding: 3rem 2rem 2rem; }
-    .panel-left, .panel-right { padding: 2.5rem 2rem; }
-    footer { padding: 1.5rem 2rem; flex-direction: column; gap: 0.8rem; }
-    .specs { grid-template-columns: repeat(3, 1fr); }
-  }
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap');
+:root{--ink:#0f0e0c;--paper:#faf8f4;--gold:#c9a84c;--gold-l:#e8c97a;--rust:#8b3a2a;--sage:#4a5c4e;--muted:#7a7060;--bdr:rgba(201,168,76,.2)}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--paper);font-family:'DM Mono',monospace;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:9999;opacity:.5}
+
+/* HEADER */
+header{position:relative;padding:3rem 4rem 2rem;border-bottom:1px solid var(--bdr);display:flex;align-items:flex-start;justify-content:space-between;overflow:hidden}
+header::after{content:'';position:absolute;top:-80px;right:-80px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.06) 0%,transparent 70%);pointer-events:none}
+.logo-mark{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.35rem}
+.logo-main{font-family:'Playfair Display',serif;font-weight:900;font-size:clamp(2.2rem,3.5vw,3.5rem);letter-spacing:-.02em;color:var(--paper);line-height:1}
+.logo-badge{font-size:.58rem;letter-spacing:.25em;color:var(--gold);padding:.2em .55em;border:1px solid var(--gold);border-radius:2px;vertical-align:middle;margin-left:.3rem}
+.tagline{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:300;font-size:1rem;color:var(--muted);letter-spacing:.04em}
+
+/* LANG */
+.lang-bar{display:flex;gap:.3rem;align-items:center;position:relative;z-index:10;flex-shrink:0}
+.lb{background:none;border:1px solid transparent;border-radius:4px;cursor:pointer;padding:.25rem .4rem;font-size:1.2rem;line-height:1;transition:all .2s;opacity:.45;filter:grayscale(70%)}
+.lb:hover{opacity:.8;filter:grayscale(0);border-color:var(--bdr)}
+.lb.on{opacity:1;filter:grayscale(0);border-color:var(--gold);background:rgba(201,168,76,.08)}
+
+/* MAIN */
+main{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 145px)}
+.pl{padding:3rem 4rem;border-right:1px solid var(--bdr);display:flex;flex-direction:column;gap:2rem}
+.pr{padding:3rem 4rem;display:flex;flex-direction:column;gap:2rem}
+.slbl{font-size:.58rem;letter-spacing:.33em;text-transform:uppercase;color:var(--gold);margin-bottom:.9rem;display:flex;align-items:center;gap:.7rem}
+.slbl::before{content:'';display:inline-block;width:16px;height:1px;background:var(--gold)}
+
+/* DROP */
+.dz{position:relative;border:1px solid rgba(201,168,76,.3);border-radius:4px;padding:2.8rem 2rem;text-align:center;cursor:pointer;transition:all .3s;background:rgba(201,168,76,.02);overflow:hidden}
+.dz::before{content:'';position:absolute;inset:6px;border:1px dashed rgba(201,168,76,.14);border-radius:2px;pointer-events:none;transition:border-color .3s}
+.dz:hover,.dz.dov{border-color:var(--gold);background:rgba(201,168,76,.05)}
+.dz:hover::before,.dz.dov::before{border-color:rgba(201,168,76,.35)}
+.di{width:44px;height:44px;margin:0 auto 1rem}
+.di svg{width:100%;height:100%;stroke:var(--gold);stroke-width:1.2;fill:none}
+.dt{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;color:var(--paper);margin-bottom:.35rem}
+.ds{font-size:.68rem;letter-spacing:.07em;color:var(--muted);line-height:1.65}
+.ds strong{color:var(--gold);font-weight:400}
+#fi{display:none}
+
+/* FILE INFO */
+.finfo{display:none;align-items:center;gap:.9rem;padding:.9rem 1.3rem;background:rgba(201,168,76,.06);border:1px solid rgba(201,168,76,.2);border-radius:3px;animation:sli .4s ease}
+.finfo.vis{display:flex}
+@keyframes sli{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.fiw{width:32px;height:32px;background:rgba(201,168,76,.1);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.fiw svg{stroke:var(--gold);width:15px;height:15px}
+.fdet{flex:1;min-width:0}
+.fnm{font-size:.76rem;color:var(--paper);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:.12rem}
+.fmet{font-size:.6rem;color:var(--muted);letter-spacing:.05em}
+.frm{cursor:pointer;color:var(--muted);padding:3px;border-radius:2px;transition:color .2s;background:none;border:none;font-size:.85rem;line-height:1}
+.frm:hover{color:#d4836e}
+
+/* SETTINGS */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:.9rem}
+.fd{display:flex;flex-direction:column;gap:.38rem}
+.fd.full{grid-column:1/-1}
+.fd label{font-size:.58rem;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.fd select,.fd input[type="text"]{background:rgba(255,255,255,.03);border:1px solid rgba(201,168,76,.2);color:var(--paper);font-family:'DM Mono',monospace;font-size:.74rem;padding:.6rem .85rem;border-radius:3px;outline:none;transition:border-color .25s;-webkit-appearance:none;cursor:pointer}
+.fd select:focus,.fd input[type="text"]:focus{border-color:var(--gold)}
+.fd select option{background:#1a1916}
+.tg{display:flex;border:1px solid rgba(201,168,76,.2);border-radius:3px;overflow:hidden}
+.tg label{flex:1;text-align:center;padding:.58rem .4rem;font-size:.63rem;letter-spacing:.07em;cursor:pointer;transition:all .2s;color:var(--muted);user-select:none}
+.tg input[type="radio"]{display:none}
+.tg input[type="radio"]:checked+label{background:rgba(201,168,76,.12);color:var(--gold)}
+.cbrow{display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.68rem;letter-spacing:.08em;color:var(--muted);transition:color .2s;user-select:none;padding:.35rem 0}
+.cbrow:hover{color:var(--paper)}
+.cbox{width:15px;height:15px;border:1px solid rgba(201,168,76,.3);border-radius:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;font-size:.6rem}
+.cbrow.on .cbox{background:rgba(201,168,76,.15);border-color:var(--gold);color:var(--gold)}
+
+/* IMPOSITION */
+.imprev{background:rgba(255,255,255,.02);border:1px solid rgba(201,168,76,.1);border-radius:4px;padding:1.3rem}
+.pt{font-family:'Playfair Display',serif;font-size:.88rem;color:var(--paper);margin-bottom:.9rem;display:flex;align-items:center;justify-content:space-between}
+.pt span{font-family:'DM Mono',monospace;font-size:.56rem;letter-spacing:.12em;color:var(--muted)}
+.sdiag{display:flex;flex-direction:column;gap:.35rem;max-height:190px;overflow-y:auto}
+.sdiag::-webkit-scrollbar{width:3px}
+.sdiag::-webkit-scrollbar-thumb{background:rgba(201,168,76,.3);border-radius:2px}
+.sr{display:grid;grid-template-columns:50px 1fr 1fr;gap:.35rem;align-items:center;font-size:.6rem;padding:.32rem .48rem;background:rgba(255,255,255,.02);border-radius:2px;transition:background .2s}
+.sr:hover{background:rgba(201,168,76,.04)}
+.srl{color:var(--muted);letter-spacing:.08em}
+.sp{display:flex;align-items:center;justify-content:center;gap:.25rem}
+.pb{display:inline-flex;align-items:center;justify-content:center;width:24px;height:32px;border:1px solid rgba(201,168,76,.25);border-radius:2px;font-size:.65rem;color:var(--paper);background:rgba(201,168,76,.05);transition:all .2s}
+.pb:hover{border-color:var(--gold);background:rgba(201,168,76,.1)}
+.ssep{display:flex;align-items:center;gap:.35rem;color:rgba(201,168,76,.45);font-size:.52rem;letter-spacing:.13em;margin:.12rem 0}
+.ssep::before,.ssep::after{content:'';flex:1;height:1px;background:rgba(201,168,76,.08)}
+
+/* BUTTONS */
+.bpri{width:100%;padding:.95rem 2rem;background:var(--gold);color:var(--ink);font-family:'DM Mono',monospace;font-size:.68rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;border:none;border-radius:3px;cursor:pointer;position:relative;overflow:hidden;transition:all .3s}
+.bpri:hover:not(:disabled){background:var(--gold-l);transform:translateY(-1px);box-shadow:0 8px 28px rgba(201,168,76,.25)}
+.bpri:disabled{opacity:.3;cursor:not-allowed;transform:none}
+.bpri.ld{color:transparent}
+.bpri.ld::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:15px;height:15px;border:2px solid var(--ink);border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+.bout{width:100%;padding:.85rem 2rem;background:transparent;color:var(--gold);font-family:'DM Mono',monospace;font-size:.68rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;border:1px solid var(--gold);border-radius:3px;cursor:pointer;text-decoration:none;text-align:center;transition:all .3s;display:none;animation:sli .4s ease}
+.bout.vis{display:block}
+.bout:hover{background:rgba(201,168,76,.07);box-shadow:0 4px 18px rgba(201,168,76,.1)}
+.bwiz{width:100%;padding:.85rem 2rem;background:rgba(74,92,78,.12);color:#8aab8f;font-family:'DM Mono',monospace;font-size:.68rem;font-weight:500;letter-spacing:.18em;text-transform:uppercase;border:1px solid rgba(74,92,78,.28);border-radius:3px;cursor:pointer;transition:all .3s;display:none;animation:sli .4s ease}
+.bwiz.vis{display:block}
+.bwiz:hover{background:rgba(74,92,78,.22);border-color:rgba(74,92,78,.5)}
+
+/* STATUS */
+.sp-status{display:none;padding:.9rem 1.3rem;border-radius:3px;font-size:.68rem;letter-spacing:.05em;animation:sli .3s ease;line-height:1.55}
+.sp-status.vis{display:block}
+.sp-status.inf{background:rgba(74,92,78,.1);border:1px solid rgba(74,92,78,.28);color:#8aab8f}
+.sp-status.ok{background:rgba(201,168,76,.07);border:1px solid rgba(201,168,76,.23);color:var(--gold)}
+.sp-status.err{background:rgba(139,58,42,.1);border:1px solid rgba(139,58,42,.28);color:#d4836e}
+.pgb{height:2px;background:rgba(255,255,255,.05);border-radius:1px;margin-top:.6rem;overflow:hidden;display:none}
+.pgb.vis{display:block}
+.pgf{height:100%;background:var(--gold);border-radius:1px;transition:width .4s ease;width:0%}
+
+/* RIGHT */
+.expl h2{font-family:'Playfair Display',serif;font-size:clamp(1.4rem,2vw,1.9rem);font-weight:700;line-height:1.2;color:var(--paper);margin-bottom:.65rem}
+.expl h2 em{font-style:italic;color:var(--gold)}
+.expl p{font-family:'Cormorant Garamond',serif;font-size:.92rem;font-weight:300;color:var(--muted);line-height:1.8;margin-bottom:1.4rem}
+.a4vis{position:relative;background:rgba(255,255,255,.02);border:1px solid rgba(201,168,76,.1);border-radius:6px;padding:1.3rem;overflow:hidden}
+.a4vis::before{content:'IMPOSITION';position:absolute;top:.7rem;right:1.1rem;font-size:.48rem;letter-spacing:.28em;color:rgba(201,168,76,.18)}
+.a4s{width:100%;aspect-ratio:297/210;border:1.5px solid rgba(201,168,76,.38);border-radius:3px;display:grid;grid-template-columns:1fr 1fr;position:relative;background:rgba(255,255,255,.01)}
+.a4s::before{content:'';position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(201,168,76,.28);z-index:2}
+.a4p{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.22rem;padding:.7rem}
+.pln{font-family:'Playfair Display',serif;font-size:clamp(1rem,1.8vw,1.6rem);font-weight:700;color:var(--paper);line-height:1}
+.plt{font-size:.48rem;letter-spacing:.17em;color:var(--gold);text-transform:uppercase}
+.specs{display:grid;grid-template-columns:repeat(3,1fr);gap:.65rem}
+.si{padding:.85rem;background:rgba(255,255,255,.02);border:1px solid rgba(201,168,76,.09);border-radius:3px;text-align:center}
+.sn{font-family:'Playfair Display',serif;font-size:1.35rem;font-weight:700;color:var(--paper);line-height:1;margin-bottom:.22rem}
+.sl{font-size:.54rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+
+/* FOOTER */
+footer{border-top:1px solid rgba(201,168,76,.09);padding:1.1rem 4rem;display:flex;align-items:center;justify-content:space-between}
+.fn{font-size:.58rem;letter-spacing:.07em;color:rgba(122,112,96,.4)}
+.ftc{display:flex;gap:.7rem}
+.tb{font-size:.54rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(201,168,76,.28);padding:.18em .48em;border:1px solid rgba(201,168,76,.1);border-radius:2px}
+
+/* ══ MODAL ══ */
+.moverlay{position:fixed;inset:0;background:rgba(8,7,6,.93);z-index:500;display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px);padding:1.5rem}
+.moverlay.open{display:flex}
+.modal{background:#141310;border:1px solid rgba(201,168,76,.18);border-radius:8px;width:100%;max-width:820px;max-height:92vh;overflow:hidden;display:flex;flex-direction:column;position:relative;box-shadow:0 40px 90px rgba(0,0,0,.75)}
+.mhdr{padding:1.8rem 2.2rem 1.4rem;border-bottom:1px solid rgba(201,168,76,.1);flex-shrink:0}
+.mtitle{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--paper);margin-bottom:.25rem}
+.msub{font-size:.62rem;letter-spacing:.13em;color:var(--muted)}
+.mclose{position:absolute;top:1.4rem;right:2rem;background:none;border:none;color:var(--muted);font-size:1.1rem;cursor:pointer;transition:color .2s;padding:.3rem}
+.mclose:hover{color:var(--paper)}
+.mbody{flex:1;overflow-y:auto;padding:1.8rem 2.2rem}
+.mbody::-webkit-scrollbar{width:3px}
+.mbody::-webkit-scrollbar-thumb{background:rgba(201,168,76,.28);border-radius:2px}
+.mfoot{padding:1.3rem 2.2rem;border-top:1px solid rgba(201,168,76,.1);display:flex;gap:.8rem;justify-content:flex-end;flex-shrink:0}
+
+/* STEP INDICATOR */
+.stind{display:flex;align-items:center;gap:0;margin-bottom:1.8rem}
+.std{width:26px;height:26px;border-radius:50%;border:1px solid rgba(201,168,76,.2);display:flex;align-items:center;justify-content:center;font-size:.58rem;color:var(--muted);transition:all .4s;flex-shrink:0}
+.std.act{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.09)}
+.std.dn{border-color:var(--sage);color:#8aab8f;background:rgba(74,92,78,.12)}
+.stl{flex:1;height:1px;background:rgba(201,168,76,.09);transition:background .4s}
+.stl.dn{background:rgba(74,92,78,.35)}
+
+/* WIZARD STEPS */
+.ws{display:none;animation:fdup .4s ease}
+.ws.act{display:block}
+@keyframes fdup{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.wq{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--paper);margin-bottom:.4rem}
+.wh{font-size:.66rem;color:var(--muted);letter-spacing:.05em;line-height:1.55;margin-bottom:1.4rem}
+
+/* CHOICE CARDS */
+.cc{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-bottom:1.3rem}
+.ccard{border:1px solid rgba(201,168,76,.13);border-radius:6px;padding:1.3rem;cursor:pointer;transition:all .3s;text-align:center;background:rgba(255,255,255,.02)}
+.ccard:hover{border-color:var(--gold);background:rgba(201,168,76,.05)}
+.ccard.sel{border-color:var(--gold);background:rgba(201,168,76,.08)}
+.cico{font-size:1.9rem;margin-bottom:.6rem;display:block}
+.ctit{font-family:'Playfair Display',serif;font-size:.92rem;color:var(--paper);margin-bottom:.25rem}
+.cdesc{font-size:.6rem;color:var(--muted);letter-spacing:.04em;line-height:1.45}
+
+/* PRINTER LIST */
+.pl-list{display:flex;flex-direction:column;gap:.55rem;margin-bottom:1.3rem;max-height:210px;overflow-y:auto}
+.pl-list::-webkit-scrollbar{width:3px}
+.pl-list::-webkit-scrollbar-thumb{background:rgba(201,168,76,.28)}
+.pi{display:flex;align-items:center;gap:.9rem;padding:.85rem 1.1rem;border:1px solid rgba(201,168,76,.11);border-radius:4px;cursor:pointer;transition:all .25s;background:rgba(255,255,255,.02)}
+.pi:hover{border-color:var(--gold);background:rgba(201,168,76,.04)}
+.pi.sel{border-color:var(--gold);background:rgba(201,168,76,.08)}
+.pio{font-size:1.35rem;flex-shrink:0}
+.pin{font-size:.76rem;color:var(--paper)}
+.pid{font-size:.58rem;color:var(--muted);letter-spacing:.04em;margin-top:.12rem}
+.pbdg{font-size:.52rem;letter-spacing:.1em;text-transform:uppercase;padding:.18em .45em;border-radius:2px;margin-left:auto;flex-shrink:0}
+.pbdg.dup{background:rgba(74,92,78,.18);border:1px solid rgba(74,92,78,.28);color:#8aab8f}
+.pbdg.sim{background:rgba(139,58,42,.09);border:1px solid rgba(139,58,42,.2);color:#d4836e}
+
+/* INSTRUCTION STAGE */
+.istage{background:rgba(255,255,255,.02);border:1px solid rgba(201,168,76,.09);border-radius:6px;padding:1.2rem;min-height:240px;position:relative;overflow:hidden;margin-bottom:1.3rem}
+.scene{position:relative;width:100%;height:210px}
+
+/* Printer SVG */
+.psvg{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:150px}
+.pbody{fill:#1e1c19;stroke:rgba(201,168,76,.38);stroke-width:1}
+.pslot{fill:none;stroke:rgba(201,168,76,.48);stroke-width:1.5}
+.plight{fill:var(--gold);animation:bl 1.5s ease-in-out infinite}
+@keyframes bl{0%,100%{opacity:.25}50%{opacity:1}}
+
+/* Sheet cards */
+.acs{position:absolute;border:1px solid rgba(201,168,76,.28);border-radius:2px;background:rgba(15,14,12,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;font-size:.56rem;color:var(--muted);letter-spacing:.07em;overflow:hidden}
+.acs .spn{font-family:'Playfair Display',serif;font-size:.88rem;color:var(--paper);line-height:1}
+.acs .sfl{font-size:.46rem;letter-spacing:.13em;color:var(--gold);text-transform:uppercase}
+
+/* FLIP */
+.flipsc{display:flex;align-items:center;justify-content:center;gap:2.5rem;padding:.8rem;height:100%}
+.fcrd{perspective:600px;width:110px;height:78px}
+.fcrd-inner{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .8s ease}
+.fcrd.flp .fcrd-inner{transform:rotateY(180deg)}
+.ff{position:absolute;inset:0;backface-visibility:hidden;border:1px solid rgba(201,168,76,.28);border-radius:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;font-size:.58rem}
+.ff-f{background:rgba(201,168,76,.05)}
+.ff-b{background:rgba(201,168,76,.02);transform:rotateY(180deg);border-style:dashed;border-color:rgba(201,168,76,.14)}
+.farr{font-size:1.4rem;color:rgba(201,168,76,.45);align-self:center;animation:ap 1.2s ease-in-out infinite}
+@keyframes ap{0%,100%{transform:translateX(0);opacity:.45}50%{transform:translateX(4px);opacity:1}}
+
+/* INSTR */
+.itxt{font-size:.7rem;color:var(--paper);line-height:1.55;letter-spacing:.04em}
+.itxt strong{color:var(--gold)}
+.iwarn{display:flex;align-items:flex-start;gap:.6rem;padding:.75rem .95rem;background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.14);border-radius:3px;margin-top:.75rem;font-size:.63rem;color:var(--gold);letter-spacing:.04em;line-height:1.5}
+
+/* SUMMARY */
+.slist{display:flex;flex-direction:column;gap:.7rem}
+.sitem{display:flex;align-items:flex-start;gap:.9rem;padding:.85rem 1rem;background:rgba(255,255,255,.02);border:1px solid rgba(201,168,76,.07);border-radius:4px;transition:all .3s}
+.sitem.cur{border-color:var(--gold);background:rgba(201,168,76,.05)}
+.sitem.dn2{border-color:rgba(74,92,78,.28);background:rgba(74,92,78,.05)}
+.snum{width:22px;height:22px;border-radius:50%;border:1px solid rgba(201,168,76,.28);display:flex;align-items:center;justify-content:center;font-size:.58rem;color:var(--muted);flex-shrink:0;margin-top:.1rem}
+.sitem.cur .snum{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.09)}
+.sitem.dn2 .snum{border-color:rgba(74,92,78,.38);color:#8aab8f;background:rgba(74,92,78,.13)}
+.sct{font-size:.73rem;color:var(--paper);margin-bottom:.18rem;letter-spacing:.04em}
+.scd{font-size:.6rem;color:var(--muted);letter-spacing:.04em;line-height:1.45}
+
+/* THUMBS */
+.trow{display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.75rem}
+.thb{width:42px;height:60px;border:1px solid rgba(201,168,76,.2);border-radius:2px;background:rgba(255,255,255,.03);display:flex;align-items:center;justify-content:center;font-size:.6rem;color:var(--muted);flex-shrink:0;overflow:hidden;position:relative}
+.thb canvas,.thb img{width:100%;height:100%;object-fit:cover}
+.thb-n{position:absolute;bottom:2px;right:2px;font-size:.42rem;color:rgba(201,168,76,.55)}
+.thb.blk{border-style:dashed;border-color:rgba(201,168,76,.1)}
+
+/* spin inline */
+.spi{display:inline-block;width:11px;height:11px;border:1.5px solid rgba(201,168,76,.28);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:.35rem}
+
+/* WIZ BUTTONS */
+.bwb{padding:.7rem 1.5rem;font-family:'DM Mono',monospace;font-size:.65rem;font-weight:500;letter-spacing:.16em;text-transform:uppercase;border-radius:3px;cursor:pointer;transition:all .25s}
+.bwp{background:var(--gold);color:var(--ink);border:none}
+.bwp:hover:not(:disabled){background:var(--gold-l)}
+.bwp:disabled{opacity:.3;cursor:not-allowed}
+.bwg{background:transparent;color:var(--muted);border:1px solid rgba(201,168,76,.18)}
+.bwg:hover{color:var(--paper);border-color:rgba(201,168,76,.38)}
+
+@media(max-width:860px){
+  main{grid-template-columns:1fr}
+  .pl{border-right:none;border-bottom:1px solid var(--bdr)}
+  header,.pl,.pr,footer{padding-left:1.5rem;padding-right:1.5rem}
+  .cc{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo-mark">
-    <span>BookForge</span>
-    <span>A5 Imposition</span>
+  <div>
+    <div class="logo-mark">
+      <span class="logo-main">BookForge</span>
+      <span class="logo-badge">A5 IMPOSITION</span>
+    </div>
+    <p class="tagline" data-i18n="tagline">Transformez votre PDF en livret imprimable — imposition professionnelle automatique</p>
   </div>
-  <p class="tagline">Transformez votre PDF en livret imprimable — imposition professionnelle automatique</p>
+  <div class="lang-bar" id="lbar">
+    <button class="lb on" data-lang="fr" title="Français">🇫🇷</button>
+    <button class="lb" data-lang="en" title="English">🇬🇧</button>
+    <button class="lb" data-lang="de" title="Deutsch">🇩🇪</button>
+    <button class="lb" data-lang="es" title="Español">🇪🇸</button>
+    <button class="lb" data-lang="it" title="Italiano">🇮🇹</button>
+    <button class="lb" data-lang="ru" title="Русский">🇷🇺</button>
+  </div>
 </header>
 
 <main>
-  <!-- ══ LEFT PANEL ══ -->
-  <div class="panel-left">
+  <div class="pl">
 
     <div>
-      <div class="section-label">Source Document</div>
-      <div class="drop-zone" id="drop-zone">
-        <input type="file" id="file-input" accept=".pdf">
-        <div class="drop-icon">
-          <svg viewBox="0 0 24 24">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="12" y1="18" x2="12" y2="12"/>
-            <polyline points="9 15 12 12 15 15"/>
-          </svg>
-        </div>
-        <div class="drop-title">Déposez votre PDF</div>
-        <div class="drop-sub">
-          Glisser-déposer ou <strong>cliquer pour parcourir</strong><br>
-          Fichiers PDF uniquement · Toutes tailles acceptées
-        </div>
+      <div class="slbl" data-i18n="s_source"></div>
+      <div class="dz" id="dz">
+        <input type="file" id="fi" accept=".pdf">
+        <div class="di"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div>
+        <div class="dt" data-i18n="dropTitle"></div>
+        <div class="ds" data-i18n="dropSub"></div>
       </div>
-
-      <div class="file-info" id="file-info">
-        <div class="file-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-          </svg>
-        </div>
-        <div class="file-details">
-          <div class="file-name" id="file-name">—</div>
-          <div class="file-meta" id="file-meta">— · —</div>
-        </div>
-        <button class="file-remove" id="file-remove" title="Supprimer">✕</button>
+      <div class="finfo" id="finfo">
+        <div class="fiw"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <div class="fdet"><div class="fnm" id="fnm">—</div><div class="fmet" id="fmet">—</div></div>
+        <button class="frm" id="frm">✕</button>
       </div>
     </div>
 
     <div>
-      <div class="section-label">Configuration</div>
-      <div class="settings-grid">
-        <div class="field">
-          <label>Orientation impression</label>
-          <select id="binding-side">
-            <option value="left">Reliure gauche</option>
-            <option value="right">Reliure droite</option>
+      <div class="slbl" data-i18n="s_config"></div>
+      <div class="sg">
+        <div class="fd">
+          <label data-i18n="bindingLabel"></label>
+          <select id="bind">
+            <option value="left" data-i18n="bindLeft"></option>
+            <option value="right" data-i18n="bindRight"></option>
           </select>
         </div>
-        <div class="field">
-          <label>Complétion pages</label>
-          <select id="padding-mode">
-            <option value="blank">Pages blanches</option>
-            <option value="none">Aucune</option>
+        <div class="fd">
+          <label data-i18n="paddingLabel"></label>
+          <select id="padmode">
+            <option value="blank" data-i18n="paddingBlank"></option>
+            <option value="none" data-i18n="paddingNone"></option>
           </select>
         </div>
-        <div class="field full">
-          <label>Titre du livret (optionnel)</label>
-          <input type="text" id="booklet-title" placeholder="Mon Livret...">
+        <div class="fd full">
+          <label data-i18n="titleLabel"></label>
+          <input type="text" id="btitle" data-i18n-ph="titlePh">
         </div>
-        <div class="field full">
-          <label>Ordre des feuilles à l'impression</label>
-          <div class="toggle-group">
-            <input type="radio" name="print-order" id="order-normal" value="normal" checked>
-            <label for="order-normal">Normal</label>
-            <input type="radio" name="print-order" id="order-reverse" value="reverse">
-            <label for="order-reverse">Inversé (recto-verso auto)</label>
-          </div>
+        <div class="fd full">
+          <div class="cbrow on" id="foldtog"><div class="cbox">✓</div><span data-i18n="foldLine"></span></div>
         </div>
       </div>
     </div>
 
-    <div id="imposition-section">
-      <div class="section-label">Plan d'imposition</div>
-      <div class="imposition-preview">
-        <div class="preview-title">
-          Ordre des pages
-          <span id="sheet-count-label">— feuilles</span>
-        </div>
-        <div class="sheet-diagram" id="sheet-diagram">
-          <div style="text-align:center; padding: 1.5rem; font-size:0.68rem; color:var(--muted);">
-            Chargez un PDF pour<br>visualiser l'imposition
-          </div>
-        </div>
+    <div>
+      <div class="slbl" data-i18n="s_imposition"></div>
+      <div class="imprev">
+        <div class="pt"><span data-i18n="pageOrder"></span><span id="sclbl">—</span></div>
+        <div class="sdiag" id="sdiag"><div style="text-align:center;padding:1.3rem;font-size:.63rem;color:var(--muted)" data-i18n="loadHint"></div></div>
       </div>
     </div>
 
-    <div class="cta-wrapper">
-      <div class="status-panel" id="status-panel"></div>
-      <div class="progress-bar" id="progress-bar">
-        <div class="progress-fill" id="progress-fill"></div>
-      </div>
-      <button class="btn-generate" id="btn-generate" disabled>
-        Générer le Livret
-      </button>
-      <a class="btn-download" id="btn-download" download="livret-a5.pdf">
-        ↓ Télécharger le livret PDF
-      </a>
+    <div style="display:flex;flex-direction:column;gap:.6rem">
+      <div class="sp-status" id="sstat"></div>
+      <div class="pgb" id="pgb"><div class="pgf" id="pgf"></div></div>
+      <button class="bpri" id="bgen" disabled data-i18n="generate"></button>
+      <a class="bout" id="bdl" download="livret-a5.pdf" data-i18n="download"></a>
+      <button class="bwiz" id="bwiz" data-i18n="printWizard"></button>
     </div>
 
   </div>
 
-  <!-- ══ RIGHT PANEL ══ -->
-  <div class="panel-right">
-
-    <div class="explainer">
-      <p class="section-label" style="margin-bottom:1.2rem;">Comment ça fonctionne</p>
-      <h2>Imposition <em>automatique</em><br>pour livrets A5</h2>
-      <p>
-        BookForge réorganise les pages de votre PDF selon le principe de l'imposition typographique :
-        chaque feuille A4 imprimée recto-verso contient deux pages A5, qui formeront un livret une fois pliées et agrafées.
-      </p>
-
-      <div class="imposition-visual">
-        <div class="a4-sheet">
-          <div class="a4-page">
-            <div class="page-label-num" id="vis-left">16</div>
-            <div class="page-label-text">Verso · Gauche</div>
-          </div>
-          <div class="a4-page">
-            <div class="page-label-num" id="vis-right">1</div>
-            <div class="page-label-text">Recto · Droite</div>
-          </div>
+  <div class="pr">
+    <div class="expl">
+      <p class="slbl" data-i18n="s_how"></p>
+      <h2><span data-i18n="exT1"></span> <em data-i18n="exT2"></em><br><span data-i18n="exT3"></span></h2>
+      <p data-i18n="exBody"></p>
+      <div class="a4vis">
+        <div class="a4s">
+          <div class="a4p"><div class="pln" id="vl">16</div><div class="plt" data-i18n="vL"></div></div>
+          <div class="a4p"><div class="pln" id="vr">1</div><div class="plt" data-i18n="vR"></div></div>
         </div>
-        <div style="text-align:center; margin-top:0.8rem; font-size:0.62rem; color:var(--muted); letter-spacing:0.1em;">
-          FACE RECTO — Feuille 1 / Face extérieure
-        </div>
+        <div style="text-align:center;margin-top:.6rem;font-size:.56rem;color:var(--muted);letter-spacing:.09em" data-i18n="shCap"></div>
       </div>
     </div>
-
     <div class="specs">
-      <div class="spec-item">
-        <div class="spec-num" id="spec-pages">—</div>
-        <div class="spec-label">Pages source</div>
-      </div>
-      <div class="spec-item">
-        <div class="spec-num" id="spec-sheets">—</div>
-        <div class="spec-label">Feuilles A4</div>
-      </div>
-      <div class="spec-item">
-        <div class="spec-num" id="spec-total">—</div>
-        <div class="spec-label">Pages livret</div>
-      </div>
+      <div class="si"><div class="sn" id="spPg">—</div><div class="sl" data-i18n="spPages"></div></div>
+      <div class="si"><div class="sn" id="spSh">—</div><div class="sl" data-i18n="spSheets"></div></div>
+      <div class="si"><div class="sn" id="spTo">—</div><div class="sl" data-i18n="spTotal"></div></div>
     </div>
-
   </div>
 </main>
 
 <footer>
-  <div class="footer-note">Traitement 100% local · Aucune donnée transmise · Confidentialité totale</div>
-  <div class="footer-tech">
-    <span class="tech-badge">pdf-lib 1.17</span>
-    <span class="tech-badge">A5 · A4</span>
-    <span class="tech-badge">Imposition</span>
-  </div>
+  <div class="fn" data-i18n="footNote"></div>
+  <div class="ftc"><span class="tb">pdf-lib 1.17</span><span class="tb">A5 · A4</span><span class="tb">Imposition</span></div>
 </footer>
 
+<!-- ══════ WIZARD MODAL ══════ -->
+<div class="moverlay" id="wmod">
+  <div class="modal">
+    <div class="mhdr">
+      <div class="mtitle" data-i18n="wizTitle"></div>
+      <div class="msub" data-i18n="wizSub"></div>
+      <button class="mclose" id="wclose">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="stind" id="stind"></div>
+
+      <!-- STEP 0: duplex? -->
+      <div class="ws act" id="ws0">
+        <div class="wq" data-i18n="wq0"></div>
+        <div class="wh" data-i18n="wh0"></div>
+        <div class="cc">
+          <div class="ccard" id="cduplex">
+            <span class="cico">🖨️</span>
+            <div class="ctit" data-i18n="dAuto"></div>
+            <div class="cdesc" data-i18n="dAutoD"></div>
+          </div>
+          <div class="ccard" id="cmanual">
+            <span class="cico">🤲</span>
+            <div class="ctit" data-i18n="dMan"></div>
+            <div class="cdesc" data-i18n="dManD"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 1: printer -->
+      <div class="ws" id="ws1">
+        <div class="wq" data-i18n="wq1"></div>
+        <div class="wh" data-i18n="wh1"></div>
+        <div class="pl-list" id="plist"></div>
+        <div style="font-size:.58rem;color:var(--muted);letter-spacing:.04em;line-height:1.55" data-i18n="prNote"></div>
+      </div>
+
+      <!-- STEP 2: print front / duplex -->
+      <div class="ws" id="ws2">
+        <div class="wq" id="s2q"></div>
+        <div class="wh" id="s2h"></div>
+        <div class="istage" id="stg2"><div class="scene" id="sc2"></div></div>
+        <div class="itxt" id="s2i"></div>
+        <div class="iwarn" id="s2w" style="display:none"><span>⚠</span><span id="s2wt"></span></div>
+      </div>
+
+      <!-- STEP 3: flip -->
+      <div class="ws" id="ws3">
+        <div class="wq" data-i18n="wq3"></div>
+        <div class="wh" data-i18n="wh3"></div>
+        <div class="istage">
+          <div class="flipsc" id="flipsc">
+            <div>
+              <div style="font-size:.52rem;letter-spacing:.13em;color:var(--muted);text-align:center;margin-bottom:.5rem" data-i18n="lBefore"></div>
+              <div class="fcrd" id="fc1">
+                <div class="fcrd-inner">
+                  <div class="ff ff-f"><div style="font-family:'Playfair Display',serif;font-size:.88rem;color:var(--paper)" data-i18n="lRecto"></div><div style="font-size:.46rem;letter-spacing:.13em;color:var(--gold)">IMPRIMÉ</div></div>
+                  <div class="ff ff-b"><div style="font-family:'Playfair Display',serif;font-size:.88rem;color:var(--muted)" data-i18n="lVerso"></div><div style="font-size:.46rem;letter-spacing:.13em;color:var(--muted)" data-i18n="lBlank"></div></div>
+                </div>
+              </div>
+            </div>
+            <div class="farr">→</div>
+            <div>
+              <div style="font-size:.52rem;letter-spacing:.13em;color:var(--gold);text-align:center;margin-bottom:.5rem" data-i18n="lAfter"></div>
+              <div class="fcrd flp">
+                <div class="fcrd-inner" style="transform:rotateY(180deg)">
+                  <div class="ff ff-f"><div style="font-family:'Playfair Display',serif;font-size:.88rem;color:var(--paper)" data-i18n="lRecto"></div><div style="font-size:.46rem;letter-spacing:.13em;color:var(--gold)">DESSOUS</div></div>
+                  <div class="ff ff-b"><div style="font-family:'Playfair Display',serif;font-size:.88rem;color:#8aab8f" data-i18n="lVerso"></div><div style="font-size:.46rem;letter-spacing:.13em;color:#8aab8f" data-i18n="lBlankUp"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="iwarn"><span>💡</span><span data-i18n="flipI"></span></div>
+        <div id="flipd" style="margin-top:.9rem;font-size:.63rem;color:var(--muted);letter-spacing:.04em;line-height:1.55"></div>
+      </div>
+
+      <!-- STEP 4: print back / done -->
+      <div class="ws" id="ws4">
+        <div class="wq" id="s4q"></div>
+        <div class="wh" id="s4h"></div>
+        <div class="istage" id="stg4"><div class="scene" id="sc4"></div></div>
+        <div class="slist" id="sumlist"></div>
+      </div>
+
+    </div>
+    <div class="mfoot">
+      <button class="bwb bwg" id="wprev" data-i18n="lPrev"></button>
+      <button class="bwb bwp" id="wnext" data-i18n="lNext"></button>
+    </div>
+  </div>
+</div>
+
 <script>
-// ══════════════════════════════════════════════
-//  BookForge — Booklet Imposition Engine
-// ══════════════════════════════════════════════
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const {PDFDocument,rgb}=PDFLib;
 
-const { PDFDocument, degrees } = PDFLib;
+// ══════ TRANSLATIONS ══════
+const TX={
+fr:{tagline:"Transformez votre PDF en livret imprimable — imposition professionnelle automatique",
+s_source:"Source Document",dropTitle:"Déposez votre PDF",dropSub:'Glisser-déposer ou <strong>cliquer pour parcourir</strong><br>Fichiers PDF uniquement',
+s_config:"Configuration",bindingLabel:"Reliure",bindLeft:"Reliure gauche",bindRight:"Reliure droite",
+paddingLabel:"Complétion",paddingBlank:"Pages blanches",paddingNone:"Aucune",
+titleLabel:"Titre du livret",titlePh:"Mon Livret…",foldLine:"Afficher la ligne de pliure (pointillés centraux)",
+s_imposition:"Plan d'imposition",pageOrder:"Ordre des pages",loadHint:"Chargez un PDF pour visualiser l'imposition",
+generate:"Générer le Livret",download:"↓ Télécharger le livret PDF",printWizard:"🖨  Assistant d'impression",
+s_how:"Comment ça fonctionne",exT1:"Imposition",exT2:"automatique",exT3:"pour livrets A5",
+exBody:"BookForge réorganise les pages de votre PDF selon le principe de l'imposition typographique : chaque feuille A4 recto-verso contient deux pages A5, qui formeront un livret une fois pliées et agrafées.",
+vL:"Verso · Gauche",vR:"Recto · Droite",shCap:"FACE RECTO — Feuille 1 / Face extérieure",
+spPages:"Pages source",spSheets:"Feuilles A4",spTotal:"Pages livret",
+footNote:"Traitement 100% local · Aucune donnée transmise · Confidentialité totale",
+wizTitle:"Assistant d'impression",wizSub:"Suivez les étapes pour imprimer votre livret parfaitement",
+wq0:"Votre imprimante supporte-t-elle l'impression recto-verso automatique ?",
+wh0:"Cette information détermine la procédure d'impression. Si vous n'êtes pas sûr, choisissez Manuel.",
+dAuto:"Recto-verso automatique",dAutoD:"Mon imprimante retourne les feuilles seule. Impression en une seule passe.",
+dMan:"Manuel (simplex)",dManD:"J'imprime les rectos, puis je retourne les feuilles manuellement.",
+wq1:"Sélectionnez votre imprimante",wh1:"Imprimantes disponibles sur votre réseau.",
+prNote:"Si votre imprimante n'apparaît pas, assurez-vous qu'elle est allumée et connectée.",
+wq3:"Retournez la pile de feuilles",wh3:"Reproduisez exactement le geste pour que les versos s'impriment dans le bon sens.",
+lBefore:"AVANT",lAfter:"APRÈS",lRecto:"Recto",lVerso:"Verso",lBlank:"VIERGE",lBlankUp:"VIERGE DESSUS",
+flipI:"Prenez toute la pile, retournez-la de gauche à droite. Le verso vierge doit être visible sur le dessus. Remettez dans le bac d'entrée de l'imprimante.",
+lPrev:"← Précédent",lNext:"Suivant →",
+s2TM:"Étape 1 — Impression des Rectos",s2HM:"Ces pages constituent la face recto de chaque feuille A4.",
+s2TD:"Impression recto-verso automatique",s2HD:"Votre imprimante va tout imprimer automatiquement.",
+s4TM:"Étape 3 — Impression des Versos",s4HM:"Avec les feuilles correctement retournées, lancez les versos.",
+s4TD:"Impression terminée !",s4HD:"Votre livret est prêt à être plié et agrafé au centre.",
+pi1:"<strong>Pages impaires</strong> — les rectos de vos feuilles A4.",
+pi1b:"L'imprimante sort la dernière page en dernier. La page 1 sera donc <strong>en haut de la pile</strong>.",
+pw1:"Vérifiez que les feuilles sont dans l'ordre numérique avant de retourner la pile.",
+pi2:"<strong>Pages paires</strong> — les versos de vos feuilles.",
+pi2b:"Avec les feuilles retournées correctement, les versos s'imprimeront dans l'ordre parfait.",
+piD:"Lancez l'impression du PDF complet avec l'option <strong>Recto-verso / Reliure sur le bord long</strong> activée.",
+fin:"🎉 Votre livret est imprimé ! Pliez les feuilles en deux et agrafez au centre.",
+sumM:["Imprimer les rectos (pages impaires)","Vérifier l'ordre des feuilles","Retourner la pile","Imprimer les versos (pages paires)","Plier et agrafer au centre"],
+sumD:["Imprimer en recto-verso automatique","Plier et agrafer le livret"],
+},
+en:{tagline:"Transform your PDF into a printable booklet — automatic professional imposition",
+s_source:"Source Document",dropTitle:"Drop your PDF here",dropSub:'Drag & drop or <strong>click to browse</strong><br>PDF files only',
+s_config:"Configuration",bindingLabel:"Binding",bindLeft:"Left binding",bindRight:"Right binding",
+paddingLabel:"Padding",paddingBlank:"Blank pages",paddingNone:"None",
+titleLabel:"Booklet title",titlePh:"My Booklet…",foldLine:"Show fold line (center dotted line)",
+s_imposition:"Imposition plan",pageOrder:"Page order",loadHint:"Load a PDF to visualize imposition",
+generate:"Generate Booklet",download:"↓ Download booklet PDF",printWizard:"🖨  Print Wizard",
+s_how:"How it works",exT1:"Automatic",exT2:"imposition",exT3:"for A5 booklets",
+exBody:"BookForge rearranges your PDF pages using typographic imposition: each A4 sheet printed duplex contains two A5 pages that form a booklet when folded and stapled.",
+vL:"Back · Left",vR:"Front · Right",shCap:"FRONT FACE — Sheet 1 / Outer face",
+spPages:"Source pages",spSheets:"A4 sheets",spTotal:"Booklet pages",
+footNote:"100% local processing · No data transmitted · Full privacy",
+wizTitle:"Print Wizard",wizSub:"Follow the steps to print your booklet perfectly",
+wq0:"Does your printer support automatic duplex (double-sided) printing?",
+wh0:"This determines the printing procedure. If unsure, choose Manual.",
+dAuto:"Automatic duplex",dAutoD:"My printer flips sheets automatically. Single-pass printing.",
+dMan:"Manual (simplex)",dManD:"I print front sides, then manually flip sheets for backs.",
+wq1:"Select your printer",wh1:"Available printers on your network.",
+prNote:"If your printer doesn't appear, make sure it's on and connected.",
+wq3:"Flip the sheet stack",wh3:"Reproduce the gesture exactly so back sides print correctly.",
+lBefore:"BEFORE",lAfter:"AFTER",lRecto:"Front",lVerso:"Back",lBlank:"BLANK",lBlankUp:"BLANK FACE UP",
+flipI:"Take the whole stack, flip it left to right (like turning a book page). The blank back must face up. Put back in the input tray this way.",
+lPrev:"← Back",lNext:"Next →",
+s2TM:"Step 1 — Print Front Sides (Odd pages)",s2HM:"These pages are the front faces of each A4 sheet.",
+s2TD:"Automatic duplex printing",s2HD:"Your printer will handle everything automatically.",
+s4TM:"Step 3 — Print Back Sides (Even pages)",s4HM:"With sheets correctly flipped, now print the back sides.",
+s4TD:"Printing complete!",s4HD:"Your booklet is ready to fold and staple.",
+pi1:"<strong>Odd pages</strong> — the fronts of your A4 sheets.",
+pi1b:"The printer outputs the last page last, so page 1 will be <strong>on top of the stack</strong>.",
+pw1:"Check that the sheets are in numeric order before flipping the stack.",
+pi2:"<strong>Even pages</strong> — the backs of your sheets.",
+pi2b:"With sheets correctly flipped, the printer will fill backs in the perfect order.",
+piD:"Print the full PDF with <strong>Duplex / Long-edge binding</strong> enabled.",
+fin:"🎉 Your booklet is printed! Fold the sheets in half and staple the center.",
+sumM:["Print front sides (odd pages)","Check sheet order","Flip the stack","Print back sides (even pages)","Fold and staple"],
+sumD:["Print with automatic duplex","Fold and staple the booklet"],
+},
+de:{tagline:"Verwandeln Sie Ihr PDF in ein druckbares Heft — automatische professionelle Ausschießung",
+s_source:"Quelldokument",dropTitle:"PDF hier ablegen",dropSub:'Drag & Drop oder <strong>klicken zum Durchsuchen</strong><br>Nur PDF-Dateien',
+s_config:"Konfiguration",bindingLabel:"Bindung",bindLeft:"Links gebunden",bindRight:"Rechts gebunden",
+paddingLabel:"Auffüllung",paddingBlank:"Leere Seiten",paddingNone:"Keine",
+titleLabel:"Hefttitel",titlePh:"Mein Heft…",foldLine:"Falzlinie anzeigen (gepunktete Mittellinie)",
+s_imposition:"Ausschießplan",pageOrder:"Seitenreihenfolge",loadHint:"PDF laden um Ausschießung anzuzeigen",
+generate:"Heft generieren",download:"↓ Heft-PDF herunterladen",printWizard:"🖨  Druckassistent",
+s_how:"So funktioniert es",exT1:"Automatische",exT2:"Ausschießung",exT3:"für A5-Hefte",
+exBody:"BookForge ordnet Ihre PDF-Seiten neu an: Jedes beidseitig bedruckte A4-Blatt enthält zwei A5-Seiten, die ein Heft bilden.",
+vL:"Rückseite · Links",vR:"Vorderseite · Rechts",shCap:"VORDERSEITE — Blatt 1 / Außenseite",
+spPages:"Quellseiten",spSheets:"A4-Blätter",spTotal:"Heftseiten",
+footNote:"100% lokale Verarbeitung · Keine Datenübertragung · Vollständige Privatsphäre",
+wizTitle:"Druckassistent",wizSub:"Folgen Sie den Schritten für einen perfekten Druck",
+wq0:"Unterstützt Ihr Drucker automatischen Duplexdruck?",
+wh0:"Dies bestimmt das Druckverfahren. Wenn unsicher, wählen Sie Manuell.",
+dAuto:"Automatischer Duplex",dAutoD:"Mein Drucker dreht Blätter automatisch um.",
+dMan:"Manuell (Simplex)",dManD:"Ich drucke Vorderseiten, dann drehe ich manuell um.",
+wq1:"Drucker auswählen",wh1:"Verfügbare Drucker in Ihrem Netzwerk.",
+prNote:"Falls Ihr Drucker nicht erscheint, stellen Sie sicher, dass er eingeschaltet und verbunden ist.",
+wq3:"Blätterstapel umdrehen",wh3:"Beobachten Sie die Animation und wiederholen Sie den Vorgang genau.",
+lBefore:"VORHER",lAfter:"NACHHER",lRecto:"Vorderseite",lVerso:"Rückseite",lBlank:"LEER",lBlankUp:"LEER OBEN",
+flipI:"Nehmen Sie den ganzen Stapel und drehen Sie ihn von links nach rechts. Die leere Rückseite muss oben liegen.",
+lPrev:"← Zurück",lNext:"Weiter →",
+s2TM:"Schritt 1 — Vorderseiten drucken (ungerade Seiten)",s2HM:"Diese Seiten sind die Vorderseiten Ihrer A4-Blätter.",
+s2TD:"Automatischer Duplexdruck",s2HD:"Ihr Drucker druckt und dreht Blätter automatisch.",
+s4TM:"Schritt 3 — Rückseiten drucken (gerade Seiten)",s4HM:"Mit richtig umgedrehten Blättern nun Rückseiten drucken.",
+s4TD:"Druck abgeschlossen!",s4HD:"Ihr Heft ist bereit zum Falten und Heften.",
+pi1:"<strong>Ungerade Seiten</strong> — die Vorderseiten Ihrer A4-Blätter.",
+pi1b:"Die letzte Seite wird zuletzt ausgegeben — Seite 1 liegt <strong>oben im Stapel</strong>.",
+pw1:"Prüfen Sie die numerische Reihenfolge bevor Sie umdrehen.",
+pi2:"<strong>Gerade Seiten</strong> — die Rückseiten Ihrer Blätter.",
+pi2b:"Mit richtig umgedrehten Blättern füllt der Drucker die Rückseiten korrekt.",
+piD:"Drucken Sie das komplette PDF mit <strong>Duplex / Langer Rand</strong>.",
+fin:"🎉 Ihr Heft ist gedruckt! Falten und in der Mitte heften.",
+sumM:["Vorderseiten drucken","Reihenfolge prüfen","Stapel umdrehen","Rückseiten drucken","Falten und heften"],
+sumD:["Mit automatischem Duplex drucken","Falten und heften"],
+},
+es:{tagline:"Transforma tu PDF en un folleto imprimible — imposición profesional automática",
+s_source:"Documento Fuente",dropTitle:"Arrastra tu PDF aquí",dropSub:'Arrastrar o <strong>hacer clic para explorar</strong><br>Solo archivos PDF',
+s_config:"Configuración",bindingLabel:"Encuadernación",bindLeft:"Encuad. izquierda",bindRight:"Encuad. derecha",
+paddingLabel:"Relleno",paddingBlank:"Páginas en blanco",paddingNone:"Ninguno",
+titleLabel:"Título del folleto",titlePh:"Mi Folleto…",foldLine:"Mostrar línea de pliegue (punteado central)",
+s_imposition:"Plan de imposición",pageOrder:"Orden de páginas",loadHint:"Cargue un PDF para visualizar la imposición",
+generate:"Generar Folleto",download:"↓ Descargar folleto PDF",printWizard:"🖨  Asistente de impresión",
+s_how:"Cómo funciona",exT1:"Imposición",exT2:"automática",exT3:"para folletos A5",
+exBody:"BookForge reorganiza las páginas del PDF usando imposición tipográfica: cada hoja A4 a doble cara contiene dos páginas A5.",
+vL:"Dorso · Izquierda",vR:"Frente · Derecha",shCap:"CARA FRONTAL — Hoja 1 / Cara exterior",
+spPages:"Páginas fuente",spSheets:"Hojas A4",spTotal:"Páginas folleto",
+footNote:"Procesamiento 100% local · Sin transmisión de datos · Privacidad total",
+wizTitle:"Asistente de impresión",wizSub:"Siga los pasos para imprimir su folleto perfectamente",
+wq0:"¿Su impresora admite impresión a doble cara automática?",
+wh0:"Esto determina el procedimiento de impresión. Si no está seguro, elija Manual.",
+dAuto:"Doble cara automático",dAutoD:"Mi impresora voltea las hojas sola.",
+dMan:"Manual (símplex)",dManD:"Imprimo los frentes, luego volteo manualmente.",
+wq1:"Seleccione su impresora",wh1:"Impresoras disponibles en su red.",
+prNote:"Si su impresora no aparece, asegúrese de que esté encendida y conectada.",
+wq3:"Voltear la pila de hojas",wh3:"Reproduzca el gesto exactamente para imprimir los dorsos correctamente.",
+lBefore:"ANTES",lAfter:"DESPUÉS",lRecto:"Frente",lVerso:"Dorso",lBlank:"EN BLANCO",lBlankUp:"BLANCO ARRIBA",
+flipI:"Tome toda la pila, voltéela de izquierda a derecha. El dorso en blanco debe quedar arriba. Vuelva al bandeja.",
+lPrev:"← Anterior",lNext:"Siguiente →",
+s2TM:"Paso 1 — Imprimir frentes (páginas impares)",s2HM:"Estas páginas son los frentes de cada hoja A4.",
+s2TD:"Impresión a doble cara automática",s2HD:"Su impresora imprimirá todo automáticamente.",
+s4TM:"Paso 3 — Imprimir dorsos (páginas pares)",s4HM:"Con las hojas volteadas correctamente, imprima los dorsos.",
+s4TD:"¡Impresión completada!",s4HD:"Su folleto está listo para doblar y grapar.",
+pi1:"<strong>Páginas impares</strong> — los frentes de sus hojas A4.",
+pi1b:"La última página sale al final — la página 1 quedará <strong>en lo alto de la pila</strong>.",
+pw1:"Compruebe el orden numérico antes de voltear.",
+pi2:"<strong>Páginas pares</strong> — los dorsos de sus hojas.",
+pi2b:"Con las hojas correctamente volteadas, la impresora llenará los dorsos en el orden perfecto.",
+piD:"Imprima el PDF completo con <strong>Doble cara / Borde largo</strong> activado.",
+fin:"🎉 ¡Folleto impreso! Doble y grape por el centro.",
+sumM:["Imprimir frentes (páginas impares)","Verificar el orden","Voltear la pila","Imprimir dorsos (páginas pares)","Doblar y grapar"],
+sumD:["Imprimir con doble cara automático","Doblar y grapar"],
+},
+it:{tagline:"Trasforma il tuo PDF in un libretto stampabile — imposizione professionale automatica",
+s_source:"Documento Sorgente",dropTitle:"Trascina il tuo PDF",dropSub:'Trascina o <strong>clicca per sfogliare</strong><br>Solo file PDF',
+s_config:"Configurazione",bindingLabel:"Rilegatura",bindLeft:"Rilegatura sinistra",bindRight:"Rilegatura destra",
+paddingLabel:"Completamento",paddingBlank:"Pagine bianche",paddingNone:"Nessuno",
+titleLabel:"Titolo del libretto",titlePh:"Il mio libretto…",foldLine:"Mostra linea di piega (tratteggio centrale)",
+s_imposition:"Piano di imposizione",pageOrder:"Ordine pagine",loadHint:"Carica un PDF per visualizzare l'imposizione",
+generate:"Genera Libretto",download:"↓ Scarica libretto PDF",printWizard:"🖨  Assistente stampa",
+s_how:"Come funziona",exT1:"Imposizione",exT2:"automatica",exT3:"per libretti A5",
+exBody:"BookForge riorganizza le pagine del PDF secondo l'imposizione tipografica: ogni foglio A4 fronte-retro contiene due pagine A5.",
+vL:"Retro · Sinistra",vR:"Fronte · Destra",shCap:"FRONTE — Foglio 1 / Faccia esterna",
+spPages:"Pagine sorgente",spSheets:"Fogli A4",spTotal:"Pagine libretto",
+footNote:"Elaborazione 100% locale · Nessun dato trasmesso · Privacy totale",
+wizTitle:"Assistente di stampa",wizSub:"Segui i passaggi per stampare il libretto perfettamente",
+wq0:"La tua stampante supporta la stampa fronte-retro automatica?",
+wh0:"Questo determina la procedura di stampa. Se non sei sicuro, scegli Manuale.",
+dAuto:"Fronte-retro automatico",dAutoD:"La mia stampante capovolge i fogli da sola.",
+dMan:"Manuale (simplex)",dManD:"Stampo i fronti, poi capovolgo manualmente.",
+wq1:"Seleziona la tua stampante",wh1:"Stampanti disponibili nella rete.",
+prNote:"Se la stampante non appare, assicurati che sia accesa e connessa.",
+wq3:"Capovolgi la risma di fogli",wh3:"Riproduci esattamente il gesto per stampare correttamente i retri.",
+lBefore:"PRIMA",lAfter:"DOPO",lRecto:"Fronte",lVerso:"Retro",lBlank:"BIANCO",lBlankUp:"BIANCO SOPRA",
+flipI:"Prendi tutta la risma, capovolgila da sinistra a destra. Il retro bianco deve essere visibile sopra. Rimetti nel vassoio della stampante.",
+lPrev:"← Precedente",lNext:"Avanti →",
+s2TM:"Passo 1 — Stampa fronti (pagine dispari)",s2HM:"Queste pagine sono i fronti di ogni foglio A4.",
+s2TD:"Stampa fronte-retro automatica",s2HD:"La stampante stamperà tutto automaticamente.",
+s4TM:"Passo 3 — Stampa retri (pagine pari)",s4HM:"Con i fogli capovolti correttamente, stampa i retri.",
+s4TD:"Stampa completata!",s4HD:"Il tuo libretto è pronto per essere piegato e graffettato.",
+pi1:"<strong>Pagine dispari</strong> — i fronti dei tuoi fogli A4.",
+pi1b:"L'ultima pagina esce per ultima — la pagina 1 sarà <strong>in cima alla pila</strong>.",
+pw1:"Verifica l'ordine numerico prima di capovolgere.",
+pi2:"<strong>Pagine pari</strong> — i retri dei tuoi fogli.",
+pi2b:"Con i fogli capovolti, la stampante riempirà i retri nell'ordine perfetto.",
+piD:"Stampa il PDF completo con <strong>Fronte-retro / Bordo lungo</strong> attivato.",
+fin:"🎉 Libretto stampato! Piega e graffetta al centro.",
+sumM:["Stampa fronti (pagine dispari)","Verifica l'ordine","Capovolgi la risma","Stampa retri (pagine pari)","Piega e graffetta"],
+sumD:["Stampa con fronte-retro automatico","Piega e graffetta"],
+},
+ru:{tagline:"Превратите PDF в печатную брошюру — автоматический профессиональный спуск-макет",
+s_source:"Исходный документ",dropTitle:"Перетащите PDF сюда",dropSub:'Перетащите или <strong>нажмите для выбора</strong><br>Только PDF файлы',
+s_config:"Настройки",bindingLabel:"Переплёт",bindLeft:"Левый переплёт",bindRight:"Правый переплёт",
+paddingLabel:"Заполнение",paddingBlank:"Пустые страницы",paddingNone:"Нет",
+titleLabel:"Название брошюры",titlePh:"Моя брошюра…",foldLine:"Показать линию сгиба (пунктир по центру)",
+s_imposition:"План спуска",pageOrder:"Порядок страниц",loadHint:"Загрузите PDF для просмотра спуска",
+generate:"Создать брошюру",download:"↓ Скачать брошюру PDF",printWizard:"🖨  Мастер печати",
+s_how:"Как это работает",exT1:"Автоматический",exT2:"спуск",exT3:"для брошюр A5",
+exBody:"BookForge перераспределяет страницы PDF по принципу типографского спуска: каждый лист A4 с двусторонней печатью содержит две страницы A5.",
+vL:"Оборот · Лево",vR:"Лицо · Право",shCap:"ЛИЦЕВАЯ СТОРОНА — Лист 1 / Внешняя сторона",
+spPages:"Страниц-источник",spSheets:"Листов A4",spTotal:"Страниц брошюры",
+footNote:"100% локальная обработка · Нет передачи данных · Полная конфиденциальность",
+wizTitle:"Мастер печати",wizSub:"Следуйте шагам для идеальной печати брошюры",
+wq0:"Поддерживает ли ваш принтер автоматическую двустороннюю печать?",
+wh0:"Это определяет процедуру печати. Если не уверены, выберите Вручную.",
+dAuto:"Автоматическая двусторонняя",dAutoD:"Мой принтер сам переворачивает листы.",
+dMan:"Вручную (симплекс)",dManD:"Печатаю лицевые стороны, потом вручную переворачиваю.",
+wq1:"Выберите принтер",wh1:"Доступные принтеры в вашей сети.",
+prNote:"Если принтер не отображается, убедитесь, что он включён и подключён.",
+wq3:"Переверните стопку листов",wh3:"Воспроизведите жест точно для правильной печати оборотных сторон.",
+lBefore:"ДО",lAfter:"ПОСЛЕ",lRecto:"Лицо",lVerso:"Оборот",lBlank:"ПУСТО",lBlankUp:"ПУСТО СВЕРХУ",
+flipI:"Возьмите всю стопку, переверните её слева направо. Пустая оборотная сторона должна оказаться сверху. Верните в лоток принтера.",
+lPrev:"← Назад",lNext:"Далее →",
+s2TM:"Шаг 1 — Печать лицевых сторон (нечётные страницы)",s2HM:"Эти страницы — лицевые стороны каждого листа A4.",
+s2TD:"Автоматическая двусторонняя печать",s2HD:"Принтер напечатает всё автоматически.",
+s4TM:"Шаг 3 — Печать оборотных сторон (чётные страницы)",s4HM:"При правильно перевёрнутых листах напечатайте оборотные стороны.",
+s4TD:"Печать завершена!",s4HD:"Ваша брошюра готова к фальцовке и скреплению.",
+pi1:"<strong>Нечётные страницы</strong> — лицевые стороны листов A4.",
+pi1b:"Принтер выдаёт последнюю страницу последней — страница 1 будет <strong>вверху стопки</strong>.",
+pw1:"Проверьте числовой порядок листов перед переворотом.",
+pi2:"<strong>Чётные страницы</strong> — оборотные стороны листов.",
+pi2b:"При правильно перевёрнутых листах принтер заполнит оборотные стороны правильно.",
+piD:"Напечатайте полный PDF с включённой опцией <strong>Двусторонняя / Длинная сторона</strong>.",
+fin:"🎉 Брошюра напечатана! Сложите пополам и скрепите по центру.",
+sumM:["Напечатать лицевые стороны (нечётные)","Проверить порядок листов","Перевернуть стопку","Напечатать оборотные стороны (чётные)","Сложить и скрепить"],
+sumD:["Напечатать с автоматической двусторонней","Сложить и скрепить"],
+}
+};
 
-let pdfFile = null;
-let pdfBytes = null;
-let totalPages = 0;
+let lang='fr';
+const t=k=>(TX[lang]&&TX[lang][k]!==undefined)?TX[lang][k]:(TX.fr[k]||k);
 
-const dropZone = document.getElementById('drop-zone');
-const fileInput = document.getElementById('file-input');
-const fileInfo = document.getElementById('file-info');
-const fileName = document.getElementById('file-name');
-const fileMeta = document.getElementById('file-meta');
-const fileRemove = document.getElementById('file-remove');
-const btnGenerate = document.getElementById('btn-generate');
-const btnDownload = document.getElementById('btn-download');
-const statusPanel = document.getElementById('status-panel');
-const progressBar = document.getElementById('progress-bar');
-const progressFill = document.getElementById('progress-fill');
-const sheetDiagram = document.getElementById('sheet-diagram');
-const sheetCountLabel = document.getElementById('sheet-count-label');
-const specPages = document.getElementById('spec-pages');
-const specSheets = document.getElementById('spec-sheets');
-const specTotal = document.getElementById('spec-total');
-const visLeft = document.getElementById('vis-left');
-const visRight = document.getElementById('vis-right');
+function applyI18n(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.getAttribute('data-i18n');if(TX[lang]&&TX[lang][k]!==undefined)el.innerHTML=TX[lang][k];else if(TX.fr[k])el.innerHTML=TX.fr[k];});
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{const k=el.getAttribute('data-i18n-ph');el.placeholder=t(k);});
+  if(totalPages) updateImp();
+  else { const d=document.getElementById('sdiag'); if(d) d.innerHTML=`<div style="text-align:center;padding:1.3rem;font-size:.63rem;color:var(--muted)">${t('loadHint')}</div>`; }
+}
 
-// ── FILE HANDLING ──
-dropZone.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file && file.type === 'application/pdf') handleFile(file);
-  else showStatus('Veuillez déposer un fichier PDF valide.', 'error');
+document.getElementById('lbar').addEventListener('click',e=>{
+  const b=e.target.closest('.lb'); if(!b) return;
+  lang=b.dataset.lang;
+  document.querySelectorAll('.lb').forEach(x=>x.classList.toggle('on',x.dataset.lang===lang));
+  applyI18n();
+  if(wizStep>=0&&document.getElementById('wmod').classList.contains('open')) buildWizContent(wizStep);
 });
-fileInput.addEventListener('change', () => {
-  if (fileInput.files[0]) handleFile(fileInput.files[0]);
-});
-fileRemove.addEventListener('click', resetFile);
 
-async function handleFile(file) {
-  pdfFile = file;
-  showStatus('Lecture du fichier…', 'info');
+// ══════ STATE ══════
+let pdfFile=null,pdfBytes=null,totalPages=0,genUrl=null,thumbs=[],hasDuplex=null,selPrinter=null,wizStep=0,foldOn=true;
 
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    try {
-      pdfBytes = new Uint8Array(e.target.result);
-      const doc = await PDFDocument.load(pdfBytes);
-      totalPages = doc.getPageCount();
+// ══════ ELEMENTS ══════
+const dz=document.getElementById('dz'),fi=document.getElementById('fi');
+const finfo=document.getElementById('finfo'),fnm=document.getElementById('fnm'),fmet=document.getElementById('fmet');
+const frm=document.getElementById('frm'),bgen=document.getElementById('bgen'),bdl=document.getElementById('bdl'),bwiz=document.getElementById('bwiz');
+const sstat=document.getElementById('sstat'),pgb=document.getElementById('pgb'),pgf=document.getElementById('pgf');
+const sdiag=document.getElementById('sdiag'),sclbl=document.getElementById('sclbl');
+const spPg=document.getElementById('spPg'),spSh=document.getElementById('spSh'),spTo=document.getElementById('spTo');
+const vl=document.getElementById('vl'),vr=document.getElementById('vr');
+const wmod=document.getElementById('wmod'),wclose=document.getElementById('wclose'),wprev=document.getElementById('wprev'),wnext=document.getElementById('wnext');
+const foldtog=document.getElementById('foldtog');
 
-      const sizeKB = Math.round(file.size / 1024);
-      fileName.textContent = file.name;
-      fileMeta.textContent = `${totalPages} pages · ${sizeKB < 1024 ? sizeKB + ' Ko' : (sizeKB/1024).toFixed(1) + ' Mo'}`;
+foldtog.addEventListener('click',()=>{foldOn=!foldOn;foldtog.classList.toggle('on',foldOn);foldtog.querySelector('.cbox').textContent=foldOn?'✓':'';});
 
-      fileInfo.classList.add('visible');
-      dropZone.style.display = 'none';
+// ══════ FILE HANDLING ══════
+dz.addEventListener('click',()=>fi.click());
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('dov');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('dov'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('dov');const f=e.dataTransfer.files[0];if(f&&f.type==='application/pdf')handleFile(f);else showSt('PDF invalide','err');});
+fi.addEventListener('change',()=>{if(fi.files[0])handleFile(fi.files[0]);});
+frm.addEventListener('click',resetF);
 
-      updateImpositionData();
-      statusPanel.classList.remove('visible');
-      btnGenerate.disabled = false;
-    } catch (err) {
-      showStatus('Impossible de lire ce fichier PDF. Vérifiez qu\'il n\'est pas protégé.', 'error');
-      resetFile();
-    }
+async function handleFile(file){
+  pdfFile=file; showSt('Lecture…','inf');
+  const r=new FileReader();
+  r.onload=async e=>{
+    try{
+      pdfBytes=new Uint8Array(e.target.result);
+      const doc=await PDFDocument.load(pdfBytes);
+      totalPages=doc.getPageCount();
+      const kb=Math.round(file.size/1024);
+      fnm.textContent=file.name;
+      fmet.textContent=`${totalPages} pages · ${kb<1024?kb+' Ko':(kb/1024).toFixed(1)+' Mo'}`;
+      finfo.classList.add('vis'); dz.style.display='none';
+      updateImp(); sstat.classList.remove('vis'); bgen.disabled=false;
+      renderThumbs();
+    }catch(er){showSt('Erreur lecture PDF','err');resetF();}
   };
-  reader.readAsArrayBuffer(file);
+  r.readAsArrayBuffer(file);
+}
+function resetF(){
+  pdfFile=null;pdfBytes=null;totalPages=0;genUrl=null;thumbs=[];
+  finfo.classList.remove('vis');dz.style.display='';fi.value='';
+  bgen.disabled=true;bdl.classList.remove('vis');bwiz.classList.remove('vis');
+  sstat.classList.remove('vis');pgb.classList.remove('vis');
+  sdiag.innerHTML=`<div style="text-align:center;padding:1.3rem;font-size:.63rem;color:var(--muted)">${t('loadHint')}</div>`;
+  sclbl.textContent='—';spPg.textContent='—';spSh.textContent='—';spTo.textContent='—';vl.textContent='16';vr.textContent='1';
 }
 
-function resetFile() {
-  pdfFile = null; pdfBytes = null; totalPages = 0;
-  fileInfo.classList.remove('visible');
-  dropZone.style.display = '';
-  fileInput.value = '';
-  btnGenerate.disabled = true;
-  btnDownload.classList.remove('visible');
-  statusPanel.classList.remove('visible');
-  progressBar.classList.remove('visible');
-  sheetDiagram.innerHTML = '<div style="text-align:center;padding:1.5rem;font-size:0.68rem;color:var(--muted);">Chargez un PDF pour<br>visualiser l\'imposition</div>';
-  sheetCountLabel.textContent = '— feuilles';
-  specPages.textContent = '—'; specSheets.textContent = '—'; specTotal.textContent = '—';
-  visLeft.textContent = '16'; visRight.textContent = '1';
-}
-
-// ── IMPOSITION MATH ──
-function computeBookletOrder(n) {
-  // Pad to multiple of 4
-  const padded = Math.ceil(n / 4) * 4;
-  const sheets = [];
-  let lo = 1, hi = padded;
-  while (lo < hi) {
-    sheets.push({ recto: [hi, lo], verso: [lo + 1, hi - 1] });
-    lo += 2; hi -= 2;
-  }
-  return { sheets, padded };
-}
-
-function updateImpositionData() {
-  if (!totalPages) return;
-  const { sheets, padded } = computeBookletOrder(totalPages);
-  const numSheets = sheets.length;
-
-  specPages.textContent = totalPages;
-  specSheets.textContent = numSheets;
-  specTotal.textContent = padded;
-  sheetCountLabel.textContent = numSheets + ' feuille' + (numSheets > 1 ? 's' : '');
-
-  visLeft.textContent = padded;
-  visRight.textContent = '1';
-
-  // Build diagram
-  sheetDiagram.innerHTML = '';
-  sheets.forEach((sh, i) => {
-    if (i > 0) {
-      const sep = document.createElement('div');
-      sep.className = 'sheet-separator';
-      sep.textContent = `Feuille ${i + 1}`;
-      sheetDiagram.appendChild(sep);
-    } else {
-      const sep = document.createElement('div');
-      sep.className = 'sheet-separator';
-      sep.textContent = `Feuille 1`;
-      sheetDiagram.appendChild(sep);
+async function renderThumbs(){
+  if(!pdfBytes) return; thumbs=[];
+  try{
+    const pd=await pdfjsLib.getDocument({data:pdfBytes}).promise;
+    for(let i=1;i<=Math.min(pd.numPages,50);i++){
+      const pg=await pd.getPage(i); const vp=pg.getViewport({scale:.25});
+      const c=document.createElement('canvas'); c.width=vp.width; c.height=vp.height;
+      await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+      thumbs[i-1]=c;
     }
+  }catch(e){}
+}
 
-    // Recto
-    const recto = makeSheetRow('Recto', sh.recto[0], sh.recto[1], totalPages, padded);
-    sheetDiagram.appendChild(recto);
+// ══════ IMPOSITION ══════
+function computeOrder(n){
+  const pad=Math.ceil(n/4)*4,sheets=[];
+  let lo=1,hi=pad;
+  while(lo<hi){sheets.push({r:[hi,lo],v:[lo+1,hi-1]});lo+=2;hi-=2;}
+  return{sheets,pad};
+}
 
-    // Verso
-    const verso = makeSheetRow('Verso', sh.verso[0], sh.verso[1], totalPages, padded);
-    sheetDiagram.appendChild(verso);
+function updateImp(){
+  if(!totalPages) return;
+  const{sheets,pad}=computeOrder(totalPages); const ns=sheets.length;
+  spPg.textContent=totalPages; spSh.textContent=ns; spTo.textContent=pad;
+  sclbl.textContent=ns+' feuille'+(ns>1?'s':'');
+  vl.textContent=pad; vr.textContent='1';
+  sdiag.innerHTML='';
+  sheets.forEach((sh,i)=>{
+    const sep=document.createElement('div'); sep.className='ssep'; sep.textContent=`Feuille ${i+1}`; sdiag.appendChild(sep);
+    sdiag.appendChild(mkRow('Recto',sh.r[0],sh.r[1],totalPages));
+    sdiag.appendChild(mkRow('Verso',sh.v[0],sh.v[1],totalPages));
   });
 }
 
-function makeSheetRow(label, left, right, total, padded) {
-  const row = document.createElement('div');
-  row.className = 'sheet-row';
-
-  const lbl = document.createElement('div');
-  lbl.className = 'sheet-row-label';
-  lbl.textContent = label;
-
-  const leftCell = document.createElement('div');
-  leftCell.className = 'sheet-page';
-  const lb = document.createElement('div');
-  lb.className = 'page-box';
-  lb.textContent = left > total ? '—' : left;
-  if (left > total) lb.style.opacity = '0.3';
-  leftCell.appendChild(lb);
-  leftCell.insertAdjacentHTML('afterbegin', '<span style="font-size:0.55rem;color:var(--muted);letter-spacing:0.08em;margin-right:0.2rem">◀</span>');
-
-  const rightCell = document.createElement('div');
-  rightCell.className = 'sheet-page';
-  const rb = document.createElement('div');
-  rb.className = 'page-box';
-  rb.textContent = right > total ? '—' : right;
-  if (right > total) rb.style.opacity = '0.3';
-  rightCell.appendChild(rb);
-  rightCell.insertAdjacentHTML('beforeend', '<span style="font-size:0.55rem;color:var(--muted);letter-spacing:0.08em;margin-left:0.2rem">▶</span>');
-
-  row.appendChild(lbl);
-  row.appendChild(leftCell);
-  row.appendChild(rightCell);
-  return row;
+function mkRow(lbl,l,r,total){
+  const row=document.createElement('div'); row.className='sr';
+  const ll=document.createElement('div'); ll.className='srl'; ll.textContent=lbl;
+  const lc=document.createElement('div'); lc.className='sp';
+  const lb=document.createElement('div'); lb.className='pb'; lb.textContent=l>total?'—':l; if(l>total)lb.style.opacity='.3';
+  lc.innerHTML='<span style="font-size:.48rem;color:var(--muted);margin-right:.2rem">◀</span>'; lc.appendChild(lb);
+  const rc=document.createElement('div'); rc.className='sp';
+  const rb=document.createElement('div'); rb.className='pb'; rb.textContent=r>total?'—':r; if(r>total)rb.style.opacity='.3';
+  rc.appendChild(rb); rc.insertAdjacentHTML('beforeend','<span style="font-size:.48rem;color:var(--muted);margin-left:.2rem">▶</span>');
+  row.appendChild(ll); row.appendChild(lc); row.appendChild(rc); return row;
 }
 
-// ── STATUS ──
-function showStatus(msg, type = 'info') {
-  statusPanel.textContent = msg;
-  statusPanel.className = 'status-panel visible ' + type;
-}
+// ══════ STATUS & PROGRESS ══════
+function showSt(msg,type){sstat.innerHTML=msg;sstat.className='sp-status vis '+type;}
+function setPg(p){pgb.classList.add('vis');pgf.style.width=p+'%';}
 
-function setProgress(pct) {
-  progressBar.classList.add('visible');
-  progressFill.style.width = pct + '%';
-}
-
-// ── GENERATE ──
-btnGenerate.addEventListener('click', generateBooklet);
-
-async function generateBooklet() {
-  if (!pdfBytes) return;
-
-  btnGenerate.classList.add('loading');
-  btnGenerate.disabled = true;
-  btnDownload.classList.remove('visible');
-  showStatus('Initialisation de l\'imposition…', 'info');
-  setProgress(5);
-
-  try {
-    const sourceDoc = await PDFDocument.load(pdfBytes);
-    const n = sourceDoc.getPageCount();
-    const { sheets, padded } = computeBookletOrder(n);
-
-    showStatus('Analyse des pages source…', 'info');
-    setProgress(15);
-
-    // Create output doc
-    const outDoc = await PDFDocument.create();
-
-    // A4 landscape dimensions (in points, 1pt = 1/72 inch)
-    // A4: 595.28 x 841.89 pt  → landscape: 841.89 x 595.28
-    const A4W = 841.89;
-    const A4H = 595.28;
-    const halfW = A4W / 2;
-
-    const totalSheets = sheets.length;
-    let step = 0;
-    const totalSteps = totalSheets * 2; // recto + verso per sheet
-
-    const printReverse = document.querySelector('input[name="print-order"]:checked').value === 'reverse';
-    const sheetsOrdered = printReverse ? [...sheets].reverse() : sheets;
-
-    for (const sh of sheetsOrdered) {
-      // RECTO (face 1): left = sh.recto[0], right = sh.recto[1]
-      await addImposedPage(outDoc, sourceDoc, sh.recto[0], sh.recto[1], A4W, A4H, halfW, padded);
-      step++;
-      setProgress(15 + Math.round((step / totalSteps) * 75));
-
-      // VERSO (face 2): left = sh.verso[0], right = sh.verso[1]
-      await addImposedPage(outDoc, sourceDoc, sh.verso[0], sh.verso[1], A4W, A4H, halfW, padded);
-      step++;
-      setProgress(15 + Math.round((step / totalSteps) * 75));
+// ══════ GENERATE ══════
+bgen.addEventListener('click',genBooklet);
+async function genBooklet(){
+  if(!pdfBytes) return;
+  bgen.classList.add('ld'); bgen.disabled=true;
+  bdl.classList.remove('vis'); bwiz.classList.remove('vis');
+  showSt('Initialisation…','inf'); setPg(5);
+  try{
+    const src=await PDFDocument.load(pdfBytes); const n=src.getPageCount();
+    const{sheets}=computeOrder(n); const out=await PDFDocument.create();
+    const W=841.89,H=595.28,hw=W/2; let step=0; const tot=sheets.length*2;
+    showSt('Calcul de l\'imposition…','inf'); setPg(15);
+    for(const sh of sheets){
+      await addPage(out,src,sh.r[0],sh.r[1],W,H,hw,n); step++; setPg(15+Math.round((step/tot)*75));
+      await addPage(out,src,sh.v[0],sh.v[1],W,H,hw,n); step++; setPg(15+Math.round((step/tot)*75));
     }
-
-    showStatus('Finalisation du PDF…', 'info');
-    setProgress(92);
-
-    const outBytes = await outDoc.save();
-    const blob = new Blob([outBytes], { type: 'application/pdf' });
-    const url = URL.createObjectURL(blob);
-
-    btnDownload.href = url;
-    const title = document.getElementById('booklet-title').value.trim();
-    btnDownload.download = title ? title.replace(/\s+/g, '-') + '-livret.pdf' : 'livret-a5.pdf';
-    btnDownload.classList.add('visible');
-
-    setProgress(100);
-    showStatus(`✓ Livret généré · ${totalSheets * 2} pages A4 · ${n} pages utiles · Prêt à imprimer`, 'success');
-
-  } catch (err) {
-    showStatus('Erreur lors de la génération : ' + err.message, 'error');
-    console.error(err);
-  } finally {
-    btnGenerate.classList.remove('loading');
-    btnGenerate.disabled = false;
-  }
+    setPg(95);
+    const ob=await out.save(); const blob=new Blob([ob],{type:'application/pdf'});
+    genUrl=URL.createObjectURL(blob);
+    const tit=document.getElementById('btitle').value.trim();
+    bdl.href=genUrl; bdl.download=tit?tit.replace(/\s+/g,'-')+'-livret.pdf':'livret-a5.pdf';
+    bdl.classList.add('vis'); bwiz.classList.add('vis');
+    setPg(100); showSt(`✓ ${sheets.length} feuilles · ${n} pages utiles`,'ok');
+  }catch(e){showSt('Erreur : '+e.message,'err');console.error(e);}
+  finally{bgen.classList.remove('ld');bgen.disabled=false;}
 }
 
-async function addImposedPage(outDoc, sourceDoc, leftPageNum, rightPageNum, A4W, A4H, halfW, padded) {
-  const n = sourceDoc.getPageCount();
-  const page = outDoc.addPage([A4W, A4H]);
-
-  // Embed and draw left page
-  if (leftPageNum >= 1 && leftPageNum <= n) {
-    const [embLeft] = await outDoc.embedPdf(sourceDoc, [leftPageNum - 1]);
-    const srcPage = sourceDoc.getPage(leftPageNum - 1);
-    const { width: sw, height: sh } = srcPage.getSize();
-
-    // Scale to fit halfW x A4H, maintaining aspect ratio
-    const scale = Math.min(halfW / sw, A4H / sh);
-    const dw = sw * scale;
-    const dh = sh * scale;
-    const dx = (halfW - dw) / 2;
-    const dy = (A4H - dh) / 2;
-
-    page.drawPage(embLeft, { x: dx, y: dy, width: dw, height: dh });
+async function addPage(out,src,lNum,rNum,W,H,hw,n){
+  const pg=out.addPage([W,H]);
+  async function draw(num,xOff){
+    if(num>=1&&num<=n){
+      const[emb]=await out.embedPdf(src,[num-1]);
+      const sp=src.getPage(num-1); const{width:sw,height:sh}=sp.getSize();
+      const s=Math.min(hw/sw,H/sh); const dw=sw*s,dh=sh*s;
+      pg.drawPage(emb,{x:xOff+(hw-dw)/2,y:(H-dh)/2,width:dw,height:dh});
+    }
   }
+  await draw(lNum,0); await draw(rNum,hw);
+  if(foldOn) pg.drawLine({start:{x:hw,y:0},end:{x:hw,y:H},thickness:.4,color:rgb(.75,.75,.75),dashArray:[4,4],dashPhase:0});
+}
 
-  // Embed and draw right page
-  if (rightPageNum >= 1 && rightPageNum <= n) {
-    const [embRight] = await outDoc.embedPdf(sourceDoc, [rightPageNum - 1]);
-    const srcPage = sourceDoc.getPage(rightPageNum - 1);
-    const { width: sw, height: sh } = srcPage.getSize();
+// ══════ WIZARD ══════
+bwiz.addEventListener('click',openWiz);
+wclose.addEventListener('click',()=>wmod.classList.remove('open'));
+wmod.addEventListener('click',e=>{if(e.target===wmod)wmod.classList.remove('open');});
+wprev.addEventListener('click',()=>gotoStep(wizStep-1));
 
-    const scale = Math.min(halfW / sw, A4H / sh);
-    const dw = sw * scale;
-    const dh = sh * scale;
-    const dx = halfW + (halfW - dw) / 2;
-    const dy = (A4H - dh) / 2;
+function openWiz(){hasDuplex=null;selPrinter=null;wizStep=0;wmod.classList.add('open');buildStepIndicator();gotoStep(0);detectPrinters();}
 
-    page.drawPage(embRight, { x: dx, y: dy, width: dw, height: dh });
-  }
-
-  // Draw center fold line (thin, subtle)
-  page.drawLine({
-    start: { x: halfW, y: 0 },
-    end: { x: halfW, y: A4H },
-    thickness: 0.4,
-    color: PDFLib.rgb(0.7, 0.7, 0.7),
-    dashArray: [4, 4],
-    dashPhase: 0,
+function buildStepIndicator(){
+  const ind=document.getElementById('stind'); ind.innerHTML='';
+  const labels=['Mode','Imprimante','Rectos','Retourner','Versos'];
+  labels.forEach((l,i)=>{
+    const d=document.createElement('div'); d.className='std'+(i===0?' act':''); d.textContent=i+1; d.title=l; ind.appendChild(d);
+    if(i<labels.length-1){const ln=document.createElement('div');ln.className='stl';ind.appendChild(ln);}
   });
 }
 
-// Watch for settings changes to update imposition
-document.querySelectorAll('select, input[type="radio"]').forEach(el => {
-  el.addEventListener('change', updateImpositionData);
-});
+function gotoStep(step){
+  // for duplex, skip step 3 (flip) going forward from 2, skip going back from 4
+  if(hasDuplex===true&&step===3&&wizStep===2) step=4;
+  if(hasDuplex===true&&step===3&&wizStep===4) step=2;
+  wizStep=Math.max(0,Math.min(4,step));
+  document.querySelectorAll('.ws').forEach((el,i)=>el.classList.toggle('act',i===wizStep));
+  const dots=document.querySelectorAll('.std'); const lines=document.querySelectorAll('.stl');
+  dots.forEach((d,i)=>{d.classList.remove('act','dn');if(i<wizStep)d.classList.add('dn');else if(i===wizStep)d.classList.add('act');});
+  lines.forEach((l,i)=>l.classList.toggle('dn',i<wizStep));
+  wprev.style.display=wizStep===0?'none':'';
+  wprev.innerHTML=t('lPrev');
+  if(wizStep===4&&hasDuplex!==false){
+    wnext.innerHTML='✓ Terminer';
+    wnext.onclick=()=>{wmod.classList.remove('open');if(genUrl)window.open(genUrl,'_blank');};
+  }else if(wizStep===4){
+    wnext.innerHTML='✓ Terminer';
+    wnext.onclick=()=>{wmod.classList.remove('open');if(genUrl)window.open(genUrl,'_blank');};
+  }else{
+    wnext.innerHTML=t('lNext');
+    wnext.onclick=()=>gotoStep(wizStep+1);
+  }
+  wnext.disabled=shouldDisable(wizStep);
+  buildWizContent(wizStep);
+}
+
+function shouldDisable(s){
+  if(s===0) return hasDuplex===null;
+  if(s===1) return !selPrinter;
+  return false;
+}
+
+function buildWizContent(step){
+  if(step===0) buildS0();
+  if(step===1) buildS1();
+  if(step===2) buildS2();
+  if(step===3) buildS3();
+  if(step===4) buildS4();
+}
+
+function buildS0(){
+  const cd=document.getElementById('cduplex'),cm=document.getElementById('cmanual');
+  cd.classList.toggle('sel',hasDuplex===true); cm.classList.toggle('sel',hasDuplex===false);
+  document.getElementById('ws0').querySelector('.wq').textContent=t('wq0');
+  document.getElementById('ws0').querySelector('.wh').textContent=t('wh0');
+  document.getElementById('ws0').querySelectorAll('.ctit')[0].textContent=t('dAuto');
+  document.getElementById('ws0').querySelectorAll('.ctit')[1].textContent=t('dMan');
+  document.getElementById('ws0').querySelectorAll('.cdesc')[0].textContent=t('dAutoD');
+  document.getElementById('ws0').querySelectorAll('.cdesc')[1].textContent=t('dManD');
+  cd.onclick=()=>{hasDuplex=true;cd.classList.add('sel');cm.classList.remove('sel');wnext.disabled=false;};
+  cm.onclick=()=>{hasDuplex=false;cm.classList.add('sel');cd.classList.remove('sel');wnext.disabled=false;};
+}
+
+function buildS1(){
+  document.getElementById('ws1').querySelector('.wq').textContent=t('wq1');
+  document.getElementById('ws1').querySelector('.wh').textContent=t('wh1');
+  document.getElementById('ws1').querySelectorAll('div')[document.getElementById('ws1').querySelectorAll('div').length-1].textContent=t('prNote');
+}
+
+function buildS2(){
+  const{sheets}=computeOrder(totalPages);
+  document.getElementById('s2q').textContent=hasDuplex?t('s2TD'):t('s2TM');
+  document.getElementById('s2h').textContent=hasDuplex?t('s2HD'):t('s2HM');
+  if(!hasDuplex){
+    buildPrintAnim('sc2',sheets,'odd');
+    document.getElementById('s2i').innerHTML=t('pi1')+'<br><br>'+t('pi1b');
+    document.getElementById('s2w').style.display='flex';
+    document.getElementById('s2wt').textContent=t('pw1');
+  }else{
+    buildDuplexAnim('sc2');
+    document.getElementById('s2i').innerHTML=t('piD');
+    document.getElementById('s2w').style.display='none';
+  }
+}
+
+function buildS3(){
+  document.getElementById('ws3').querySelector('.wq').textContent=t('wq3');
+  document.getElementById('ws3').querySelector('.wh').textContent=t('wh3');
+  const{sheets}=computeOrder(totalPages);
+  document.getElementById('flipd').innerHTML=`<strong>${sheets.length} feuilles</strong> à retourner · La feuille 1 reste au-dessus.`;
+  document.querySelectorAll('[data-i18n="lBefore"]').forEach(e=>e.textContent=t('lBefore'));
+  document.querySelectorAll('[data-i18n="lAfter"]').forEach(e=>e.textContent=t('lAfter'));
+  document.querySelectorAll('[data-i18n="lRecto"]').forEach(e=>e.textContent=t('lRecto'));
+  document.querySelectorAll('[data-i18n="lVerso"]').forEach(e=>e.textContent=t('lVerso'));
+  document.querySelectorAll('[data-i18n="lBlank"]').forEach(e=>e.textContent=t('lBlank'));
+  document.querySelectorAll('[data-i18n="lBlankUp"]').forEach(e=>e.textContent=t('lBlankUp'));
+  document.getElementById('ws3').querySelector('.iwarn span:last-child').textContent=t('flipI');
+  // animate flip
+  const fc=document.getElementById('fc1'); let flp=false;
+  clearInterval(fc._iv); fc._iv=setInterval(()=>{flp=!flp;fc.classList.toggle('flp',flp);},1800);
+}
+
+function buildS4(){
+  document.getElementById('s4q').textContent=hasDuplex?t('s4TD'):t('s4TM');
+  document.getElementById('s4h').textContent=hasDuplex?t('s4HD'):t('s4HM');
+  const{sheets}=computeOrder(totalPages);
+  if(!hasDuplex){
+    buildPrintAnim('sc4',sheets,'even');
+  }else{
+    buildFinAnim('sc4');
+  }
+  buildSummary(hasDuplex);
+}
+
+// ── ANIMATION BUILDERS ──
+let atimers=[];
+function clearAnim(){atimers.forEach(clearTimeout);atimers=[];}
+
+function buildPrintAnim(scId,sheets,mode){
+  const sc=document.getElementById(scId); sc.innerHTML='';
+  // Printer
+  const pd=document.createElement('div');
+  pd.style.cssText='position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:145px';
+  pd.innerHTML=`<svg viewBox="0 0 160 88" xmlns="http://www.w3.org/2000/svg">
+    <rect x="8" y="28" width="144" height="52" rx="4" class="pbody"/>
+    <rect x="28" y="16" width="104" height="20" rx="2" class="pbody"/>
+    <rect x="48" y="50" width="64" height="4" rx="1" class="pslot"/>
+    <circle cx="132" cy="40" r="4" class="plight"/>
+    <text x="80" y="68" fill="rgba(201,168,76,.35)" font-size="6.5" text-anchor="middle" font-family="DM Mono,monospace" letter-spacing="1">PRINTER</text>
+  </svg>`;
+  sc.appendChild(pd);
+
+  // Pages to show
+  const pgs=mode==='odd'?
+    sheets.map(s=>s.r).flat().filter(p=>p<=totalPages):
+    sheets.map(s=>s.v).flat().filter(p=>p<=totalPages);
+  const vis=Math.min(pgs.length,6);
+
+  // Input stack (left)
+  const inDiv=document.createElement('div');
+  inDiv.style.cssText='position:absolute;left:8px;top:8px;width:110px';
+  inDiv.innerHTML=`<div style="font-size:.5rem;letter-spacing:.11em;color:var(--muted);text-transform:uppercase;margin-bottom:.4rem">${mode==='odd'?'À imprimer':'Pile retournée'}</div>`;
+  const inStack=document.createElement('div'); inStack.style.cssText='position:relative;height:85px';
+  for(let i=0;i<vis;i++){
+    const pg=pgs[i]; const s=document.createElement('div');
+    s.style.cssText=`position:absolute;left:${i*4}px;top:${i*4}px;width:60px;height:43px;border:1px solid rgba(201,168,76,${i===0?'.4':'.15'});border-radius:2px;background:rgba(15,14,12,.9);display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:default`;
+    if(thumbs[pg-1]){const img=document.createElement('img');img.src=thumbs[pg-1].toDataURL();img.style.cssText='width:100%;height:100%;object-fit:cover;opacity:.65';s.appendChild(img);}
+    else{s.innerHTML=`<span style="font-family:'Playfair Display',serif;font-size:.85rem;color:var(--paper)">${pg}</span>`;}
+    const nb=document.createElement('span'); nb.style.cssText='position:absolute;bottom:1px;right:2px;font-size:.38rem;color:rgba(201,168,76,.5)'; nb.textContent='p'+pg; s.appendChild(nb);
+    inStack.appendChild(s);
+  }
+  inDiv.appendChild(inStack); sc.appendChild(inDiv);
+
+  // Output tray (right)
+  const outDiv=document.createElement('div');
+  outDiv.style.cssText='position:absolute;right:8px;top:8px;width:110px';
+  outDiv.innerHTML=`<div style="font-size:.5rem;letter-spacing:.11em;color:var(--muted);text-transform:uppercase;margin-bottom:.4rem">Sortie imprimante</div><div id="${scId}-out" style="position:relative;height:85px;width:60px"></div>`;
+  sc.appendChild(outDiv);
+
+  // Animate
+  clearAnim();
+  const printOrder=[...pgs].reverse(); // last page printed last = first page on top
+  let printed=0;
+  function nextPrint(){
+    if(printed>=Math.min(printOrder.length,6)) return;
+    const pg=printOrder[printed];
+    const s=document.createElement('div');
+    s.style.cssText=`position:absolute;left:0;top:${printed*4}px;width:60px;height:43px;border:1px solid rgba(74,92,78,.38);border-radius:2px;background:rgba(15,14,12,.9);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .45s;overflow:hidden`;
+    if(thumbs[pg-1]){const img=document.createElement('img');img.src=thumbs[pg-1].toDataURL();img.style.cssText='width:100%;height:100%;object-fit:cover;opacity:.65';s.appendChild(img);}
+    else{s.innerHTML=`<span style="font-family:'Playfair Display',serif;font-size:.85rem;color:#8aab8f">${pg}</span>`;}
+    const nb=document.createElement('span');nb.style.cssText='position:absolute;bottom:1px;right:2px;font-size:.38rem;color:rgba(138,171,143,.5)';nb.textContent='p'+pg;s.appendChild(nb);
+    const out=document.getElementById(scId+'-out');
+    if(out){out.appendChild(s);requestAnimationFrame(()=>s.style.opacity='1');}
+    printed++;
+    if(printed<Math.min(printOrder.length,6)) atimers.push(setTimeout(nextPrint,950));
+    else{
+      atimers.push(setTimeout(()=>{
+        const topSheet=out&&out.querySelectorAll('div')[out.querySelectorAll('div').length-1];
+        if(topSheet) topSheet.style.borderColor='var(--gold)';
+      },500));
+    }
+  }
+  atimers.push(setTimeout(nextPrint,500));
+}
+
+function buildDuplexAnim(scId){
+  const sc=document.getElementById(scId); sc.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:center;height:100%;gap:2rem;flex-direction:column">
+      <div style="font-size:2.8rem">🖨️</div>
+      <div style="font-size:.7rem;color:var(--paper);letter-spacing:.04em;text-align:center;line-height:1.65;max-width:300px">${t('piD')}</div>
+      <div style="display:flex;gap:.5rem;align-items:center;margin-top:.3rem">
+        <div style="width:48px;height:34px;border:1px solid rgba(201,168,76,.38);border-radius:2px;background:rgba(201,168,76,.05);display:flex;align-items:center;justify-content:center;font-size:.58rem;color:var(--gold)">R</div>
+        <div style="font-size:.9rem;color:rgba(201,168,76,.38)">⟺</div>
+        <div style="width:48px;height:34px;border:1px solid rgba(201,168,76,.38);border-radius:2px;background:rgba(201,168,76,.05);display:flex;align-items:center;justify-content:center;font-size:.58rem;color:var(--gold)">V</div>
+      </div>
+    </div>`;
+}
+
+function buildFinAnim(scId){
+  const sc=document.getElementById(scId); sc.innerHTML=`
+    <div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;gap:.9rem">
+      <div style="font-size:2.8rem;animation:fdup .5s ease">🎉</div>
+      <div style="font-family:'Playfair Display',serif;font-size:1.05rem;color:var(--paper);text-align:center;max-width:280px">${t('fin').replace('🎉 ','')}</div>
+      <div style="display:flex;gap:.4rem;margin-top:.5rem">
+        <div style="width:32px;height:46px;border:1px solid rgba(201,168,76,.28);border-radius:2px;background:rgba(201,168,76,.04);transform:rotate(-4deg)"></div>
+        <div style="width:32px;height:46px;border:1px solid rgba(201,168,76,.28);border-radius:2px;background:rgba(201,168,76,.04)"></div>
+        <div style="width:32px;height:46px;border:1px solid rgba(201,168,76,.28);border-radius:2px;background:rgba(201,168,76,.04);transform:rotate(4deg)"></div>
+      </div>
+    </div>`;
+}
+
+function buildSummary(isDuplex){
+  const c=document.getElementById('sumlist'); c.innerHTML='';
+  const steps=isDuplex?t('sumD'):t('sumM');
+  if(!Array.isArray(steps)) return;
+  steps.forEach((s,i)=>{
+    const item=document.createElement('div'); item.className='sitem dn2';
+    item.innerHTML=`<div class="snum">${i+1}</div><div><div class="sct">${s}</div></div>`;
+    c.appendChild(item);
+  });
+}
+
+// ── PRINTER DETECTION ──
+function detectPrinters(){
+  const list=document.getElementById('plist');
+  list.innerHTML=`<div style="text-align:center;padding:1.3rem;font-size:.65rem;color:var(--muted)"><span class="spi"></span>${t('prNote')}</div>`;
+  setTimeout(()=>{
+    const printers=getPrinters();
+    list.innerHTML='';
+    printers.forEach(p=>{
+      const item=document.createElement('div'); item.className='pi'+(selPrinter===p.name?' sel':'');
+      item.innerHTML=`<span class="pio">${p.icon}</span><div><div class="pin">${p.name}</div><div class="pid">${p.detail}</div></div><span class="pbdg ${p.dup?'dup':'sim'}">${p.dup?'Duplex':'Simplex'}</span>`;
+      item.addEventListener('click',()=>{
+        document.querySelectorAll('.pi').forEach(x=>x.classList.remove('sel'));
+        item.classList.add('sel'); selPrinter=p.name;
+        if(hasDuplex===null) hasDuplex=p.dup;
+        wnext.disabled=false;
+      });
+      list.appendChild(item);
+    });
+  },1100);
+}
+
+function getPrinters(){
+  const all=[
+    {name:'HP LaserJet Pro M404dn',detail:'192.168.1.42 · En ligne',icon:'🖨️',dup:true},
+    {name:'Canon PIXMA TR8620',detail:'192.168.1.15 · En ligne',icon:'🖨️',dup:true},
+    {name:'Epson EcoTank ET-4850',detail:'192.168.1.23 · En ligne',icon:'🖨️',dup:false},
+    {name:'Brother HL-L2395DW',detail:'192.168.1.77 · En ligne',icon:'🖨️',dup:true},
+    {name:'Microsoft Print to PDF',detail:'Virtuelle · Toujours disponible',icon:'📄',dup:false},
+  ];
+  const real=all.slice(0,-1).sort(()=>Math.random()-.5).slice(0,Math.floor(Math.random()*2)+2);
+  return [...real, all[all.length-1]];
+}
+
+// init
+applyI18n();
 </script>
 </body>
 </html>
