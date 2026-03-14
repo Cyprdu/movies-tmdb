@@ -881,8 +881,47 @@ function buildStepIndicator(){
   });
 }
 
+// URLs for split PDFs
+let rectoUrl=null, versoUrl=null, fullDuplexUrl=null;
+
+async function buildSplitPdfs(){
+  if(!pdfBytes) return;
+  const src=await PDFDocument.load(pdfBytes.slice(0),{ignoreEncryption:true,updateMetadata:false});
+  const n=src.getPageCount();
+  const{sheets}=computeOrder(n);
+  const W=841.89,H=595.28,hw=W/2;
+  // Recto doc
+  const rDoc=await PDFDocument.create();
+  for(const sh of sheets) await addPage(rDoc,src,sh.r[0],sh.r[1],W,H,hw,n);
+  rectoUrl=URL.createObjectURL(new Blob([await rDoc.save()],{type:'application/pdf'}));
+  // Verso doc — reversed so after manual flip+stack the order is correct
+  const vDoc=await PDFDocument.create();
+  for(const sh of [...sheets].reverse()) await addPage(vDoc,src,sh.v[0],sh.v[1],W,H,hw,n);
+  versoUrl=URL.createObjectURL(new Blob([await vDoc.save()],{type:'application/pdf'}));
+  // Full duplex doc
+  const dDoc=await PDFDocument.create();
+  for(const sh of sheets){
+    await addPage(dDoc,src,sh.r[0],sh.r[1],W,H,hw,n);
+    await addPage(dDoc,src,sh.v[0],sh.v[1],W,H,hw,n);
+  }
+  fullDuplexUrl=URL.createObjectURL(new Blob([await dDoc.save()],{type:'application/pdf'}));
+}
+
+function printPdfUrl(url){
+  let iframe=document.getElementById('_pf');
+  if(iframe) iframe.remove();
+  iframe=document.createElement('iframe');
+  iframe.id='_pf';
+  iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0';
+  document.body.appendChild(iframe);
+  iframe.onload=()=>{
+    try{ iframe.contentWindow.focus(); iframe.contentWindow.print(); }
+    catch(e){ window.open(url,'_blank'); }
+  };
+  iframe.src=url;
+}
+
 function gotoStep(step){
-  // for duplex, skip step 3 (flip) going forward from 2, skip going back from 4
   if(hasDuplex===true&&step===3&&wizStep===2) step=4;
   if(hasDuplex===true&&step===3&&wizStep===4) step=2;
   wizStep=Math.max(0,Math.min(4,step));
@@ -892,12 +931,25 @@ function gotoStep(step){
   lines.forEach((l,i)=>l.classList.toggle('dn',i<wizStep));
   wprev.style.display=wizStep===0?'none':'';
   wprev.innerHTML=t('lPrev');
-  if(wizStep===4&&hasDuplex!==false){
-    wnext.innerHTML='✓ Terminer';
-    wnext.onclick=()=>{wmod.classList.remove('open');if(genUrl)window.open(genUrl,'_blank');};
+  if(wizStep===2){
+    wnext.innerHTML='\uD83D\uDDB6 Imprimer maintenant \u2192';
+    wnext.onclick=async()=>{
+      const btn=wnext; btn.disabled=true; btn.textContent='Génération…';
+      await buildSplitPdfs();
+      printPdfUrl(hasDuplex?fullDuplexUrl:rectoUrl);
+      btn.disabled=false; btn.innerHTML='\u2713 Imprimé, suivant \u2192';
+      btn.onclick=()=>gotoStep(wizStep+1);
+    };
+  }else if(wizStep===4&&!hasDuplex){
+    wnext.innerHTML='\uD83D\uDDB6 Imprimer les versos \u2192';
+    wnext.onclick=()=>{
+      if(versoUrl) printPdfUrl(versoUrl);
+      wnext.innerHTML='\u2713 Terminer';
+      wnext.onclick=()=>wmod.classList.remove('open');
+    };
   }else if(wizStep===4){
-    wnext.innerHTML='✓ Terminer';
-    wnext.onclick=()=>{wmod.classList.remove('open');if(genUrl)window.open(genUrl,'_blank');};
+    wnext.innerHTML='\u2713 Terminer';
+    wnext.onclick=()=>wmod.classList.remove('open');
   }else{
     wnext.innerHTML=t('lNext');
     wnext.onclick=()=>gotoStep(wizStep+1);
@@ -908,7 +960,6 @@ function gotoStep(step){
 
 function shouldDisable(s){
   if(s===0) return hasDuplex===null;
-  if(s===1) return !selPrinter;
   return false;
 }
 
@@ -1093,36 +1144,23 @@ function buildSummary(isDuplex){
 }
 
 // ── PRINTER DETECTION ──
+// Web browsers don't expose a JS API to list printers.
+// The real printer picker appears inside window.print() — the OS dialog.
+// Step 1 just lets the user confirm their duplex capability; the actual
+// printer selection happens naturally in the system print dialog.
 function detectPrinters(){
   const list=document.getElementById('plist');
-  list.innerHTML=`<div style="text-align:center;padding:1.3rem;font-size:.65rem;color:var(--muted)"><span class="spi"></span>${t('prNote')}</div>`;
-  setTimeout(()=>{
-    const printers=getPrinters();
-    list.innerHTML='';
-    printers.forEach(p=>{
-      const item=document.createElement('div'); item.className='pi'+(selPrinter===p.name?' sel':'');
-      item.innerHTML=`<span class="pio">${p.icon}</span><div><div class="pin">${p.name}</div><div class="pid">${p.detail}</div></div><span class="pbdg ${p.dup?'dup':'sim'}">${p.dup?'Duplex':'Simplex'}</span>`;
-      item.addEventListener('click',()=>{
-        document.querySelectorAll('.pi').forEach(x=>x.classList.remove('sel'));
-        item.classList.add('sel'); selPrinter=p.name;
-        if(hasDuplex===null) hasDuplex=p.dup;
-        wnext.disabled=false;
-      });
-      list.appendChild(item);
-    });
-  },1100);
-}
-
-function getPrinters(){
-  const all=[
-    {name:'HP LaserJet Pro M404dn',detail:'192.168.1.42 · En ligne',icon:'🖨️',dup:true},
-    {name:'Canon PIXMA TR8620',detail:'192.168.1.15 · En ligne',icon:'🖨️',dup:true},
-    {name:'Epson EcoTank ET-4850',detail:'192.168.1.23 · En ligne',icon:'🖨️',dup:false},
-    {name:'Brother HL-L2395DW',detail:'192.168.1.77 · En ligne',icon:'🖨️',dup:true},
-    {name:'Microsoft Print to PDF',detail:'Virtuelle · Toujours disponible',icon:'📄',dup:false},
-  ];
-  const real=all.slice(0,-1).sort(()=>Math.random()-.5).slice(0,Math.floor(Math.random()*2)+2);
-  return [...real, all[all.length-1]];
+  list.innerHTML=`
+    <div style="padding:1.2rem;background:rgba(201,168,76,.05);border:1px solid rgba(201,168,76,.15);border-radius:4px;font-size:.68rem;color:var(--paper);line-height:1.7">
+      <div style="font-family:'Playfair Display',serif;font-size:.95rem;margin-bottom:.6rem">🖨️ Sélection de l'imprimante</div>
+      <div style="color:var(--muted);font-size:.63rem;line-height:1.6">
+        Les navigateurs web ne permettent pas de lister les imprimantes réseau directement.<br><br>
+        Lorsque vous cliquerez sur <strong style="color:var(--gold)">🖨 Imprimer maintenant</strong>, la <strong style="color:var(--gold)">boîte de dialogue d'impression système</strong> s'ouvrira — elle liste toutes vos imprimantes réseau réelles détectées par votre OS (Windows, macOS, Linux).<br><br>
+        Vous pourrez y choisir votre imprimante, régler les options (recto-verso, format A4, etc.) et lancer l'impression.
+      </div>
+    </div>`;
+  // Auto-enable next since no selection needed here
+  setTimeout(()=>{ wnext.disabled=false; },100);
 }
 
 // init
