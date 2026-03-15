@@ -1,0 +1,2233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SQL — Cours NSI</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161922;
+    --surface2: #1e2330;
+    --border: #2a3045;
+    --accent: #00e5ff;
+    --accent2: #ff6b6b;
+    --accent3: #a8ff78;
+    --accent4: #ffd166;
+    --accent5: #c084fc;
+    --text: #e8eaf0;
+    --text-muted: #7a859a;
+    --keyword: #ff79c6;
+    --string: #a8ff78;
+    --number: #ffd166;
+    --comment: #6272a4;
+    --success: #50fa7b;
+    --error: #ff5555;
+    --warning: #ffb86c;
+    --radius: 10px;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* FOCUS MODE */
+  body.focus-mode .sidebar { display: none; }
+  body.focus-mode .lesson-view { max-width: 100%; }
+  body.focus-mode #focus-overlay { display: flex; }
+
+  #focus-overlay {
+    display: none;
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(13,15,20,0.95);
+    border: 1px solid var(--accent5);
+    border-radius: 50px;
+    padding: 0.5rem 1.5rem;
+    z-index: 9999;
+    gap: 1rem;
+    align-items: center;
+    font-size: 0.8rem;
+    color: var(--accent5);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    backdrop-filter: blur(20px);
+    animation: pulse-border 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(192,132,252,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(192,132,252,0); }
+  }
+
+  #focus-overlay button {
+    background: var(--accent5);
+    color: #000;
+    border: none;
+    padding: 0.3rem 0.9rem;
+    border-radius: 30px;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(13,15,20,0.95);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    height: 58px;
+  }
+
+  .logo {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+  }
+  .logo span { color: var(--text-muted); }
+
+  .tabs {
+    display: flex;
+    gap: 0.3rem;
+    flex: 1;
+    overflow-x: auto;
+  }
+
+  .tab-btn {
+    padding: 0.35rem 0.9rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #000; }
+  .tab-btn.active.tab-ajout { background: var(--accent2); border-color: var(--accent2); }
+  .tab-btn.active.tab-param { background: var(--accent4); border-color: var(--accent4); color: #000; }
+  .tab-btn.active.tab-exo { background: var(--accent5); border-color: var(--accent5); color: #000; }
+
+  .header-actions { display: flex; gap: 0.5rem; }
+
+  .btn-focus-mode {
+    padding: 0.35rem 0.9rem;
+    background: rgba(192,132,252,0.15);
+    color: var(--accent5);
+    border: 1px solid rgba(192,132,252,0.35);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .btn-focus-mode:hover { background: rgba(192,132,252,0.3); }
+  .btn-focus-mode.active { background: var(--accent5); color: #000; }
+
+  /* ─── LAYOUT ─── */
+  .app {
+    display: flex;
+    height: calc(100vh - 58px);
+    position: relative;
+    z-index: 1;
+  }
+
+  .sidebar {
+    width: 250px;
+    min-width: 250px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s;
+  }
+
+  .sidebar::-webkit-scrollbar { width: 4px; }
+  .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .sidebar-section { padding: 0.8rem; border-bottom: 1px solid var(--border); }
+  .sidebar-section h3 {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.4rem;
+    padding: 0 0.3rem;
+  }
+
+  .lesson-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.4rem 0.6rem;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    text-align: left;
+    transition: all 0.15s;
+  }
+  .lesson-btn:hover { background: var(--surface2); color: var(--text); }
+  .lesson-btn.active { background: rgba(0,229,255,0.12); color: var(--accent); }
+  .lesson-btn.done .lesson-num { background: var(--success); color: #000; }
+
+  .lesson-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 20px; height: 20px;
+    border-radius: 4px;
+    background: var(--surface2);
+    font-size: 0.65rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .difficulty-badge {
+    margin-left: auto;
+    font-size: 0.58rem;
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .diff-easy { background: rgba(80,250,123,0.15); color: var(--success); }
+  .diff-medium { background: rgba(255,209,102,0.15); color: var(--accent4); }
+  .diff-hard { background: rgba(255,107,107,0.15); color: var(--accent2); }
+  .diff-boss { background: rgba(192,132,252,0.15); color: var(--accent5); }
+
+  .progress-bar-wrap { padding: 0.8rem; border-bottom: 1px solid var(--border); }
+  .progress-label { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+  .progress-bar { height: 4px; background: var(--border); border-radius: 99px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent3)); border-radius: 99px; transition: width 0.4s ease; }
+
+  /* MAIN */
+  .main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+  .main::-webkit-scrollbar { width: 6px; }
+  .main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+  .lesson-view { display: none; padding: 1.8rem; max-width: 920px; width: 100%; }
+  .lesson-view.active { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .lesson-header { display: flex; flex-direction: column; gap: 0.4rem; }
+  .lesson-tag {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--accent); font-family: var(--font-mono);
+  }
+  .lesson-title { font-size: 1.7rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.5px; }
+  .lesson-subtitle { color: var(--text-muted); font-size: 0.88rem; line-height: 1.65; max-width: 700px; }
+
+  /* STORY BOX */
+  .story-box {
+    background: linear-gradient(135deg, rgba(0,229,255,0.04), rgba(168,255,120,0.04));
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: var(--radius);
+    padding: 1rem 1.3rem;
+    font-size: 0.88rem;
+    line-height: 1.7;
+    color: var(--text);
+    position: relative;
+    overflow: hidden;
+  }
+  .story-box::before {
+    content: '📖';
+    position: absolute;
+    right: 1rem;
+    top: 0.7rem;
+    font-size: 1.4rem;
+    opacity: 0.4;
+  }
+  .story-box strong { color: var(--accent3); }
+  .story-box em { color: var(--accent4); font-style: normal; font-weight: 700; }
+
+  /* CARDS */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .card-header {
+    padding: 0.65rem 1.1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.6rem;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  .card-header .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .card-header .dot.red { background: var(--error); }
+  .card-header .dot.green { background: var(--success); }
+  .card-header .dot.yellow { background: var(--warning); }
+  .card-header .dot.purple { background: var(--accent5); }
+  .card-body { padding: 1.1rem; }
+
+  /* THEORY */
+  .theory {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.3rem;
+    font-size: 0.88rem;
+    line-height: 1.75;
+  }
+  .theory p + p { margin-top: 0.7rem; }
+  .highlight {
+    background: rgba(0,229,255,0.1);
+    color: var(--accent);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.85em;
+  }
+
+  /* CALLOUT BOXES */
+  .callout {
+    padding: 0.8rem 1.1rem;
+    border-radius: 8px;
+    font-size: 0.84rem;
+    line-height: 1.6;
+    display: flex;
+    gap: 0.7rem;
+    align-items: flex-start;
+  }
+  .callout-icon { flex-shrink: 0; font-size: 1.1rem; }
+  .callout.warn { background: rgba(255,107,107,0.08); border: 1px solid rgba(255,107,107,0.25); color: #ffb3b3; }
+  .callout.tip { background: rgba(255,209,102,0.08); border: 1px solid rgba(255,209,102,0.25); color: var(--accent4); }
+  .callout.info { background: rgba(0,229,255,0.06); border: 1px solid rgba(0,229,255,0.2); color: #a0eeff; }
+  .callout.recap { background: rgba(168,255,120,0.06); border: 1px solid rgba(168,255,120,0.2); color: var(--accent3); }
+  .callout code { font-family: var(--font-mono); font-size: 0.85em; }
+
+  /* SCHEMA TABLE */
+  .schema-wrap { overflow-x: auto; border-radius: var(--radius); }
+  .schema-table { border-collapse: collapse; width: 100%; font-family: var(--font-mono); font-size: 0.78rem; }
+  .schema-table th { background: var(--surface2); color: var(--accent); padding: 0.55rem 0.9rem; text-align: left; border-bottom: 1px solid var(--border); font-weight: 700; }
+  .schema-table td { padding: 0.5rem 0.9rem; border-bottom: 1px solid var(--border); color: var(--text); }
+  .schema-table tr:last-child td { border-bottom: none; }
+  .schema-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .schema-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px,1fr)); gap: 0.8rem; }
+  .schema-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  .schema-card-title { padding: 0.45rem 0.8rem; background: rgba(0,229,255,0.07); font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700; color: var(--accent); border-bottom: 1px solid var(--border); }
+
+  /* SQL EDITOR */
+  .sql-editor-wrap { background: #0a0c10; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .editor-toolbar {
+    padding: 0.5rem 0.9rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 0.8rem;
+  }
+  .editor-label { font-size: 0.7rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; font-family: var(--font-mono); }
+  .editor-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+  .btn { padding: 0.35rem 0.85rem; border: none; border-radius: 6px; cursor: pointer; font-family: 'Syne', sans-serif; font-size: 0.75rem; font-weight: 700; transition: all 0.15s; }
+  .btn-run { background: var(--accent); color: #000; }
+  .btn-run:hover { background: #00cfea; transform: translateY(-1px); }
+  .btn-reset { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+  .btn-reset:hover { color: var(--text); border-color: var(--text-muted); }
+  .btn-hint { background: rgba(255,209,102,0.12); color: var(--accent4); border: 1px solid rgba(255,209,102,0.25); }
+  .btn-hint:hover { background: rgba(255,209,102,0.22); }
+  .btn-solution { background: rgba(255,107,107,0.12); color: var(--accent2); border: 1px solid rgba(255,107,107,0.25); font-size: 0.7rem; }
+  .btn-solution:hover { background: rgba(255,107,107,0.22); }
+
+  textarea.sql-input {
+    width: 100%;
+    min-height: 110px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--accent3);
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    line-height: 1.65;
+    padding: 0.9rem 1.1rem;
+    resize: vertical;
+    caret-color: var(--accent);
+    tab-size: 2;
+  }
+  textarea.sql-input::placeholder { color: var(--comment); }
+
+  .line-numbers {
+    position: relative;
+  }
+
+  /* RESULT */
+  .result-area { min-height: 50px; border-top: 1px solid var(--border); }
+  .result-status { padding: 0.65rem 1.1rem; font-size: 0.76rem; font-family: var(--font-mono); font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+  .result-status.success { color: var(--success); background: rgba(80,250,123,0.05); }
+  .result-status.error { color: var(--error); background: rgba(255,85,85,0.05); }
+  .result-status.info { color: var(--text-muted); }
+  .result-table-wrap { overflow-x: auto; padding: 0 1.1rem 1.1rem; }
+  .result-table { border-collapse: collapse; width: 100%; font-family: var(--font-mono); font-size: 0.78rem; }
+  .result-table th { background: rgba(0,229,255,0.08); color: var(--accent); padding: 0.45rem 0.8rem; text-align: left; border: 1px solid var(--border); font-weight: 700; }
+  .result-table td { padding: 0.4rem 0.8rem; border: 1px solid var(--border); color: var(--text); }
+  .result-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+  .null-val { color: var(--text-muted); font-style: italic; }
+
+  /* HINT */
+  .hint-box { display: none; margin-top: 0.7rem; padding: 0.8rem 1.1rem; background: rgba(255,209,102,0.06); border: 1px solid rgba(255,209,102,0.22); border-radius: var(--radius); font-size: 0.83rem; color: var(--accent4); font-family: var(--font-mono); line-height: 1.5; }
+  .hint-box.show { display: block; }
+
+  /* SUCCESS */
+  .success-banner { display: none; padding: 0.9rem 1.3rem; background: rgba(80,250,123,0.08); border: 1px solid rgba(80,250,123,0.25); border-radius: var(--radius); color: var(--success); font-weight: 700; font-size: 0.88rem; align-items: center; gap: 0.5rem; }
+  .success-banner.show { display: flex; }
+
+  /* NAV */
+  .lesson-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 0.8rem; padding-top: 1.3rem; border-top: 1px solid var(--border); }
+  .btn-nav { padding: 0.55rem 1.3rem; border: 1px solid var(--border); background: var(--surface); color: var(--text); border-radius: 8px; cursor: pointer; font-family: 'Syne', sans-serif; font-size: 0.8rem; font-weight: 700; transition: all 0.15s; display: flex; align-items: center; gap: 0.4rem; }
+  .btn-nav:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* WELCOME */
+  .welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; padding: 3rem; text-align: center; gap: 1.3rem; }
+  .welcome-icon { font-size: 3.5rem; }
+  .welcome h1 { font-size: 2.3rem; font-weight: 800; letter-spacing: -1px; }
+  .welcome h1 span { color: var(--accent); }
+  .welcome p { color: var(--text-muted); max-width: 520px; line-height: 1.7; font-size: 0.95rem; }
+  .welcome-start { padding: 0.75rem 2rem; background: var(--accent); color: #000; border: none; border-radius: 8px; font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 800; cursor: pointer; transition: all 0.15s; }
+  .welcome-start:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,229,255,0.3); }
+  .stats { display: flex; gap: 2rem; margin-top: 0.8rem; }
+  .stat { display: flex; flex-direction: column; align-items: center; gap: 0.2rem; }
+  .stat-num { font-size: 1.5rem; font-weight: 800; color: var(--accent); }
+  .stat-label { font-size: 0.72rem; color: var(--text-muted); }
+
+  .kw { display: inline-block; background: rgba(255,121,198,0.12); color: var(--keyword); padding: 0.1em 0.45em; border-radius: 4px; font-family: var(--font-mono); font-size: 0.85em; font-weight: 600; }
+  .cat-badge { padding: 0.15em 0.6em; border-radius: 4px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .cat-requete { background: rgba(0,229,255,0.15); color: var(--accent); }
+  .cat-ajout { background: rgba(255,107,107,0.15); color: var(--accent2); }
+  .cat-param { background: rgba(255,209,102,0.15); color: var(--accent4); }
+  .cat-exo { background: rgba(192,132,252,0.15); color: var(--accent5); }
+
+  /* MULTI-STEP EXERCISE */
+  .steps-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .step-item { display: flex; gap: 0.7rem; align-items: flex-start; font-size: 0.86rem; line-height: 1.6; }
+  .step-num { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 50%; background: rgba(0,229,255,0.15); color: var(--accent); font-family: var(--font-mono); font-size: 0.7rem; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+
+  /* RECAP BOX */
+  .recap-box {
+    background: rgba(168,255,120,0.05);
+    border: 1px solid rgba(168,255,120,0.2);
+    border-radius: var(--radius);
+    padding: 1rem 1.2rem;
+    font-size: 0.84rem;
+    line-height: 1.7;
+  }
+  .recap-box h4 { color: var(--accent3); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.5rem; font-family: var(--font-mono); }
+  .recap-box code { font-family: var(--font-mono); font-size: 0.83em; color: var(--accent3); }
+
+  /* CODE BLOCK */
+  .code-block {
+    background: #080a0f;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    color: var(--text);
+  }
+  .code-block .kw-sql { color: #ff79c6; font-weight: 700; }
+  .code-block .kw-fn { color: #50fa7b; }
+  .code-block .kw-str { color: #f1fa8c; }
+  .code-block .kw-cmt { color: #6272a4; font-style: italic; }
+  .code-block .kw-num { color: #bd93f9; }
+
+  /* MULTI-EDITOR (tabs within an exercise) */
+  .multi-editor { display: flex; flex-direction: column; gap: 1rem; }
+  .sub-exercise {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface2);
+  }
+  .sub-exercise-header {
+    padding: 0.5rem 1rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .sub-exercise-header .step-badge {
+    background: rgba(0,229,255,0.1);
+    color: var(--accent);
+    padding: 0.1em 0.5em;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+  }
+
+  /* SCORE BAR (exercises) */
+  .score-display {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.7rem 1.1rem;
+    background: var(--surface2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+  }
+  .score-pts { color: var(--accent5); font-weight: 700; font-size: 1.1rem; }
+  .score-label { color: var(--text-muted); }
+
+  @media (max-width: 768px) {
+    .sidebar { width: 200px; min-width: 200px; }
+    .lesson-title { font-size: 1.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<div id="focus-overlay">
+  <span>🔒 MODE FOCUS ACTIVÉ — Concentration maximale</span>
+  <button onclick="toggleFocusMode()">Quitter</button>
+</div>
+
+<header>
+  <div class="logo">SQL<span>·</span>NSI</div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchCategory('requete')">🔍 Requête</button>
+    <button class="tab-btn tab-ajout" onclick="switchCategory('ajout')">✏️ Ajout</button>
+    <button class="tab-btn tab-param" onclick="switchCategory('param')">⚙️ Paramétrage</button>
+    <button class="tab-btn tab-exo" onclick="switchCategory('exo')">🏋️ Exercices</button>
+  </div>
+  <div class="header-actions">
+    <button class="btn-focus-mode" id="focus-btn" onclick="toggleFocusMode()">🔒 Mode Focus</button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="progress-bar-wrap">
+      <div class="progress-label">
+        <span>Progression</span>
+        <span id="progress-text">0 / 0</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+    <div id="lesson-list"></div>
+  </aside>
+
+  <main class="main" id="main-content">
+    <div class="welcome" id="welcome-screen">
+      <div class="welcome-icon">🗄️</div>
+      <h1>Cours <span>SQL</span><br>pour le bac NSI</h1>
+      <p>Apprends le SQL par l'histoire et la pratique. Chaque leçon s'appuie sur la précédente — les commandes reviennent encore et encore jusqu'à devenir des réflexes.</p>
+      <div class="stats">
+        <div class="stat"><div class="stat-num">60+</div><div class="stat-label">Leçons</div></div>
+        <div class="stat"><div class="stat-num">4</div><div class="stat-label">Catégories</div></div>
+        <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Interactif</div></div>
+      </div>
+      <button class="welcome-start" onclick="startCourse()">Commencer le cours →</button>
+    </div>
+    <div id="lesson-container"></div>
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+//  DATABASE ENGINE
+// ═══════════════════════════════════════════════════════════════════════
+
+const DB = { tables: {} };
+
+DB.init = function() {
+  // ── TABLE: eleves ──
+  this.tables['eleves'] = {
+    columns: ['id','nom','prenom','age','classe','moyenne','ville'],
+    rows: [
+      [1,'Martin','Alice',17,'Terminale',15.5,'Lyon'],
+      [2,'Durand','Bob',16,'Première',12.0,'Paris'],
+      [3,'Leroy','Charlie',17,'Terminale',18.0,'Lyon'],
+      [4,'Petit','Diana',18,'Terminale',9.5,'Marseille'],
+      [5,'Moreau','Eve',16,'Première',14.0,'Lyon'],
+      [6,'Simon','Frank',17,'Terminale',11.0,'Paris'],
+      [7,'Laurent','Grace',18,'Terminale',16.5,'Bordeaux'],
+      [8,'Michel','Hugo',15,'Seconde',13.0,'Lyon'],
+      [9,'Garcia','Iris',17,'Terminale',null,'Paris'],
+      [10,'David','Jules',16,'Première',17.5,'Nantes'],
+    ]
+  };
+  // ── TABLE: matieres ──
+  this.tables['matieres'] = {
+    columns: ['id','nom_matiere','coefficient','professeur'],
+    rows: [
+      [1,'Mathématiques',6,'M. Dupont'],
+      [2,'NSI',4,'Mme Leclerc'],
+      [3,'Physique',6,'M. Bernard'],
+      [4,'Français',4,'Mme Rousseau'],
+      [5,'Anglais',3,'M. Wilson'],
+      [6,'Philosophie',3,'Mme Fontaine'],
+      [7,'Histoire-Géo',3,'M. Roux'],
+    ]
+  };
+  // ── TABLE: notes ──
+  this.tables['notes'] = {
+    columns: ['id','eleve_id','matiere_id','note','date_note'],
+    rows: [
+      [1,1,1,16,'2024-01-15'],[2,1,2,18,'2024-01-20'],[3,1,3,14,'2024-02-10'],
+      [4,2,1,11,'2024-01-15'],[5,2,2,13,'2024-01-20'],[6,2,3,10,'2024-02-10'],
+      [7,3,1,19,'2024-01-15'],[8,3,2,20,'2024-01-20'],[9,3,3,17,'2024-02-10'],
+      [10,4,1,8,'2024-01-15'],[11,4,2,9,'2024-01-20'],[12,4,3,11,'2024-02-10'],
+      [13,5,1,15,'2024-01-15'],[14,5,2,14,'2024-01-20'],
+      [15,6,1,10,'2024-01-15'],[16,6,3,12,'2024-02-10'],
+      [17,7,1,17,'2024-01-15'],[18,7,2,15,'2024-01-20'],[19,7,3,16,'2024-02-10'],
+      [20,8,1,13,'2024-01-15'],[21,9,2,null,'2024-01-20'],
+      [22,10,1,18,'2024-01-15'],[23,10,2,19,'2024-01-20'],
+    ]
+  };
+  // ── TABLE: livres ──
+  this.tables['livres'] = {
+    columns:['id','titre','auteur','genre','annee','prix'],
+    rows:[
+      [1,'1984','George Orwell','Dystopie',1949,8.50],
+      [2,'Le Petit Prince','Antoine de Saint-Exupéry','Conte',1943,6.90],
+      [3,'Harry Potter T1','J.K. Rowling','Fantasy',1997,9.90],
+      [4,'Les Misérables','Victor Hugo','Roman',1862,12.00],
+      [5,'Dune','Frank Herbert','SF',1965,10.50],
+      [6,"L'Étranger",'Albert Camus','Roman',1942,7.20],
+      [7,'Neuromancien','William Gibson','SF',1984,8.90],
+      [8,'Fondation','Isaac Asimov','SF',1951,9.20],
+      [9,'Le Seigneur des Anneaux','J.R.R. Tolkien','Fantasy',1954,15.00],
+      [10,'Candide','Voltaire','Conte',1759,5.50],
+    ]
+  };
+  // ── TABLE: produits ──
+  this.tables['produits'] = {
+    columns:['id','nom','categorie','prix','stock','fournisseur_id'],
+    rows:[
+      [1,'Laptop Pro','Informatique',999.99,15,1],
+      [2,'Souris sans fil','Informatique',29.99,150,1],
+      [3,'Clavier mécanique','Informatique',79.99,80,2],
+      [4,'Écran 27"','Informatique',349.99,25,1],
+      [5,'Bureau ergonomique','Mobilier',450.00,10,3],
+      [6,'Chaise gamer','Mobilier',299.00,20,3],
+      [7,'Webcam HD','Informatique',59.99,60,2],
+      [8,'Casque audio','Électronique',89.99,45,2],
+      [9,'Lampe de bureau','Mobilier',39.99,70,3],
+      [10,'Câble USB-C','Informatique',9.99,500,1],
+    ]
+  };
+  // ── TABLE: fournisseurs ──
+  this.tables['fournisseurs'] = {
+    columns:['id','nom','pays','email'],
+    rows:[
+      [1,'TechSupply SA','France','contact@techsupply.fr'],
+      [2,'ElectoWorld','Allemagne','info@electoworld.de'],
+      [3,'MobilPro','Italie','pro@mobilpro.it'],
+    ]
+  };
+  // ── TABLE: employes ──
+  this.tables['employes'] = {
+    columns:['id','nom','prenom','departement_id','salaire','date_embauche','manager_id'],
+    rows:[
+      [1,'Rousseau','Émilie',1,52000,'2019-03-15',null],
+      [2,'Bertin','Lucas',2,44000,'2020-07-01',1],
+      [3,'Fontaine','Sara',1,47000,'2018-11-20',1],
+      [4,'Moreau','Tom',3,38000,'2021-02-10',2],
+      [5,'Blanc','Clara',2,41000,'2021-06-15',2],
+      [6,'Lefort','Paul',3,36000,'2022-01-03',4],
+      [7,'Guerin','Léa',1,55000,'2017-09-01',null],
+      [8,'Roux','Axel',4,62000,'2016-04-20',null],
+      [9,'Morin','Jade',4,58000,'2018-08-12',8],
+      [10,'Vidal','Enzo',3,35000,'2023-03-01',4],
+      [11,'Simon','Camille',2,46000,'2020-12-15',2],
+      [12,'Dupuis','Nathan',5,71000,'2015-06-10',null],
+      [13,'Caron','Inès',5,68000,'2016-09-22',12],
+      [14,'Lacroix','Théo',1,43000,'2022-07-18',1],
+      [15,'Lemaire','Zoé',4,60000,'2019-01-25',8],
+    ]
+  };
+  // ── TABLE: departements ──
+  this.tables['departements'] = {
+    columns:['id','nom','budget','ville'],
+    rows:[
+      [1,'RH',150000,'Paris'],
+      [2,'Marketing',200000,'Lyon'],
+      [3,'Support',120000,'Paris'],
+      [4,'Technique',300000,'Bordeaux'],
+      [5,'Direction',500000,'Paris'],
+    ]
+  };
+  // ── TABLE: commandes ──
+  this.tables['commandes'] = {
+    columns:['id','client','produit_id','quantite','date_cmd','statut'],
+    rows:[
+      [1,'Alice Martin',1,1,'2024-01-10','livré'],
+      [2,'Bob Durand',2,3,'2024-01-12','livré'],
+      [3,'Alice Martin',5,1,'2024-01-15','livré'],
+      [4,'Charlie Leroy',3,2,'2024-01-18','en cours'],
+      [5,'Diana Petit',7,1,'2024-01-20','en cours'],
+      [6,'Eve Moreau',10,10,'2024-01-22','livré'],
+      [7,'Frank Simon',4,1,'2024-02-01','annulé'],
+      [8,'Grace Laurent',2,2,'2024-02-05','livré'],
+      [9,'Hugo Michel',8,1,'2024-02-10','en cours'],
+      [10,'Jules David',1,2,'2024-02-14','livré'],
+      [11,'Alice Martin',3,1,'2024-02-20','livré'],
+      [12,'Bob Durand',6,1,'2024-03-01','en cours'],
+      [13,'Charlie Leroy',9,4,'2024-03-05','livré'],
+      [14,'Iris Garcia',2,2,'2024-03-08','livré'],
+      [15,'Jules David',4,1,'2024-03-10','annulé'],
+    ]
+  };
+  // ── TABLE: films ──
+  this.tables['films'] = {
+    columns:['id','titre','realisateur','annee','genre','note_publique','box_office'],
+    rows:[
+      [1,'Interstellar','Christopher Nolan',2014,'SF',8.6,701000000],
+      [2,'Le Parrain','Francis Coppola',1972,'Drame',9.2,246000000],
+      [3,'Parasite','Bong Joon-ho',2019,'Thriller',8.5,258000000],
+      [4,'Avengers Endgame','Anthony Russo',2019,'Action',8.4,2798000000],
+      [5,'Spirited Away','Hayao Miyazaki',2001,'Animation',8.6,395000000],
+      [6,'The Dark Knight','Christopher Nolan',2008,'Action',9.0,1005000000],
+      [7,'Pulp Fiction','Quentin Tarantino',1994,'Drame',8.9,214000000],
+      [8,'1917','Sam Mendes',2019,'Guerre',8.3,385000000],
+      [9,'Dune','Denis Villeneuve',2021,'SF',8.0,402000000],
+      [10,'Oppenheimer','Christopher Nolan',2023,'Drame',8.5,952000000],
+      [11,'Everything Everywhere','Daniel Kwan',2022,'SF',7.8,72000000],
+      [12,'Tár','Todd Field',2022,'Drame',7.5,38000000],
+      [13,'Top Gun Maverick','Joseph Kosinski',2022,'Action',8.3,1493000000],
+      [14,'The Whale','Darren Aronofsky',2022,'Drame',7.7,18000000],
+    ]
+  };
+};
+
+DB.init();
+let dbSnapshot = {};
+function takeSnapshot() {
+  dbSnapshot = {};
+  for (const [t, d] of Object.entries(DB.tables)) {
+    dbSnapshot[t] = { columns: [...d.columns], rows: d.rows.map(r=>[...r]) };
+  }
+}
+function restoreSnapshot() {
+  for (const [t, d] of Object.entries(dbSnapshot)) {
+    DB.tables[t] = { columns: [...d.columns], rows: d.rows.map(r=>[...r]) };
+  }
+  // also restore any extra tables
+  for (const t of Object.keys(DB.tables)) {
+    if (!dbSnapshot[t]) delete DB.tables[t];
+  }
+}
+takeSnapshot();
+
+// ═══════════════════════════════════════════════════════════════════════
+//  SQL ENGINE (parser + executor)
+// ═══════════════════════════════════════════════════════════════════════
+
+function executeSQL(sql) {
+  try {
+    // Strip comments before processing
+    let cleaned = sql
+      .replace(/--[^\n]*/g, '')          // single-line comments
+      .replace(/\/\*[\s\S]*?\*\//g, '')  // multi-line comments
+      .trim()
+      .replace(/;$/, '')
+      .trim();
+
+    if (!cleaned) return { type:'ok', message:'Commentaire SQL détecté. Pas de requête à exécuter.' };
+
+    const upper = cleaned.toUpperCase();
+    if (upper.startsWith('SELECT')) return execSelect(cleaned);
+    if (upper.startsWith('INSERT')) return execInsert(cleaned);
+    if (upper.startsWith('UPDATE')) return execUpdate(cleaned);
+    if (upper.startsWith('DELETE')) return execDelete(cleaned);
+    if (upper.startsWith('CREATE TABLE')) return execCreateTable(cleaned);
+    if (upper.startsWith('DROP TABLE')) return execDropTable(cleaned);
+    if (upper.startsWith('ALTER TABLE')) return execAlterTable(cleaned);
+    throw sqlError(`Commande "${cleaned.split(' ')[0].toUpperCase()}" non reconnue.`);
+  } catch(e) {
+    if (e.isSQLError) return { type:'error', message: e.message };
+    return { type:'error', message: `Erreur : ${e.message}` };
+  }
+}
+
+function sqlError(msg) { const e = new Error(msg); e.isSQLError = true; return e; }
+
+// ─── SELECT ───
+function execSelect(sql) {
+  const re = /^SELECT\s+(.*?)\s+FROM\s+(\w+)(?:\s+(?:AS\s+)?(\w+))?(.*?)$/is;
+  const m = sql.match(re);
+  if (!m) throw sqlError("Syntaxe invalide : SELECT ... FROM table");
+
+  let colsRaw = m[1].trim();
+  let mainTable = m[2].toLowerCase();
+  let rest = m[4] ? m[4].trim() : '';
+  let tableAlias = { [mainTable]: mainTable };
+  if (m[3]) tableAlias[m[3].toLowerCase()] = mainTable;
+
+  let tableData = getTable(mainTable);
+  let rows = tableData.rows.map(r => buildRowObj(tableData.columns, r, mainTable));
+
+  // JOINs
+  const restUpper = rest.toUpperCase();
+  const wherePos = restUpper.search(/\bWHERE\b/);
+  const joinSearchArea = wherePos >= 0 ? rest.slice(0, wherePos) : rest;
+  const joinRe = /((?:LEFT\s+)?(?:INNER\s+)?JOIN)\s+(\w+)(?:\s+(?:AS\s+)?(\w+))?\s+ON\s+(.+?)(?=(?:LEFT\s+)?(?:INNER\s+)?JOIN|WHERE|GROUP\s+BY|ORDER\s+BY|LIMIT|$)/gi;
+  let joinMatch;
+  while ((joinMatch = joinRe.exec(joinSearchArea)) !== null) {
+    const jt = joinMatch[2].toLowerCase();
+    const ja = joinMatch[3] ? joinMatch[3].toLowerCase() : jt;
+    tableAlias[ja] = jt;
+    const isLeft = joinMatch[1].trim().toUpperCase().includes('LEFT');
+    const joinTable = getTable(jt);
+    rows = performJoin(rows, joinTable, joinMatch[4].trim(), tableAlias, isLeft, jt);
+  }
+
+  // WHERE
+  let whereClause = extractClause(rest, 'WHERE', ['GROUP BY','ORDER BY','LIMIT','HAVING']);
+  if (whereClause) rows = rows.filter(row => evalCondition(whereClause, row, tableAlias));
+
+  // GROUP BY
+  let groupByClause = extractClause(rest, 'GROUP BY', ['ORDER BY','LIMIT','HAVING','WHERE']);
+  if (groupByClause) rows = performGroupBy(rows, groupByClause, colsRaw);
+
+  // HAVING
+  let havingClause = extractClause(rest, 'HAVING', ['ORDER BY','LIMIT']);
+  if (havingClause) rows = rows.filter(row => evalCondition(havingClause, row, tableAlias));
+
+  // DISTINCT
+  const isDistinct = /^DISTINCT\s+/i.test(colsRaw);
+  if (isDistinct) colsRaw = colsRaw.replace(/^DISTINCT\s+/i, '');
+
+  let { selectedCols, resultRows } = applySelect(colsRaw, rows, tableAlias, !groupByClause);
+  if (isDistinct) resultRows = uniqueRows(resultRows);
+
+  // ORDER BY
+  let orderByClause = extractClause(rest, 'ORDER BY', ['LIMIT','HAVING']);
+  if (orderByClause) resultRows = performOrderBy(resultRows, orderByClause, selectedCols);
+
+  // LIMIT
+  let limitClause = extractClause(rest, 'LIMIT', []);
+  if (limitClause) {
+    const n = parseInt(limitClause);
+    if (isNaN(n)) throw sqlError(`LIMIT attend un nombre, got "${limitClause}"`);
+    resultRows = resultRows.slice(0, n);
+  }
+
+  return { type:'select', columns: selectedCols, rows: resultRows, message:`${resultRows.length} ligne(s) retournée(s)` };
+}
+
+function buildRowObj(columns, row, tableName) {
+  const obj = {};
+  columns.forEach((col, i) => {
+    obj[`${tableName}.${col}`] = row[i];
+    obj[col] = row[i];
+  });
+  return obj;
+}
+
+function getTable(name) {
+  const t = DB.tables[name.toLowerCase()];
+  if (!t) throw sqlError(`Table "${name}" introuvable. Tables : ${Object.keys(DB.tables).join(', ')}`);
+  return t;
+}
+
+function extractClause(str, keyword, stopKeywords) {
+  const kUpper = keyword.toUpperCase();
+  const stops = stopKeywords.map(s=>'\\b'+s.replace(/ /g,'\\s+')+'\\b').join('|');
+  const re = new RegExp(`\\b${kUpper}\\b\\s*(.+?)(?=${stops}|$)`, 'is');
+  const mm = str.match(re);
+  return mm ? mm[1].trim() : null;
+}
+
+function performJoin(leftRows, rightTable, condition, aliases, isLeft, rightTableName) {
+  const rightRows = rightTable.rows.map(r => buildRowObj(rightTable.columns, r, rightTableName));
+  const result = [];
+  for (const lrow of leftRows) {
+    let matched = false;
+    for (const rrow of rightRows) {
+      const combined = {...lrow, ...rrow};
+      if (evalCondition(condition, combined, aliases)) { result.push(combined); matched = true; }
+    }
+    if (isLeft && !matched) {
+      const nullRight = {};
+      rightTable.columns.forEach(c => { nullRight[`${rightTableName}.${c}`] = null; nullRight[c] = null; });
+      result.push({...lrow, ...nullRight});
+    }
+  }
+  return result;
+}
+
+function evalCondition(cond, row, aliases) {
+  const c = cond.trim();
+  const orParts = splitTopLevel(c, ' OR ');
+  if (orParts.length > 1) return orParts.some(p => evalCondition(p.trim(), row, aliases));
+  const andParts = splitTopLevel(c, ' AND ');
+  if (andParts.length > 1) return andParts.every(p => evalCondition(p.trim(), row, aliases));
+  if (/^\(.*\)$/s.test(c)) return evalCondition(c.slice(1,-1).trim(), row, aliases);
+  if (/^NOT\s+/i.test(c)) return !evalCondition(c.slice(4).trim(), row, aliases);
+  if (/\bIS\s+NOT\s+NULL\b/i.test(c)) return getVal(c.replace(/\s+IS\s+NOT\s+NULL/i,'').trim(), row, aliases) !== null;
+  if (/\bIS\s+NULL\b/i.test(c)) return getVal(c.replace(/\s+IS\s+NULL/i,'').trim(), row, aliases) === null;
+  const inM = c.match(/^(.+?)\s+(NOT\s+)?IN\s*\((.+)\)$/is);
+  if (inM) {
+    const notIn = !!inM[2];
+    const col = inM[1].trim();
+    const valStr = inM[3];
+    let inVals;
+    if (/^\s*SELECT\s/i.test(valStr)) { const sub = execSelect(valStr.trim()); inVals = sub.rows.map(r=>r[0]); }
+    else inVals = parseList(valStr);
+    const v = getVal(col, row, aliases);
+    const vC = typeof v === 'string' ? v.toLowerCase() : v;
+    const inSet = inVals.map(x => typeof x === 'string' ? x.toLowerCase() : x);
+    return notIn ? !inSet.includes(vC) : inSet.includes(vC);
+  }
+  const likeM = c.match(/^(.+?)\s+(NOT\s+)?LIKE\s+('.*?'|".*?")$/i);
+  if (likeM) {
+    const notLike = !!likeM[2]; const col = likeM[1].trim();
+    const pattern = likeM[3].slice(1,-1);
+    const regex = new RegExp('^' + pattern.replace(/%/g,'.*').replace(/_/g,'.') + '$', 'i');
+    const v = getVal(col, row, aliases);
+    const res = v !== null && regex.test(String(v));
+    return notLike ? !res : res;
+  }
+  const cmpM = c.match(/^(.+?)\s*(<=|>=|<>|!=|<|>|=)\s*(.+)$/s);
+  if (cmpM) return compare(getVal(cmpM[1].trim(), row, aliases), cmpM[2], parseValue(cmpM[3].trim(), row, aliases));
+  return false;
+}
+
+function splitTopLevel(str, sep) {
+  const parts = []; let depth = 0, cur = '';
+  const upStr = str.toUpperCase();
+  for (let i = 0; i < str.length; i++) {
+    if (str[i]==='(') depth++;
+    else if (str[i]===')') depth--;
+    if (depth === 0 && upStr.startsWith(sep.toUpperCase(), i)) { parts.push(cur); cur=''; i+=sep.length-1; }
+    else cur += str[i];
+  }
+  parts.push(cur);
+  return parts.length > 1 ? parts : [str];
+}
+
+function getVal(expr, row, aliases) {
+  expr = expr.trim();
+  const dotM = expr.match(/^(\w+)\.(\w+)$/);
+  if (dotM) {
+    const key = `${dotM[1].toLowerCase()}.${dotM[2].toLowerCase()}`;
+    if (key in row) return row[key];
+    const realT = aliases ? aliases[dotM[1].toLowerCase()] : null;
+    if (realT) return row[`${realT}.${dotM[2].toLowerCase()}`];
+    return null;
+  }
+  if (expr in row) return row[expr];
+  const lower = expr.toLowerCase();
+  if (lower in row) return row[lower];
+  if (/^'.*'$/.test(expr)) return expr.slice(1,-1);
+  if (/^".*"$/.test(expr)) return expr.slice(1,-1);
+  if (/^-?\d+(\.\d+)?$/.test(expr)) return parseFloat(expr);
+  return evalExpr(expr, row, aliases);
+}
+
+function parseValue(expr, row, aliases) {
+  expr = expr.trim();
+  if (/^'.*'$/.test(expr)) return expr.slice(1,-1);
+  if (/^".*"$/.test(expr)) return expr.slice(1,-1);
+  if (/^-?\d+(\.\d+)?$/.test(expr)) return parseFloat(expr);
+  if (/^\(SELECT/i.test(expr)) { const sub = execSelect(expr.slice(1,-1).trim()); return sub.rows.length > 0 ? sub.rows[0][0] : null; }
+  return getVal(expr, row, aliases);
+}
+
+function compare(a, op, b) {
+  if (a === null || b === null) return false;
+  const n1 = parseFloat(a), n2 = parseFloat(b);
+  const isNum = !isNaN(n1) && !isNaN(n2);
+  const l = isNum ? n1 : String(a).toLowerCase();
+  const r = isNum ? n2 : String(b).toLowerCase();
+  switch(op) {
+    case '=': return l == r;
+    case '<>': case '!=': return l != r;
+    case '<': return l < r; case '>': return l > r;
+    case '<=': return l <= r; case '>=': return l >= r;
+  }
+  return false;
+}
+
+function parseList(str) {
+  const items=[]; let current='', inStr=false, strChar='';
+  for (const c of str) {
+    if (inStr) { if (c===strChar) inStr=false; else current+=c; }
+    else if (c==="'"||c==='"') { inStr=true; strChar=c; }
+    else if (c===',') { items.push(parseRawVal(current.trim())); current=''; }
+    else current+=c;
+  }
+  if (current.trim()) items.push(parseRawVal(current.trim()));
+  return items;
+}
+
+function parseRawVal(s) {
+  if (/^'.*'$/.test(s)||/^".*"$/.test(s)) return s.slice(1,-1);
+  const n = parseFloat(s);
+  return isNaN(n) ? s : n;
+}
+
+function applySelect(colsRaw, rows, aliases, allowNonAgg) {
+  const colDefs = splitCols(colsRaw);
+  const selectedCols = [];
+  const resultRows = [];
+  const hasAgg = colDefs.some(c => /\b(COUNT|SUM|AVG|MAX|MIN)\s*\(/i.test(c));
+
+  if (hasAgg && rows.length === 0) {
+    colDefs.forEach(cd => { const {alias,expr} = colAlias(cd); selectedCols.push(alias||computeColName(expr)); });
+    resultRows.push(colDefs.map(cd => /\bCOUNT\s*\(/i.test(cd) ? 0 : null));
+    return { selectedCols, resultRows };
+  }
+
+  if (hasAgg && rows[0] && !('__group__' in rows[0])) {
+    colDefs.forEach(cd => { const {alias,expr} = colAlias(cd); selectedCols.push(alias||computeColName(expr)); });
+    resultRows.push(colDefs.map(cd => { const {expr} = colAlias(cd); return computeAgg(expr, rows, aliases); }));
+    return { selectedCols, resultRows };
+  }
+
+  colDefs.forEach(cd => { const {alias,expr} = colAlias(cd); selectedCols.push(alias||computeColName(expr)); });
+
+  // Handle SELECT * expansion
+  const expandedCols = [];
+  const expandedDefs = [];
+  for (const cd of colDefs) {
+    const {alias, expr} = colAlias(cd);
+    if (expr.trim() === '*') {
+      // expand all columns from all available rows keys
+      if (rows.length > 0) {
+        const keys = Object.keys(rows[0]).filter(k => !k.includes('.') && !k.startsWith('__'));
+        keys.forEach(k => { expandedCols.push(k); expandedDefs.push({alias: k, expr: k}); });
+      }
+    } else {
+      expandedCols.push(alias||computeColName(expr));
+      expandedDefs.push({alias, expr});
+    }
+  }
+
+  // Rebuild selectedCols with expansion
+  selectedCols.length = 0;
+  expandedCols.forEach(c => selectedCols.push(c));
+
+  for (const row of rows) {
+    const resultRow = expandedDefs.map(({alias, expr}) => {
+      if (/\b(COUNT|SUM|AVG|MAX|MIN)\s*\(/i.test(expr)) {
+        return row['__agg__'+expr.toUpperCase()] !== undefined ? row['__agg__'+expr.toUpperCase()] : computeAgg(expr, [row], aliases);
+      }
+      return evalExpr(expr, row, aliases);
+    });
+    resultRows.push(resultRow);
+  }
+  return { selectedCols, resultRows };
+}
+
+function computeColName(expr) {
+  if (/^\*$/.test(expr)) return '*';
+  const d = expr.match(/^\w+\.(\w+)$/);
+  if (d) return d[1];
+  return expr.replace(/[^a-zA-Z0-9_]/g,'_').toLowerCase();
+}
+
+function colAlias(colDef) {
+  const asM = colDef.match(/^(.+?)\s+AS\s+['"]?(\w+)['"]?$/i);
+  if (asM) return { expr: asM[1].trim(), alias: asM[2] };
+  return { expr: colDef.trim(), alias: null };
+}
+
+function evalExpr(expr, row, aliases) {
+  expr = expr.trim();
+  if (expr === '*') {
+    const vals = Object.entries(row).filter(([k]) => !k.includes('.') && !k.startsWith('__')).map(([,v])=>v);
+    return vals[0] ?? null;
+  }
+  if (/^CASE\b/i.test(expr)) return evalCase(expr, row, aliases);
+  const substrM = expr.match(/^SUBSTR(?:ING)?\s*\(\s*(.+?)\s*,\s*(\d+)\s*(?:,\s*(\d+)\s*)?\)$/i);
+  if (substrM) {
+    const val = String(getVal(substrM[1].trim(), row, aliases)??'');
+    const start = parseInt(substrM[2])-1;
+    const len = substrM[3] ? parseInt(substrM[3]) : undefined;
+    return len !== undefined ? val.substr(start,len) : val.substr(start);
+  }
+  const coalM = expr.match(/^COALESCE\s*\((.+)\)$/i);
+  if (coalM) { for (const a of splitCols(coalM[1])) { const v = getVal(a.trim(), row, aliases); if (v !== null && v !== undefined) return v; } return null; }
+  if (/^(COUNT|SUM|AVG|MAX|MIN)\s*\(/i.test(expr)) return computeAgg(expr, [row], aliases);
+  if (/^'.*'$/.test(expr)) return expr.slice(1,-1);
+  if (/^".*"$/.test(expr)) return expr.slice(1,-1);
+  if (/^-?\d+(\.\d+)?$/.test(expr)) return parseFloat(expr);
+  return getVal(expr, row, aliases);
+}
+
+function evalCase(expr, row, aliases) {
+  const wc = expr.replace(/^CASE\s*/i,'').replace(/\s*END$/i,'').trim();
+  const elseM = wc.match(/^(.*?)\s+ELSE\s+(.+?)$/is);
+  let whensPart = elseM ? elseM[1] : wc, elsePart = elseM ? elseM[2].trim() : null;
+  const whenRe = /WHEN\s+(.+?)\s+THEN\s+(.+?)(?=\s+WHEN|\s*$)/gi;
+  let wm;
+  while ((wm = whenRe.exec(whensPart)) !== null) {
+    if (evalCondition(wm[1].trim(), row, aliases)) return parseRawVal(wm[2].trim());
+  }
+  return elsePart ? parseRawVal(elsePart) : null;
+}
+
+function computeAgg(expr, rows, aliases) {
+  const m = expr.match(/^(COUNT|SUM|AVG|MAX|MIN)\s*\(\s*(\*|DISTINCT\s+\w+(?:\.\w+)?|\w+(?:\.\w+)?)\s*\)$/i);
+  if (!m) return null;
+  const fn = m[1].toUpperCase(), colRaw = m[2].trim();
+  if (fn==='COUNT' && colRaw==='*') return rows.length;
+  const isDistinct = /^DISTINCT\s+/i.test(colRaw);
+  const colName = isDistinct ? colRaw.replace(/^DISTINCT\s+/i,'').trim() : colRaw;
+  let vals = rows.map(r=>getVal(colName,r,aliases)).filter(v=>v!==null&&v!==undefined);
+  if (isDistinct) vals = [...new Set(vals)];
+  if (vals.length===0) return fn==='COUNT'?0:null;
+  switch(fn) {
+    case 'COUNT': return vals.length;
+    case 'SUM': return Math.round(vals.reduce((a,b)=>a+Number(b),0)*100)/100;
+    case 'AVG': return Math.round(vals.reduce((a,b)=>a+Number(b),0)/vals.length*100)/100;
+    case 'MAX': return vals.reduce((a,b)=>Number(b)>Number(a)?b:a);
+    case 'MIN': return vals.reduce((a,b)=>Number(b)<Number(a)?b:a);
+  }
+}
+
+function performGroupBy(rows, groupByClause, colsRaw) {
+  const groupCols = groupByClause.split(',').map(s=>s.trim());
+  const groups = {};
+  for (const row of rows) {
+    const key = groupCols.map(c=>getVal(c,row,{}));
+    const keyStr = JSON.stringify(key);
+    if (!groups[keyStr]) groups[keyStr] = { rows:[], key };
+    groups[keyStr].rows.push(row);
+  }
+  return Object.values(groups).map(g => {
+    const baseRow = {...g.rows[0], '__group__':true};
+    splitCols(colsRaw).forEach(cd => {
+      const {expr} = colAlias(cd);
+      if (/\b(COUNT|SUM|AVG|MAX|MIN)\s*\(/i.test(expr)) baseRow['__agg__'+expr.toUpperCase()] = computeAgg(expr, g.rows, {});
+    });
+    return baseRow;
+  });
+}
+
+function performOrderBy(rows, orderByClause, selectedCols) {
+  const orders = orderByClause.split(',').map(s => {
+    const parts = s.trim().split(/\s+/);
+    return { col: parts[0], dir: (parts[1]||'ASC').toUpperCase() };
+  });
+  return [...rows].sort((a,b) => {
+    for (const ord of orders) {
+      const idx = selectedCols.indexOf(ord.col);
+      const va = idx>=0 ? a[idx] : (a[ord.col]??null);
+      const vb = idx>=0 ? b[idx] : (b[ord.col]??null);
+      if (va===null&&vb===null) continue;
+      if (va===null) return ord.dir==='ASC'?1:-1;
+      if (vb===null) return ord.dir==='ASC'?-1:1;
+      const na=parseFloat(va), nb=parseFloat(vb);
+      const cmp = (!isNaN(na)&&!isNaN(nb)) ? na-nb : String(va).localeCompare(String(vb));
+      if (cmp!==0) return ord.dir==='ASC'?cmp:-cmp;
+    }
+    return 0;
+  });
+}
+
+function uniqueRows(rows) {
+  const seen = new Set();
+  return rows.filter(row => { const k=JSON.stringify(row); if(seen.has(k)) return false; seen.add(k); return true; });
+}
+
+function splitCols(str) {
+  const cols=[]; let depth=0, current='', inStr=false, strChar='';
+  for (const c of str) {
+    if (inStr) { if (c===strChar) inStr=false; current+=c; continue; }
+    if (c==="'"||c==='"') { inStr=true; strChar=c; current+=c; continue; }
+    if (c==='(') depth++; else if (c===')') depth--;
+    if (c===','&&depth===0) { cols.push(current.trim()); current=''; } else current+=c;
+  }
+  if (current.trim()) cols.push(current.trim());
+  return cols;
+}
+
+// ─── INSERT / UPDATE / DELETE / CREATE / DROP / ALTER ───
+function execInsert(sql) {
+  const m = sql.match(/^INSERT\s+INTO\s+(\w+)\s*(?:\(([^)]+)\))?\s*VALUES\s*\(([^)]+)\)$/is);
+  if (!m) throw sqlError("Syntaxe : INSERT INTO table (col1, col2) VALUES (val1, val2)");
+  const tableName = m[1].toLowerCase();
+  const t = getTable(tableName);
+  const vals = parseList(m[3]);
+  let cols = m[2] ? m[2].split(',').map(s=>s.trim()) : t.columns;
+  if (cols.length !== vals.length) throw sqlError(`${cols.length} colonne(s) vs ${vals.length} valeur(s).`);
+  if (m[2]) cols.forEach(c => { if (!t.columns.includes(c)) throw sqlError(`Colonne "${c}" inconnue.`); });
+  const newRow = new Array(t.columns.length).fill(null);
+  cols.forEach((c,i) => { newRow[t.columns.indexOf(c)] = vals[i]; });
+  t.rows.push(newRow);
+  return { type:'ok', message:`1 ligne insérée dans "${tableName}".` };
+}
+
+function execUpdate(sql) {
+  const m = sql.match(/^UPDATE\s+(\w+)\s+SET\s+(.+?)(?:\s+WHERE\s+(.+))?$/is);
+  if (!m) throw sqlError("Syntaxe : UPDATE table SET col = val [WHERE condition]");
+  const tableName = m[1].toLowerCase();
+  const t = getTable(tableName);
+  const setClauses = m[2].split(',').map(s => { const eq=s.indexOf('='); return { col:s.slice(0,eq).trim(), val:parseRawVal(s.slice(eq+1).trim()) }; });
+  setClauses.forEach(({col}) => { if (!t.columns.includes(col)) throw sqlError(`Colonne "${col}" inconnue.`); });
+  let count=0;
+  t.rows = t.rows.map(row => {
+    const rowObj = buildRowObj(t.columns, row, tableName);
+    if (!m[3] || evalCondition(m[3], rowObj, {})) {
+      const nr=[...row];
+      setClauses.forEach(({col,val}) => { nr[t.columns.indexOf(col)] = val; });
+      count++;
+      return nr;
+    }
+    return row;
+  });
+  return { type:'ok', message:`${count} ligne(s) mise(s) à jour dans "${tableName}".` };
+}
+
+function execDelete(sql) {
+  const m = sql.match(/^DELETE\s+FROM\s+(\w+)(?:\s+WHERE\s+(.+))?$/is);
+  if (!m) throw sqlError("Syntaxe : DELETE FROM table [WHERE condition]");
+  const tableName = m[1].toLowerCase();
+  const t = getTable(tableName);
+  if (!m[2]) { const count=t.rows.length; t.rows=[]; return { type:'ok', message:`${count} ligne(s) supprimée(s).` }; }
+  const before = t.rows.length;
+  t.rows = t.rows.filter(row => !evalCondition(m[2], buildRowObj(t.columns, row, tableName), {}));
+  return { type:'ok', message:`${before-t.rows.length} ligne(s) supprimée(s).` };
+}
+
+function execCreateTable(sql) {
+  const m = sql.match(/^CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(\w+)\s*\((.+)\)$/is);
+  if (!m) throw sqlError("Syntaxe : CREATE TABLE nom (col1 TYPE, ...)");
+  const tableName = m[1].toLowerCase();
+  if (DB.tables[tableName]) throw sqlError(`La table "${tableName}" existe déjà.`);
+  const cols = [];
+  for (const def of m[2].split(',').map(s=>s.trim())) {
+    if (/^(PRIMARY\s+KEY|FOREIGN\s+KEY|CONSTRAINT|UNIQUE\s+KEY)/i.test(def)) continue;
+    const parts = def.split(/\s+/);
+    if (parts[0]) cols.push(parts[0].replace(/[`"']/g,''));
+  }
+  if (cols.length===0) throw sqlError("Aucune colonne valide.");
+  DB.tables[tableName] = { columns: cols, rows: [] };
+  return { type:'ok', message:`Table "${tableName}" créée avec ${cols.length} colonne(s) : ${cols.join(', ')}.` };
+}
+
+function execDropTable(sql) {
+  const m = sql.match(/^DROP\s+TABLE\s+(?:IF\s+EXISTS\s+)?(\w+)$/is);
+  if (!m) throw sqlError("Syntaxe : DROP TABLE nom_table");
+  const tableName = m[1].toLowerCase();
+  if (!DB.tables[tableName]) throw sqlError(`La table "${tableName}" n'existe pas.`);
+  delete DB.tables[tableName];
+  return { type:'ok', message:`Table "${tableName}" supprimée.` };
+}
+
+function execAlterTable(sql) {
+  const fkM = sql.match(/^ALTER\s+TABLE\s+(\w+)\s+ADD\s+(?:CONSTRAINT\s+\w+\s+)?FOREIGN\s+KEY\s*\((\w+)\)\s+REFERENCES\s+(\w+)\s*\((\w+)\)/i);
+  if (fkM) { getTable(fkM[1]); getTable(fkM[3]); return { type:'ok', message:`FK simulée : "${fkM[1]}.${fkM[2]}" → "${fkM[3]}.${fkM[4]}".` }; }
+  const addM = sql.match(/^ALTER\s+TABLE\s+(\w+)\s+ADD\s+(?:COLUMN\s+)?(\w+)\s+(\w+)/i);
+  if (addM) {
+    const t = getTable(addM[1].toLowerCase());
+    if (t.columns.includes(addM[2])) throw sqlError(`Colonne "${addM[2]}" existe déjà.`);
+    t.columns.push(addM[2]);
+    t.rows = t.rows.map(r=>[...r,null]);
+    return { type:'ok', message:`Colonne "${addM[2]}" ajoutée.` };
+  }
+  const dropM = sql.match(/^ALTER\s+TABLE\s+(\w+)\s+DROP\s+(?:COLUMN\s+)?(\w+)/i);
+  if (dropM) {
+    const t = getTable(dropM[1].toLowerCase());
+    const idx = t.columns.indexOf(dropM[2]);
+    if (idx<0) throw sqlError(`Colonne "${dropM[2]}" inconnue.`);
+    t.columns.splice(idx,1);
+    t.rows = t.rows.map(r=>{const nr=[...r];nr.splice(idx,1);return nr;});
+    return { type:'ok', message:`Colonne "${dropM[2]}" supprimée.` };
+  }
+  throw sqlError("Syntaxe ALTER TABLE non reconnue.");
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  LESSONS DATA
+// ═══════════════════════════════════════════════════════════════════════
+
+const LESSONS = {
+  requete: [
+    {
+      id:'r1', num:1, title:'SELECT * — Tout afficher', tag:'Requête SQL',
+      story: `🏫 Tu es le nouveau responsable informatique du <strong>Lycée Victor Hugo</strong>. La base de données contient les élèves, leurs notes, leurs matières... Mais pour commencer, tu dois juste <em>tout afficher</em> pour voir ce qu'il y a.`,
+      theory:`La commande <span class="highlight">SELECT</span> récupère des données. <span class="highlight">SELECT *</span> signifie "toutes les colonnes". <span class="highlight">FROM</span> précise la table source.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> * <span class="kw-sql">FROM</span> eleves;</div><br>
+      <div class="callout tip"><span class="callout-icon">💡</span><div>Le <span class="kw">;</span> marque la fin d'une requête SQL. En théorie obligatoire, dans ce simulateur il est optionnel — mais prends l'habitude !</div></div><br>
+      <div class="callout info"><span class="callout-icon">📝</span><div>Tu peux écrire des commentaires en SQL :<br><code>-- Ceci est un commentaire sur une ligne</code><br><code>/* Ceci est un commentaire multi-lignes */</code><br>Les commentaires sont ignorés par le moteur SQL.</div></div>`,
+      tables: ['eleves'],
+      exercise: `Affiche <strong>toutes les colonnes</strong> de la table <strong>eleves</strong> pour voir qui est dans le lycée.`,
+      hint: `SELECT * FROM eleves;`,
+      validate: (res) => res.type === 'select' && res.rows.length >= 5 && res.columns.length >= 5,
+    },
+    {
+      id:'r2', num:2, title:'SELECT colonnes spécifiques', tag:'Requête SQL',
+      story: `📋 Le directeur te demande la liste des élèves avec seulement leur nom, prénom et moyenne — pas besoin du reste. Tu dois sélectionner <em>uniquement les colonnes utiles</em>.`,
+      theory:`Au lieu de <span class="highlight">*</span>, liste les colonnes séparées par des virgules.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> nom, prenom, moyenne <span class="kw-sql">FROM</span> eleves;</div><br>
+      <div class="callout warn"><span class="callout-icon">⚠️</span><div>Le nom des colonnes doit correspondre <em>exactement</em> à ce qui est dans la table. Vérifie la structure dans l'onglet "Tables disponibles".</div></div><br>
+      <div class="recap-box"><h4>⟳ Rappel de la leçon précédente</h4>La structure est toujours : <code>SELECT ... FROM table;</code></div>`,
+      tables: ['eleves'],
+      exercise: `Affiche uniquement le <strong>nom</strong>, le <strong>prenom</strong> et la <strong>moyenne</strong> des élèves.`,
+      hint: `SELECT nom, prenom, moyenne FROM eleves;`,
+      validate: (res) => res.type === 'select' && res.columns.includes('nom') && res.columns.includes('moyenne') && res.columns.length === 3,
+    },
+    {
+      id:'r3', num:3, title:'WHERE — Filtrer par égalité', tag:'Requête SQL',
+      story: `🎓 Il y a un événement spécial pour les <strong>Terminales</strong> uniquement. Tu dois extraire uniquement les élèves de Terminale de la base.`,
+      theory:`<span class="highlight">WHERE</span> filtre les lignes. Pour l'égalité sur du texte, on utilise <span class="highlight">=</span> et des guillemets simples.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> * <span class="kw-sql">FROM</span> eleves <span class="kw-sql">WHERE</span> classe = <span class="kw-str">'Terminale'</span>;</div><br>
+      <div class="callout tip"><span class="callout-icon">💡</span><div>Les textes sont entre guillemets simples <code>'...'</code>, les nombres n'ont pas de guillemets.</div></div>
+      <div class="recap-box"><h4>⟳ Rappel</h4>Tu connais déjà : <code>SELECT nom, prenom FROM eleves;</code> — maintenant on ajoute un filtre !</div>`,
+      tables: ['eleves'],
+      exercise: `Affiche le <strong>nom</strong>, <strong>prenom</strong> et <strong>classe</strong> des élèves dont la classe est <strong>'Terminale'</strong>.`,
+      hint: `SELECT nom, prenom, classe FROM eleves WHERE classe = 'Terminale';`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0 && res.rows.every(r=>{const i=res.columns.indexOf('classe');return r[i]==='Terminale';}),
+    },
+    {
+      id:'r4', num:4, title:'WHERE — Comparaisons numériques', tag:'Requête SQL',
+      story: `🏆 Le lycée organise un voyage scolaire réservé aux <strong>bons élèves</strong> (moyenne > 14). Trouve qui peut y participer !`,
+      theory:`Pour les nombres, on dispose des opérateurs : <span class="highlight">></span> <span class="highlight"><</span> <span class="highlight">>=</span> <span class="highlight"><=</span> <span class="highlight">=</span> <span class="highlight"><></span> (différent).<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> nom, prenom, moyenne <span class="kw-sql">FROM</span> eleves <span class="kw-sql">WHERE</span> moyenne > <span class="kw-num">14</span>;</div><br>
+      <div class="recap-box"><h4>⟳ Rappel</h4>Structure : <code>SELECT colonnes FROM table WHERE condition;</code> — tu l'utilises depuis la leçon 3 !</div>`,
+      tables: ['eleves'],
+      exercise: `Affiche le <strong>nom</strong>, <strong>prenom</strong> et <strong>moyenne</strong> des élèves dont la moyenne est <strong>supérieure à 14</strong>.`,
+      hint: `SELECT nom, prenom, moyenne FROM eleves WHERE moyenne > 14;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0 && res.rows.every(r=>{const i=res.columns.indexOf('moyenne');return r[i]>14;}),
+    },
+    {
+      id:'r5', num:5, title:'AND — Combiner des conditions', tag:'Requête SQL',
+      story: `🎁 Le voyage scolaire, c'est pour les Terminales ET avec une bonne moyenne. Double condition ! Tu dois les combiner avec <strong>AND</strong>.`,
+      theory:`<span class="highlight">AND</span> exige que TOUTES les conditions soient vraies.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> nom, prenom, classe, moyenne<br><span class="kw-sql">FROM</span> eleves<br><span class="kw-sql">WHERE</span> classe = <span class="kw-str">'Terminale'</span> <span class="kw-sql">AND</span> moyenne > <span class="kw-num">13</span>;</div><br>
+      <div class="callout info"><span class="callout-icon">💡</span><div>On peut chaîner autant de AND que nécessaire : <code>WHERE a=1 AND b>2 AND c='x'</code></div></div>
+      <div class="recap-box"><h4>⟳ Rappel</h4>Leçon 3 : <code>WHERE classe = 'Terminale'</code> / Leçon 4 : <code>WHERE moyenne > 14</code> — maintenant on les combine !</div>`,
+      tables: ['eleves'],
+      exercise: `Affiche les élèves de <strong>Terminale</strong> avec une <strong>moyenne ≥ 15</strong>. Colonnes : nom, prenom, classe, moyenne.`,
+      hint: `SELECT nom, prenom, classe, moyenne FROM eleves WHERE classe = 'Terminale' AND moyenne >= 15;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'r6', num:6, title:'OR — Au moins une condition', tag:'Requête SQL',
+      story: `🗺️ Tu dois contacter les élèves de <strong>Lyon</strong> ou de <strong>Paris</strong> pour une réunion régionale. Deux villes, un seul filtre !`,
+      theory:`<span class="highlight">OR</span> retourne les lignes si AU MOINS UNE des conditions est vraie.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> nom, prenom, ville<br><span class="kw-sql">FROM</span> eleves<br><span class="kw-sql">WHERE</span> ville = <span class="kw-str">'Lyon'</span> <span class="kw-sql">OR</span> ville = <span class="kw-str">'Paris'</span>;</div><br>
+      <div class="recap-box"><h4>⟳ Rappel</h4>AND = toutes les conditions | OR = au moins une condition</div>`,
+      tables: ['eleves'],
+      exercise: `Affiche le nom, prénom et ville des élèves venant de <strong>Lyon</strong> ou de <strong>Paris</strong>.`,
+      hint: `SELECT nom, prenom, ville FROM eleves WHERE ville = 'Lyon' OR ville = 'Paris';`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'r7', num:7, title:'IN — Liste de valeurs', tag:'Requête SQL',
+      story: `📧 Même mission, mais maintenant tu veux aussi <strong>Bordeaux</strong> et <strong>Nantes</strong>. Avec 4 villes, écrire 4 OR serait long... <strong>IN</strong> est fait pour ça.`,
+      theory:`<span class="highlight">IN</span> est un raccourci propre pour plusieurs OR :<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> * <span class="kw-sql">FROM</span> eleves<br><span class="kw-sql">WHERE</span> ville <span class="kw-sql">IN</span> (<span class="kw-str">'Lyon'</span>, <span class="kw-str">'Paris'</span>, <span class="kw-str">'Bordeaux'</span>);</div><br>
+      <div class="callout tip"><span class="callout-icon">💡</span><div><code>NOT IN ('Lyon', 'Paris')</code> donne l'inverse : toutes les villes SAUF Lyon et Paris.</div></div>
+      <div class="recap-box"><h4>⟳ Rappel</h4>OR (leçon 6) et IN font la même chose — IN est plus lisible pour 3+ valeurs.</div>`,
+      tables: ['eleves'],
+      exercise: `Avec <strong>IN</strong>, affiche les élèves dont la ville est <strong>Lyon, Paris, Bordeaux</strong> ou <strong>Nantes</strong>. Colonnes : nom, prenom, ville.`,
+      hint: `SELECT nom, prenom, ville FROM eleves WHERE ville IN ('Lyon', 'Paris', 'Bordeaux', 'Nantes');`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'r8', num:8, title:'ORDER BY — Trier les résultats', tag:'Requête SQL',
+      story: `📊 Le directeur veut le classement des élèves par moyenne, du meilleur au moins bon. <strong>ORDER BY</strong> va t'aider.`,
+      theory:`<span class="highlight">ORDER BY</span> trie les résultats. <span class="highlight">ASC</span> = croissant (défaut), <span class="highlight">DESC</span> = décroissant.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> nom, prenom, moyenne<br><span class="kw-sql">FROM</span> eleves<br><span class="kw-sql">ORDER BY</span> moyenne <span class="kw-sql">DESC</span>;</div><br>
+      <div class="callout info"><span class="callout-icon">💡</span><div>On peut trier sur plusieurs colonnes : <code>ORDER BY classe ASC, moyenne DESC</code></div></div>`,
+      tables: ['eleves'],
+      exercise: `Affiche nom, prenom, classe, moyenne de tous les élèves, triés par <strong>moyenne décroissante</strong>.`,
+      hint: `SELECT nom, prenom, classe, moyenne FROM eleves ORDER BY moyenne DESC;`,
+      validate: (res) => {
+        if (res.type!=='select') return false;
+        const idx=res.columns.indexOf('moyenne');
+        const vals=res.rows.map(r=>r[idx]).filter(v=>v!==null);
+        for(let i=1;i<vals.length;i++) if(vals[i]>vals[i-1]) return false;
+        return true;
+      },
+    },
+    {
+      id:'r9', num:9, title:'LIMIT — Limiter les résultats', tag:'Requête SQL',
+      story: `🥇 Tu veux afficher un <strong>podium des 3 meilleurs élèves</strong> sur le panneau d'affichage du lycée. Il ne faut que les 3 premières lignes.`,
+      theory:`<span class="highlight">LIMIT</span> restreint le nombre de lignes retournées. On le place en dernier.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> nom, prenom, moyenne<br><span class="kw-sql">FROM</span> eleves<br><span class="kw-sql">ORDER BY</span> moyenne <span class="kw-sql">DESC</span><br><span class="kw-sql">LIMIT</span> <span class="kw-num">3</span>;</div><br>
+      <div class="recap-box"><h4>⟳ Révision express</h4><code>SELECT colonnes FROM table WHERE condition ORDER BY col DESC LIMIT n;</code> — tu connais déjà toutes ces clauses !</div>`,
+      tables: ['eleves'],
+      exercise: `Affiche les <strong>5 élèves</strong> avec la meilleure moyenne (nom, prenom, moyenne, triés).`,
+      hint: `SELECT nom, prenom, moyenne FROM eleves ORDER BY moyenne DESC LIMIT 5;`,
+      validate: (res) => res.type === 'select' && res.rows.length === 5,
+    },
+    {
+      id:'r10', num:10, title:'DISTINCT — Valeurs uniques', tag:'Requête SQL',
+      story: `🗺️ Pour organiser des réunions par ville, tu as besoin de la <strong>liste des villes</strong> sans doublons. <strong>DISTINCT</strong> élimine les répétitions.`,
+      theory:`<span class="highlight">DISTINCT</span> élimine les doublons dans les résultats :<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT DISTINCT</span> ville <span class="kw-sql">FROM</span> eleves;</div><br>
+      <div class="callout tip"><span class="callout-icon">💡</span><div>DISTINCT s'applique à la combinaison de toutes les colonnes sélectionnées.</div></div>`,
+      tables: ['eleves'],
+      exercise: `Affiche la liste des <strong>villes distinctes</strong> présentes dans la table eleves. Trie-les par ordre alphabétique.`,
+      hint: `SELECT DISTINCT ville FROM eleves ORDER BY ville ASC;`,
+      validate: (res) => res.type === 'select' && res.rows.length <= 6,
+    },
+    {
+      id:'r11', num:11, title:'COUNT(*) — Compter les lignes', tag:'Requête SQL',
+      story: `📋 L'administration a besoin de savoir <strong>combien d'élèves</strong> sont dans chaque classe pour réserver les salles. <strong>COUNT</strong> compte pour toi.`,
+      theory:`<span class="highlight">COUNT(*)</span> compte le nombre de lignes.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> <span class="kw-fn">COUNT</span>(*) <span class="kw-sql">FROM</span> eleves; <span class="kw-cmt">-- toutes les lignes</span><br><span class="kw-sql">SELECT</span> <span class="kw-fn">COUNT</span>(*) <span class="kw-sql">FROM</span> eleves <span class="kw-sql">WHERE</span> classe = <span class="kw-str">'Terminale'</span>;</div><br>
+      <div class="recap-box"><h4>⟳ Rappel</h4>Tu connais WHERE depuis la leçon 3 — ici on l'utilise avec COUNT !</div>`,
+      tables: ['eleves'],
+      exercise: `Compte le nombre d'élèves en <strong>Terminale</strong>.`,
+      hint: `SELECT COUNT(*) FROM eleves WHERE classe = 'Terminale';`,
+      validate: (res) => res.type === 'select' && res.rows[0][0] > 0,
+    },
+    {
+      id:'r12', num:12, title:'SUM, AVG, MAX, MIN', tag:'Requête SQL',
+      story: `📈 Le proviseur veut un <strong>rapport statistique</strong> complet : moyenne générale, meilleure note, moins bonne note. Les fonctions d'agrégation vont tout faire.`,
+      theory:`Les fonctions d'agrégation calculent des statistiques sur une colonne :<br><br>
+      <div class="code-block"><span class="kw-fn">COUNT</span>(*) <span class="kw-cmt">-- nombre de lignes</span><br><span class="kw-fn">SUM</span>(col) <span class="kw-cmt">-- somme des valeurs</span><br><span class="kw-fn">AVG</span>(col) <span class="kw-cmt">-- moyenne des valeurs</span><br><span class="kw-fn">MAX</span>(col) <span class="kw-cmt">-- valeur maximale</span><br><span class="kw-fn">MIN</span>(col) <span class="kw-cmt">-- valeur minimale</span></div><br>
+      <div class="callout tip"><span class="callout-icon">💡</span><div>On peut les combiner dans une seule requête : <code>SELECT AVG(moyenne), MAX(moyenne), MIN(moyenne) FROM eleves;</code></div></div>`,
+      tables: ['eleves'],
+      exercise: `En <strong>une seule requête</strong>, affiche la moyenne générale, la meilleure et la moins bonne moyenne. Utilise des alias : "Moyenne_Generale", "Meilleure", "Moins_Bonne".`,
+      hint: `SELECT AVG(moyenne) AS Moyenne_Generale, MAX(moyenne) AS Meilleure, MIN(moyenne) AS Moins_Bonne FROM eleves;`,
+      validate: (res) => res.type === 'select' && res.columns.length === 3,
+    },
+    {
+      id:'r13', num:13, title:'GROUP BY — Regrouper', tag:'Requête SQL',
+      story: `🏫 Maintenant tu veux les statistiques <strong>par classe</strong> : combien d'élèves par classe, et la moyenne de chaque classe. <strong>GROUP BY</strong> regroupe les lignes identiques.`,
+      theory:`<span class="highlight">GROUP BY</span> regroupe les lignes par valeur. On l'utilise toujours avec des fonctions d'agrégation.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> classe, <span class="kw-fn">COUNT</span>(*) <span class="kw-sql">AS</span> nb_eleves, <span class="kw-fn">AVG</span>(moyenne) <span class="kw-sql">AS</span> moy<br><span class="kw-sql">FROM</span> eleves<br><span class="kw-sql">GROUP BY</span> classe;</div><br>
+      <div class="recap-box"><h4>⟳ Rappel</h4>COUNT et AVG vus en leçon 12 — ici on les applique par groupe !</div>`,
+      tables: ['eleves'],
+      exercise: `Affiche pour chaque <strong>classe</strong> : le nom de la classe, le nombre d'élèves et la moyenne. Trie par nombre d'élèves décroissant.`,
+      hint: `SELECT classe, COUNT(*) AS nb_eleves, AVG(moyenne) AS moy FROM eleves GROUP BY classe ORDER BY nb_eleves DESC;`,
+      validate: (res) => res.type === 'select' && res.rows.length >= 2,
+    },
+    {
+      id:'r14', num:14, title:'NULL — Valeurs manquantes', tag:'Requête SQL',
+      story: `❓ Iris n'a pas encore de moyenne — sa note est <strong>NULL</strong>. Tu dois trouver tous les élèves dont la moyenne n'est pas renseignée pour les contacter.`,
+      theory:`<span class="highlight">NULL</span> = valeur manquante. Pour le tester, on utilise <span class="highlight">IS NULL</span> ou <span class="highlight">IS NOT NULL</span>.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> * <span class="kw-sql">FROM</span> eleves <span class="kw-sql">WHERE</span> moyenne <span class="kw-sql">IS NULL</span>;<br><span class="kw-cmt">-- JAMAIS : WHERE moyenne = NULL (ne fonctionne pas !)</span></div><br>
+      <div class="callout warn"><span class="callout-icon">⚠️</span><div><code>WHERE col = NULL</code> ne fonctionne JAMAIS en SQL. Toujours utiliser <code>IS NULL</code>.</div></div>`,
+      tables: ['eleves'],
+      exercise: `Affiche les élèves dont la <strong>moyenne est NULL</strong> (non renseignée). Colonnes : nom, prenom, classe, moyenne.`,
+      hint: `SELECT nom, prenom, classe, moyenne FROM eleves WHERE moyenne IS NULL;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'r15', num:15, title:'LIKE — Recherche par motif', tag:'Requête SQL',
+      story: `🔍 Une mère appelle : elle ne se souvient plus du nom exact de son enfant dans la base, mais ça commence par "M". <strong>LIKE</strong> permet la recherche floue.`,
+      theory:`<span class="highlight">LIKE</span> filtre par motif. <span class="highlight">%</span> = zéro ou plusieurs caractères, <span class="highlight">_</span> = exactement un caractère.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> * <span class="kw-sql">FROM</span> eleves <span class="kw-sql">WHERE</span> nom <span class="kw-sql">LIKE</span> <span class="kw-str">'M%'</span>;   <span class="kw-cmt">-- commence par M</span><br><span class="kw-sql">SELECT</span> * <span class="kw-sql">FROM</span> eleves <span class="kw-sql">WHERE</span> nom <span class="kw-sql">LIKE</span> <span class="kw-str">'%in'</span>;  <span class="kw-cmt">-- finit par 'in'</span><br><span class="kw-sql">SELECT</span> * <span class="kw-sql">FROM</span> eleves <span class="kw-sql">WHERE</span> nom <span class="kw-sql">LIKE</span> <span class="kw-str">'%ar%'</span>; <span class="kw-cmt">-- contient 'ar'</span></div>`,
+      tables: ['eleves'],
+      exercise: `Affiche les élèves dont le <strong>nom contient la lettre 'a'</strong> (insensible à la casse). Colonnes : nom, prenom.`,
+      hint: `SELECT nom, prenom FROM eleves WHERE nom LIKE '%a%';`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'r16', num:16, title:'COALESCE — Remplacer NULL', tag:'Requête SQL',
+      story: `📊 Pour le rapport, les NULL dans la colonne moyenne posent problème — ils faussent l'affichage. <strong>COALESCE</strong> remplace les NULL par une valeur par défaut.`,
+      theory:`<span class="highlight">COALESCE(val1, val2, ...)</span> retourne la première valeur non-NULL.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> nom, <span class="kw-fn">COALESCE</span>(moyenne, <span class="kw-num">0</span>) <span class="kw-sql">AS</span> moyenne<br><span class="kw-sql">FROM</span> eleves;</div><br>
+      <div class="recap-box"><h4>⟳ Rappel</h4>NULL vu en leçon 14 — COALESCE est la solution pour les afficher proprement !</div>`,
+      tables: ['eleves'],
+      exercise: `Affiche nom, prenom et moyenne de tous les élèves, en remplaçant les NULL par <strong>0</strong>. Alias : "moyenne_affichee".`,
+      hint: `SELECT nom, prenom, COALESCE(moyenne, 0) AS moyenne_affichee FROM eleves;`,
+      validate: (res) => res.type === 'select' && !res.rows.some(r=>r[2]===null),
+    },
+    {
+      id:'r17', num:17, title:'Alias — Renommer colonnes et tables', tag:'Requête SQL',
+      story: `✏️ Les colonnes s'appellent "nom", "prenom"... mais dans le rapport officiel il faut "Nom de famille", "Prénom", "Résultat". Les alias AS permettent de renommer.`,
+      theory:`<span class="highlight">AS</span> renomme une colonne ou une table dans les résultats.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> nom <span class="kw-sql">AS</span> <span class="kw-str">"Nom de famille"</span>, prenom <span class="kw-sql">AS</span> Prenom, moyenne <span class="kw-sql">AS</span> Resultat<br><span class="kw-sql">FROM</span> eleves <span class="kw-sql">AS</span> e; <span class="kw-cmt">-- alias de table aussi</span></div>`,
+      tables: ['eleves'],
+      exercise: `Affiche le nom (alias "Nom_Eleve"), le prénom (alias "Prenom_Eleve"), la classe (alias "Classe") et la moyenne (alias "Moy") de tous les élèves.`,
+      hint: `SELECT nom AS Nom_Eleve, prenom AS Prenom_Eleve, classe AS Classe, moyenne AS Moy FROM eleves;`,
+      validate: (res) => res.type === 'select' && res.columns.some(c=>/nom_eleve/i.test(c)),
+    },
+    {
+      id:'r18', num:18, title:'INNER JOIN — Joindre deux tables', tag:'Requête SQL',
+      story: `📝 Les notes sont dans une table séparée. Pour les lier aux élèves, il faut les joindre. C'est le principe fondamental des bases relationnelles : les données sont <em>réparties dans plusieurs tables</em>.`,
+      theory:`<span class="highlight">INNER JOIN</span> lie deux tables via une colonne commune. Ne retourne que les lignes avec correspondance dans LES DEUX tables.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> e.nom, e.prenom, n.note<br><span class="kw-sql">FROM</span> eleves e<br><span class="kw-sql">INNER JOIN</span> notes n <span class="kw-sql">ON</span> e.id = n.eleve_id;</div><br>
+      <div class="callout info"><span class="callout-icon">💡</span><div>La notation <code>e.nom</code> précise que "nom" vient de la table aliasée "e". Indispensable quand deux tables ont des colonnes du même nom !</div></div>`,
+      tables: ['eleves','notes'],
+      exercise: `Affiche le <strong>nom</strong>, <strong>prenom</strong> de l'élève et sa <strong>note</strong> en joignant <strong>eleves</strong> et <strong>notes</strong>.`,
+      hint: `SELECT e.nom, e.prenom, n.note FROM eleves e INNER JOIN notes n ON e.id = n.eleve_id;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'r19', num:19, title:'JOIN + WHERE — Filtrer après jointure', tag:'Requête SQL',
+      story: `🎯 Tu veux les notes des élèves de <strong>Terminale</strong> uniquement. Jointure + WHERE !`,
+      theory:`On combine <span class="highlight">JOIN</span> et <span class="highlight">WHERE</span> naturellement :<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> e.nom, e.classe, n.note<br><span class="kw-sql">FROM</span> eleves e<br><span class="kw-sql">INNER JOIN</span> notes n <span class="kw-sql">ON</span> e.id = n.eleve_id<br><span class="kw-sql">WHERE</span> e.classe = <span class="kw-str">'Terminale'</span>;</div><br>
+      <div class="recap-box"><h4>⟳ Récap</h4>JOIN (leçon 18) + WHERE (leçon 3) — combiner les deux c'est naturel !</div>`,
+      tables: ['eleves','notes'],
+      exercise: `Affiche le nom, prénom, la note et la date_note des élèves de <strong>Terminale</strong>. Trie par note décroissante.`,
+      hint: `SELECT e.nom, e.prenom, n.note, n.date_note FROM eleves e INNER JOIN notes n ON e.id = n.eleve_id WHERE e.classe = 'Terminale' ORDER BY n.note DESC;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'r20', num:20, title:'Jointures multiples — 3 tables', tag:'Requête SQL',
+      story: `📋 Le bulletin de notes final doit montrer : "Alice — Mathématiques — 16". Les matières sont dans une troisième table. Il faut <strong>chaîner les jointures</strong>.`,
+      theory:`On peut chaîner plusieurs JOIN pour relier 3 tables ou plus :<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> e.nom, m.nom_matiere, n.note<br><span class="kw-sql">FROM</span> eleves e<br><span class="kw-sql">INNER JOIN</span> notes n <span class="kw-sql">ON</span> e.id = n.eleve_id<br><span class="kw-sql">INNER JOIN</span> matieres m <span class="kw-sql">ON</span> n.matiere_id = m.id;</div>`,
+      tables: ['eleves','notes','matieres'],
+      exercise: `Affiche le <strong>nom de l'élève</strong>, le <strong>nom de la matière</strong>, la <strong>note</strong> et le <strong>coefficient</strong>. Trie par nom d'élève puis par matière.`,
+      hint: `SELECT e.nom, m.nom_matiere, n.note, m.coefficient FROM eleves e INNER JOIN notes n ON e.id = n.eleve_id INNER JOIN matieres m ON n.matiere_id = m.id ORDER BY e.nom, m.nom_matiere;`,
+      validate: (res) => res.type === 'select' && res.columns.length >= 3,
+    },
+    {
+      id:'r21', num:21, title:'LEFT JOIN — Inclure les sans-correspondance', tag:'Requête SQL',
+      story: `🔍 Tu veux la liste complète des élèves avec leurs notes — même ceux qui <em>n'ont pas encore de note</em>. Un INNER JOIN exclurait ces élèves. Le <strong>LEFT JOIN</strong> les inclut avec NULL.`,
+      theory:`<span class="highlight">LEFT JOIN</span> retourne TOUTES les lignes de la table gauche, même sans correspondance à droite (→ NULL).<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> e.nom, n.note<br><span class="kw-sql">FROM</span> eleves e<br><span class="kw-sql">LEFT JOIN</span> notes n <span class="kw-sql">ON</span> e.id = n.eleve_id;</div><br>
+      <div class="callout info"><span class="callout-icon">📌</span><div>INNER JOIN = intersection | LEFT JOIN = tout à gauche + correspondances à droite</div></div>`,
+      tables: ['eleves','notes'],
+      exercise: `Avec un <strong>LEFT JOIN</strong>, affiche tous les élèves et leurs notes. Filtre ensuite pour ne garder que ceux dont la note est <strong>NULL</strong> (aucune note enregistrée).`,
+      hint: `SELECT e.nom, e.prenom, n.note FROM eleves e LEFT JOIN notes n ON e.id = n.eleve_id WHERE n.note IS NULL;`,
+      validate: (res) => res.type === 'select',
+    },
+    {
+      id:'r22', num:22, title:'Sous-requête (subquery)', tag:'Requête SQL',
+      story: `🏅 Tu veux les élèves qui ont une moyenne <em>supérieure à la moyenne générale</em> — sans calculer la moyenne à la main. C'est le rôle des <strong>sous-requêtes</strong>.`,
+      theory:`Une sous-requête est un SELECT à l'intérieur d'un autre. Elle est évaluée en premier.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> nom, moyenne<br><span class="kw-sql">FROM</span> eleves<br><span class="kw-sql">WHERE</span> moyenne > (<span class="kw-sql">SELECT</span> <span class="kw-fn">AVG</span>(moyenne) <span class="kw-sql">FROM</span> eleves);</div><br>
+      <div class="callout tip"><span class="callout-icon">💡</span><div>La sous-requête peut retourner une valeur scalaire (1 cellule) ou une liste (pour IN).</div></div>`,
+      tables: ['eleves'],
+      exercise: `Affiche les élèves dont la moyenne est <strong>supérieure à la moyenne générale</strong> de toute la table. Colonnes : nom, prenom, moyenne.`,
+      hint: `SELECT nom, prenom, moyenne FROM eleves WHERE moyenne > (SELECT AVG(moyenne) FROM eleves);`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'r23', num:23, title:'CASE — Conditions dans SELECT', tag:'Requête SQL',
+      story: `📄 Pour le bulletin final, chaque élève doit avoir une <strong>mention</strong> : Très bien, Bien, Assez bien, ou Passable. En SQL, c'est CASE qui joue le rôle du if/else.`,
+      theory:`<span class="highlight">CASE WHEN ... THEN ... ELSE ... END</span> crée une colonne conditionnelle.<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> nom,<br>  <span class="kw-sql">CASE</span><br>    <span class="kw-sql">WHEN</span> moyenne >= <span class="kw-num">16</span> <span class="kw-sql">THEN</span> <span class="kw-str">'Très bien'</span><br>    <span class="kw-sql">WHEN</span> moyenne >= <span class="kw-num">14</span> <span class="kw-sql">THEN</span> <span class="kw-str">'Bien'</span><br>    <span class="kw-sql">ELSE</span> <span class="kw-str">'Passable'</span><br>  <span class="kw-sql">END</span> <span class="kw-sql">AS</span> mention<br><span class="kw-sql">FROM</span> eleves;</div>`,
+      tables: ['eleves'],
+      exercise: `Affiche nom, prenom, moyenne et une colonne "mention" :<br>≥16 → 'Très bien' / ≥14 → 'Bien' / ≥12 → 'Assez bien' / sinon → 'Passable'.<br>Trie par moyenne décroissante.`,
+      hint: `SELECT nom, prenom, moyenne, CASE WHEN moyenne >= 16 THEN 'Très bien' WHEN moyenne >= 14 THEN 'Bien' WHEN moyenne >= 12 THEN 'Assez bien' ELSE 'Passable' END AS mention FROM eleves ORDER BY moyenne DESC;`,
+      validate: (res) => res.type === 'select' && res.columns.some(c=>/mention/i.test(c)),
+    },
+    {
+      id:'r24', num:24, title:'GROUP BY + HAVING', tag:'Requête SQL',
+      story: `📊 Tu veux les <strong>villes avec plus de 2 élèves</strong>. GROUP BY groupe, mais pour filtrer sur un résultat agrégé, il faut <strong>HAVING</strong> — pas WHERE.`,
+      theory:`<span class="highlight">HAVING</span> filtre les groupes après un GROUP BY (WHERE filtre les lignes avant agrégation).<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> ville, <span class="kw-fn">COUNT</span>(*) <span class="kw-sql">AS</span> nb<br><span class="kw-sql">FROM</span> eleves<br><span class="kw-sql">GROUP BY</span> ville<br><span class="kw-sql">HAVING</span> <span class="kw-fn">COUNT</span>(*) > <span class="kw-num">1</span>;</div><br>
+      <div class="callout warn"><span class="callout-icon">⚠️</span><div>WHERE filtre les LIGNES. HAVING filtre les GROUPES (après agrégation).</div></div>`,
+      tables: ['eleves'],
+      exercise: `Affiche les <strong>villes</strong> qui ont <strong>au moins 2 élèves</strong>, avec le nombre d'élèves. Trie par nombre décroissant.`,
+      hint: `SELECT ville, COUNT(*) AS nb_eleves FROM eleves GROUP BY ville HAVING COUNT(*) >= 2 ORDER BY nb_eleves DESC;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'r25', num:25, title:'SUBSTR — Extraire des sous-chaînes', tag:'Requête SQL',
+      story: `🔖 Pour les badges d'identité, on veut afficher les <strong>3 premières lettres</strong> du nom. SUBSTR extrait des morceaux de texte.`,
+      theory:`<span class="highlight">SUBSTR(chaine, debut, longueur)</span> — le premier caractère est à la position 1.<br><br>
+      <div class="code-block"><span class="kw-fn">SUBSTR</span>(nom, <span class="kw-num">1</span>, <span class="kw-num">3</span>) <span class="kw-cmt">-- 3 premiers caractères</span><br><span class="kw-fn">SUBSTR</span>(nom, <span class="kw-num">2</span>)    <span class="kw-cmt">-- à partir du 2ème caractère</span></div>`,
+      tables: ['eleves'],
+      exercise: `Affiche chaque élève avec : nom complet, et les <strong>2 premières lettres du prénom</strong> (alias "initiale_prenom"). Trie par nom.`,
+      hint: `SELECT nom, prenom, SUBSTR(prenom, 1, 2) AS initiale_prenom FROM eleves ORDER BY nom;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'r26', num:26, title:'Self JOIN — Jointure réflexive', tag:'Requête SQL',
+      story: `🤝 Tu veux trouver des <strong>paires d'élèves de la même ville</strong>. La table se joint sur elle-même — c'est un "self join" !`,
+      theory:`Un <strong>self join</strong> : on joint une table avec elle-même (obligatoirement avec des alias pour les distinguer).<br><br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> a.nom, b.nom, a.ville<br><span class="kw-sql">FROM</span> eleves a<br><span class="kw-sql">INNER JOIN</span> eleves b <span class="kw-sql">ON</span> a.ville = b.ville<br><span class="kw-sql">WHERE</span> a.id < b.id; <span class="kw-cmt">-- évite les doublons</span></div>`,
+      tables: ['eleves'],
+      exercise: `Affiche toutes les paires d'élèves habitant la <strong>même ville</strong>. Affiche a.nom, b.nom, a.ville. Utilise <code>a.id < b.id</code> pour éviter les doublons.`,
+      hint: `SELECT a.nom AS eleve1, b.nom AS eleve2, a.ville FROM eleves a INNER JOIN eleves b ON a.ville = b.ville WHERE a.id < b.id;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'r27', num:27, title:'Requête complexe — Tout combiner', tag:'Requête SQL',
+      story: `🎓 Le grand final ! Le directeur veut un rapport complet : pour chaque élève en Terminale avec une note en NSI (matière id=2), afficher le nom, la note NSI, et s'ils ont la mention.`,
+      theory:`Tu connais maintenant :<br>
+      <div class="code-block"><span class="kw-sql">SELECT</span> e.nom, n.note, m.nom_matiere,<br>  <span class="kw-sql">CASE WHEN</span> n.note >= <span class="kw-num">10</span> <span class="kw-sql">THEN</span> <span class="kw-str">'Validé'</span> <span class="kw-sql">ELSE</span> <span class="kw-str">'Non validé'</span> <span class="kw-sql">END</span> <span class="kw-sql">AS</span> statut<br><span class="kw-sql">FROM</span> eleves e<br><span class="kw-sql">JOIN</span> notes n <span class="kw-sql">ON</span> e.id = n.eleve_id<br><span class="kw-sql">JOIN</span> matieres m <span class="kw-sql">ON</span> n.matiere_id = m.id<br><span class="kw-sql">WHERE</span> e.classe = <span class="kw-str">'Terminale'</span> <span class="kw-sql">AND</span> m.nom_matiere = <span class="kw-str">'NSI'</span><br><span class="kw-sql">ORDER BY</span> n.note <span class="kw-sql">DESC</span>;</div>`,
+      tables: ['eleves','notes','matieres'],
+      exercise: `Écris une requête qui affiche pour chaque élève : nom, prénom, nom de la matière, note, et une colonne "statut" (≥10 → 'Admis', sinon → 'Ajourné'). Filtre sur la classe 'Terminale'. Trie par note décroissante.`,
+      hint: `SELECT e.nom, e.prenom, m.nom_matiere, n.note, CASE WHEN n.note >= 10 THEN 'Admis' ELSE 'Ajourné' END AS statut FROM eleves e JOIN notes n ON e.id = n.eleve_id JOIN matieres m ON n.matiere_id = m.id WHERE e.classe = 'Terminale' ORDER BY n.note DESC;`,
+      validate: (res) => res.type === 'select' && res.columns.length >= 4,
+    },
+  ],
+
+  ajout: [
+    {
+      id:'a1', num:1, title:'INSERT INTO — Ajouter une ligne', tag:'Ajout SQL',
+      story: `🆕 Un nouveau élève, <strong>Lucie Dupuis</strong>, vient de s'inscrire au lycée. Il faut ajouter son enregistrement dans la base de données.`,
+      theory:`<span class="highlight">INSERT INTO</span> ajoute une nouvelle ligne.<br><br>
+      <div class="code-block"><span class="kw-sql">INSERT INTO</span> eleves (id, nom, prenom, age, classe, moyenne, ville)<br><span class="kw-sql">VALUES</span> (<span class="kw-num">11</span>, <span class="kw-str">'Dupuis'</span>, <span class="kw-str">'Lucie'</span>, <span class="kw-num">17</span>, <span class="kw-str">'Terminale'</span>, <span class="kw-num">15.0</span>, <span class="kw-str">'Lyon'</span>);</div><br>
+      <div class="callout tip"><span class="callout-icon">💡</span><div>Textes entre guillemets simples, nombres sans guillemets.</div></div>`,
+      tables: ['eleves'],
+      exercise: `Ajoute un élève avec : id=11, nom='Dupuis', prenom='Lucie', age=17, classe='Terminale', moyenne=15.0, ville='Lyon'. Ensuite, vérifie avec un SELECT.`,
+      hint: `INSERT INTO eleves (id, nom, prenom, age, classe, moyenne, ville) VALUES (11, 'Dupuis', 'Lucie', 17, 'Terminale', 15.0, 'Lyon');`,
+      validate: (res) => res.type === 'ok',
+    },
+    {
+      id:'a2', num:2, title:'INSERT partiel — Colonnes optionnelles', tag:'Ajout SQL',
+      story: `📝 Un autre élève s'inscrit mais son dossier n'est pas complet — pas encore de moyenne ni de ville. On peut insérer une ligne incomplète.`,
+      theory:`On peut spécifier seulement certaines colonnes — les autres auront la valeur NULL.<br><br>
+      <div class="code-block"><span class="kw-sql">INSERT INTO</span> eleves (id, nom, prenom, classe)<br><span class="kw-sql">VALUES</span> (<span class="kw-num">12</span>, <span class="kw-str">'Blanc'</span>, <span class="kw-str">'Tom'</span>, <span class="kw-str">'Seconde'</span>);</div><br>
+      <div class="recap-box"><h4>⟳ Rappel</h4>NULL = valeur manquante (vu en leçon Requête n°14).</div>`,
+      tables: ['eleves'],
+      exercise: `Insère un élève (id=12, nom='Blanc', prenom='Tom', classe='Seconde') sans renseigner l'âge, la moyenne ni la ville. Vérifie ensuite avec un SELECT.`,
+      hint: `INSERT INTO eleves (id, nom, prenom, classe) VALUES (12, 'Blanc', 'Tom', 'Seconde');`,
+      validate: (res) => res.type === 'ok',
+    },
+    {
+      id:'a3', num:3, title:'UPDATE — Modifier des données', tag:'Ajout SQL',
+      story: `✏️ Diana a repassé son contrôle — sa moyenne doit être mise à jour de 9.5 à 12.5. <strong>UPDATE</strong> modifie les valeurs existantes.`,
+      theory:`<span class="highlight">UPDATE ... SET ... WHERE</span> — <strong>toujours</strong> mettre un WHERE !<br><br>
+      <div class="code-block"><span class="kw-sql">UPDATE</span> eleves<br><span class="kw-sql">SET</span> moyenne = <span class="kw-num">12.5</span><br><span class="kw-sql">WHERE</span> id = <span class="kw-num">4</span>;</div><br>
+      <div class="callout warn"><span class="callout-icon">⚠️</span><div>Sans WHERE, TOUTES les lignes de la table seraient modifiées ! Vérifie toujours ton WHERE avant d'exécuter.</div></div>`,
+      tables: ['eleves'],
+      exercise: `Mets à jour la <strong>moyenne</strong> de l'élève avec <strong>id=4</strong> à <strong>12.5</strong>. Vérifie ensuite avec un SELECT.`,
+      hint: `UPDATE eleves SET moyenne = 12.5 WHERE id = 4;`,
+      validate: (res) => res.type === 'ok',
+    },
+    {
+      id:'a4', num:4, title:'UPDATE — Plusieurs colonnes', tag:'Ajout SQL',
+      story: `🏠 Bob a déménagé à Bordeaux et a eu une nouvelle note. Il faut mettre à jour deux colonnes en même temps.`,
+      theory:`On peut modifier plusieurs colonnes en les séparant par des virgules dans SET.<br><br>
+      <div class="code-block"><span class="kw-sql">UPDATE</span> eleves<br><span class="kw-sql">SET</span> ville = <span class="kw-str">'Bordeaux'</span>, moyenne = <span class="kw-num">13.5</span><br><span class="kw-sql">WHERE</span> id = <span class="kw-num">2</span>;</div>`,
+      tables: ['eleves'],
+      exercise: `Pour l'élève avec <strong>id=2</strong> : mets à jour sa <strong>ville</strong> en 'Bordeaux' ET sa <strong>moyenne</strong> en 13.5. Vérifie ensuite.`,
+      hint: `UPDATE eleves SET ville = 'Bordeaux', moyenne = 13.5 WHERE id = 2;`,
+      validate: (res) => res.type === 'ok',
+    },
+    {
+      id:'a5', num:5, title:'DELETE — Supprimer des lignes', tag:'Ajout SQL',
+      story: `🗑️ L'élève Iris (id=9) a quitté le lycée. Il faut la retirer de la base. <strong>DELETE</strong> supprime des lignes — avec BEAUCOUP de précaution.`,
+      theory:`<span class="highlight">DELETE FROM ... WHERE</span> — encore une fois, le WHERE est VITAL !<br><br>
+      <div class="code-block"><span class="kw-sql">DELETE FROM</span> eleves <span class="kw-sql">WHERE</span> id = <span class="kw-num">9</span>;</div><br>
+      <div class="callout warn"><span class="callout-icon">☠️</span><div><code>DELETE FROM eleves;</code> sans WHERE = supprime TOUTE la table ! Toujours vérifier le WHERE d'abord avec un SELECT.</div></div>`,
+      tables: ['eleves'],
+      exercise: `Supprime l'élève avec <strong>id=9</strong>. Avant de supprimer, vérifie d'abord avec un SELECT qui est id=9.`,
+      hint: `DELETE FROM eleves WHERE id = 9;`,
+      validate: (res) => res.type === 'ok',
+    },
+    {
+      id:'a6', num:6, title:'DELETE avec condition complexe', tag:'Ajout SQL',
+      story: `📚 La bibliothèque fait du rangement : on supprime tous les livres trop anciens (<em>avant 1950</em>) et pas chers (<em>moins de 8€</em>). Double condition sur DELETE.`,
+      theory:`DELETE accepte n'importe quelle condition WHERE, y compris AND/OR.<br><br>
+      <div class="code-block"><span class="kw-sql">DELETE FROM</span> livres<br><span class="kw-sql">WHERE</span> annee < <span class="kw-num">1950</span> <span class="kw-sql">AND</span> prix < <span class="kw-num">8</span>;</div><br>
+      <div class="callout tip"><span class="callout-icon">💡</span><div>Bonne pratique : faire d'abord <code>SELECT * FROM livres WHERE annee &lt; 1950 AND prix &lt; 8;</code> pour voir ce qui sera supprimé.</div></div>`,
+      tables: ['livres'],
+      exercise: `Supprime les livres parus <strong>avant 1950</strong> ET dont le prix est <strong>inférieur à 8€</strong>. Vérifie ensuite ce qu'il reste dans la table.`,
+      hint: `DELETE FROM livres WHERE annee < 1950 AND prix < 8;`,
+      validate: (res) => res.type === 'ok',
+    },
+    {
+      id:'a7', num:7, title:'INSERT + SELECT — Charger des données', tag:'Ajout SQL',
+      story: `🔄 L'administrateur doit préparer les données : ajouter 3 nouvelles notes pour l'élève Jules (id=10) dans différentes matières.`,
+      theory:`On peut exécuter plusieurs requêtes INSERT successivement.<br><br>
+      <div class="code-block"><span class="kw-cmt">-- Note 1</span><br><span class="kw-sql">INSERT INTO</span> notes (id, eleve_id, matiere_id, note, date_note)<br><span class="kw-sql">VALUES</span> (<span class="kw-num">24</span>, <span class="kw-num">10</span>, <span class="kw-num">3</span>, <span class="kw-num">14</span>, <span class="kw-str">'2024-03-01'</span>);</div>`,
+      tables: ['notes','eleves','matieres'],
+      exercise: `Insère une nouvelle note dans la table <strong>notes</strong> : id=24, eleve_id=10 (Jules), matiere_id=3 (Physique), note=16, date_note='2024-03-15'. Vérifie ensuite avec un SELECT.`,
+      hint: `INSERT INTO notes (id, eleve_id, matiere_id, note, date_note) VALUES (24, 10, 3, 16, '2024-03-15');`,
+      validate: (res) => res.type === 'ok',
+    },
+    {
+      id:'a8', num:8, title:'UPDATE avec sous-requête', tag:'Ajout SQL',
+      story: `📊 Le proviseur décide d'<em>augmenter de 1 point</em> la moyenne de tous les élèves de Lyon qui ont moins de 12. UPDATE ciblé avec une condition précise.`,
+      theory:`UPDATE peut utiliser des conditions complexes ou même des sous-requêtes.<br><br>
+      <div class="code-block"><span class="kw-sql">UPDATE</span> eleves<br><span class="kw-sql">SET</span> moyenne = moyenne + <span class="kw-num">1</span><br><span class="kw-sql">WHERE</span> ville = <span class="kw-str">'Lyon'</span> <span class="kw-sql">AND</span> moyenne < <span class="kw-num">12</span>;</div>`,
+      tables: ['eleves'],
+      exercise: `Augmente de <strong>1 point</strong> la moyenne de tous les élèves de <strong>Lyon</strong> dont la moyenne est <strong>inférieure à 14</strong>. Vérifie les résultats après.`,
+      hint: `UPDATE eleves SET moyenne = moyenne + 1 WHERE ville = 'Lyon' AND moyenne < 14;`,
+      validate: (res) => res.type === 'ok',
+    },
+  ],
+
+  param: [
+    {
+      id:'p1', num:1, title:'CREATE TABLE — Créer une table', tag:'Paramétrage SQL',
+      story: `🏗️ Le lycée veut gérer les <strong>clubs</strong> (théâtre, robotique, sport...). Aucune table n'existe encore — tu dois la créer de zéro.`,
+      theory:`<span class="highlight">CREATE TABLE</span> définit une nouvelle table avec ses colonnes et types.<br><br>
+      <div class="code-block"><span class="kw-sql">CREATE TABLE</span> clubs (<br>  id <span class="kw-str">INTEGER</span>,<br>  nom <span class="kw-str">VARCHAR</span>(<span class="kw-num">100</span>),<br>  responsable <span class="kw-str">VARCHAR</span>(<span class="kw-num">100</span>),<br>  max_membres <span class="kw-str">INTEGER</span>,<br>  <span class="kw-sql">PRIMARY KEY</span> (id)<br>);</div><br>
+      <div class="callout info"><span class="callout-icon">📌</span><div>Types courants : <span class="kw">INTEGER</span>, <span class="kw">VARCHAR(n)</span>, <span class="kw">FLOAT</span>, <span class="kw">DATE</span>, <span class="kw">BOOLEAN</span>, <span class="kw">TEXT</span></div></div>`,
+      tables: [],
+      exercise: `Crée une table <strong>clubs</strong> avec : <strong>id</strong> (INTEGER), <strong>nom</strong> (VARCHAR), <strong>responsable</strong> (VARCHAR), <strong>max_membres</strong> (INTEGER). Puis insère un club de ton choix.`,
+      hint: `CREATE TABLE clubs (id INTEGER, nom VARCHAR(100), responsable VARCHAR(100), max_membres INTEGER);`,
+      validate: (res) => res.type === 'ok',
+    },
+    {
+      id:'p2', num:2, title:'DROP TABLE — Supprimer une table', tag:'Paramétrage SQL',
+      story: `🗑️ La table "temp_import" a servi à importer des données — elle n'est plus utile. On la supprime.`,
+      theory:`<span class="highlight">DROP TABLE</span> supprime une table entière, définitivement.<br><br>
+      <div class="code-block"><span class="kw-sql">DROP TABLE</span> temp_import;<br><span class="kw-sql">DROP TABLE IF EXISTS</span> temp_import; <span class="kw-cmt">-- pas d'erreur si n'existe pas</span></div><br>
+      <div class="callout warn"><span class="callout-icon">☠️</span><div>DROP TABLE est irréversible ! Toutes les données de la table sont perdues.</div></div>`,
+      tables: [],
+      exercise: `Crée une table <strong>temp_test</strong> (id INTEGER, valeur VARCHAR), puis supprime-la avec DROP TABLE.`,
+      hint: `CREATE TABLE temp_test (id INTEGER, valeur VARCHAR(50));\nDROP TABLE temp_test;`,
+      validate: (res) => res.type === 'ok',
+    },
+    {
+      id:'p3', num:3, title:'ALTER TABLE — Ajouter une colonne', tag:'Paramétrage SQL',
+      story: `📱 Le lycée veut stocker les emails des élèves mais la colonne n'existe pas encore dans la table. <strong>ALTER TABLE</strong> permet de modifier une table existante.`,
+      theory:`<span class="highlight">ALTER TABLE ... ADD</span> ajoute une colonne sans perdre les données existantes.<br><br>
+      <div class="code-block"><span class="kw-sql">ALTER TABLE</span> eleves <span class="kw-sql">ADD</span> email <span class="kw-str">VARCHAR</span>(<span class="kw-num">150</span>);</div><br>
+      <div class="callout info"><span class="callout-icon">💡</span><div>La nouvelle colonne aura la valeur NULL pour toutes les lignes existantes.</div></div>`,
+      tables: ['eleves'],
+      exercise: `Ajoute une colonne <strong>email</strong> (VARCHAR) à la table <strong>eleves</strong>. Vérifie ensuite avec un SELECT * FROM eleves.`,
+      hint: `ALTER TABLE eleves ADD email VARCHAR(150);`,
+      validate: (res) => res.type === 'ok',
+    },
+    {
+      id:'p4', num:4, title:'ALTER TABLE — Supprimer une colonne', tag:'Paramétrage SQL',
+      story: `🔒 La colonne "fournisseur_id" dans produits va être déplacée dans une autre table. On la supprime de la table actuelle.`,
+      theory:`<span class="highlight">ALTER TABLE ... DROP COLUMN</span> supprime une colonne.<br><br>
+      <div class="code-block"><span class="kw-sql">ALTER TABLE</span> produits <span class="kw-sql">DROP COLUMN</span> fournisseur_id;</div><br>
+      <div class="callout warn"><span class="callout-icon">⚠️</span><div>Toutes les données de cette colonne sont perdues !</div></div>`,
+      tables: ['produits'],
+      exercise: `Supprime la colonne <strong>fournisseur_id</strong> de la table <strong>produits</strong>. Vérifie la structure ensuite.`,
+      hint: `ALTER TABLE produits DROP COLUMN fournisseur_id;`,
+      validate: (res) => res.type === 'ok',
+    },
+    {
+      id:'p5', num:5, title:'FOREIGN KEY — Clé étrangère', tag:'Paramétrage SQL',
+      story: `🔗 La table <strong>notes</strong> référence la table <strong>eleves</strong> via eleve_id. On veut que la base garantisse qu'on ne peut pas ajouter une note pour un élève qui n'existe pas — c'est le rôle des <strong>clés étrangères</strong>.`,
+      theory:`Une <span class="highlight">FOREIGN KEY</span> lie une colonne à la clé primaire d'une autre table (intégrité référentielle).<br><br>
+      <div class="code-block"><span class="kw-sql">ALTER TABLE</span> notes<br><span class="kw-sql">ADD FOREIGN KEY</span> (eleve_id) <span class="kw-sql">REFERENCES</span> eleves(id);</div><br>
+      <div class="callout info"><span class="callout-icon">📌</span><div>La FK est déclarée sur la table "enfant" (notes), qui référence la table "parent" (eleves).</div></div>`,
+      tables: ['notes','eleves'],
+      exercise: `Ajoute une contrainte de clé étrangère sur <strong>notes.eleve_id</strong> qui référence <strong>eleves.id</strong>.`,
+      hint: `ALTER TABLE notes ADD FOREIGN KEY (eleve_id) REFERENCES eleves(id);`,
+      validate: (res) => res.type === 'ok',
+    },
+    {
+      id:'p6', num:6, title:'CREATE TABLE avec FK', tag:'Paramétrage SQL',
+      story: `🏗️ Tu crées une table <strong>inscriptions</strong> pour gérer les inscriptions aux clubs. Elle doit référencer à la fois les élèves et les clubs via des clés étrangères.`,
+      theory:`On peut déclarer les FK directement dans le CREATE TABLE.<br><br>
+      <div class="code-block"><span class="kw-sql">CREATE TABLE</span> inscriptions (<br>  id <span class="kw-str">INTEGER</span>,<br>  eleve_id <span class="kw-str">INTEGER</span>,<br>  club_id <span class="kw-str">INTEGER</span>,<br>  date_inscription <span class="kw-str">DATE</span>,<br>  <span class="kw-sql">FOREIGN KEY</span> (eleve_id) <span class="kw-sql">REFERENCES</span> eleves(id)<br>);</div>`,
+      tables: ['eleves'],
+      exercise: `Crée une table <strong>absences</strong> avec : id (INTEGER), eleve_id (INTEGER), date_absence (VARCHAR), justifiee (INTEGER), et une FOREIGN KEY sur eleve_id → eleves(id).`,
+      hint: `CREATE TABLE absences (id INTEGER, eleve_id INTEGER, date_absence VARCHAR(20), justifiee INTEGER, FOREIGN KEY (eleve_id) REFERENCES eleves(id));`,
+      validate: (res) => res.type === 'ok',
+    },
+    {
+      id:'p7', num:7, title:'Contraintes — NOT NULL, UNIQUE', tag:'Paramétrage SQL',
+      story: `🔐 Tu crées la table des comptes utilisateurs pour l'ENT. Certains champs sont obligatoires (<strong>NOT NULL</strong>), d'autres doivent être uniques (<strong>UNIQUE</strong>).`,
+      theory:`Les contraintes garantissent la qualité des données :<br><br>
+      <div class="code-block"><span class="kw-sql">CREATE TABLE</span> utilisateurs (<br>  id <span class="kw-str">INTEGER</span> <span class="kw-sql">NOT NULL</span>,<br>  login <span class="kw-str">VARCHAR</span>(<span class="kw-num">50</span>) <span class="kw-sql">UNIQUE NOT NULL</span>,<br>  mdp <span class="kw-str">VARCHAR</span>(<span class="kw-num">255</span>) <span class="kw-sql">NOT NULL</span>,<br>  actif <span class="kw-str">INTEGER</span><br>);</div>`,
+      tables: [],
+      exercise: `Crée une table <strong>utilisateurs</strong> avec : id (INTEGER NOT NULL), login (VARCHAR UNIQUE NOT NULL), mdp (VARCHAR NOT NULL), actif (INTEGER). Insère ensuite 2 utilisateurs.`,
+      hint: `CREATE TABLE utilisateurs (id INTEGER NOT NULL, login VARCHAR(50) UNIQUE NOT NULL, mdp VARCHAR(255) NOT NULL, actif INTEGER);`,
+      validate: (res) => res.type === 'ok',
+    },
+    {
+      id:'p8', num:8, title:'Schéma complet — Révision générale', tag:'Paramétrage SQL',
+      story: `🏗️ Bilan final : tu maîtrises CREATE, DROP, ALTER, les clés étrangères. Voyons si tu sais lire un schéma de base de données et écrire les requêtes qui vont avec.`,
+      theory:`Schéma de la base du lycée :<br><br>
+      <div class="code-block"><span class="kw-cmt">-- eleves (id PK, nom, prenom, age, classe, moyenne, ville)</span><br><span class="kw-cmt">--   ↑ FK depuis notes.eleve_id</span><br><span class="kw-cmt">-- notes (id PK, eleve_id FK→eleves, matiere_id FK→matieres, note, date_note)</span><br><span class="kw-cmt">--   ↑ FK depuis notes.matiere_id</span><br><span class="kw-cmt">-- matieres (id PK, nom_matiere, coefficient, professeur)</span></div><br>
+      <div class="callout recap"><span class="callout-icon">✅</span><div>Tu connais maintenant CREATE TABLE, DROP TABLE, ALTER TABLE ADD/DROP, FOREIGN KEY. C'est tout le DDL (Data Definition Language) du programme NSI !</div></div>`,
+      tables: ['eleves','notes','matieres'],
+      exercise: `Requête de synthèse : affiche le nom de l'élève, le nom de la matière, la note, la date et le coefficient. Filtre sur les notes ≥ 15. Trie par coefficient décroissant puis par note décroissante.`,
+      hint: `SELECT e.nom, m.nom_matiere, n.note, n.date_note, m.coefficient FROM eleves e JOIN notes n ON e.id = n.eleve_id JOIN matieres m ON n.matiere_id = m.id WHERE n.note >= 15 ORDER BY m.coefficient DESC, n.note DESC;`,
+      validate: (res) => res.type === 'select' && res.columns.length >= 4,
+    },
+  ],
+
+  exo: [
+    // ─── FACILE ───
+    {
+      id:'e1', num:1, title:'Exploration basique', tag:'Exercice', difficulty:'easy',
+      story: `🎬 Tu travailles pour une plateforme de streaming et tu dois explorer la base de données des <strong>films</strong> pour préparer un rapport.`,
+      theory:`<div class="callout info"><span class="callout-icon">📋</span><div>Table disponible : <strong>films</strong> (id, titre, realisateur, annee, genre, note_publique, box_office)</div></div>`,
+      tables: ['films'],
+      exercise: `Réponds aux 3 questions suivantes :<br><br>
+      <div class="steps-list">
+        <div class="step-item"><span class="step-num">1</span>Affiche tous les films triés par <strong>note publique décroissante</strong>. Colonnes : titre, realisateur, annee, note_publique.</div>
+        <div class="step-item"><span class="step-num">2</span>Compte le nombre de films par <strong>genre</strong>.</div>
+        <div class="step-item"><span class="step-num">3</span>Affiche les films avec un box-office <strong>supérieur à 500 millions</strong>.</div>
+      </div>`,
+      hint: `-- Q1:\nSELECT titre, realisateur, annee, note_publique FROM films ORDER BY note_publique DESC;\n-- Q2:\nSELECT genre, COUNT(*) AS nb FROM films GROUP BY genre;\n-- Q3:\nSELECT titre, box_office FROM films WHERE box_office > 500000000 ORDER BY box_office DESC;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'e2', num:2, title:'Catalogue produits', tag:'Exercice', difficulty:'easy',
+      story: `🛒 Tu gères le catalogue d'une boutique en ligne. Le directeur commercial a besoin de plusieurs listes.`,
+      theory:`<div class="callout info"><span class="callout-icon">📋</span><div>Tables : <strong>produits</strong> (id, nom, categorie, prix, stock, fournisseur_id) | <strong>fournisseurs</strong> (id, nom, pays, email)</div></div>`,
+      tables: ['produits','fournisseurs'],
+      exercise: `Réponds à ces questions sur les produits :<br><br>
+      <div class="steps-list">
+        <div class="step-item"><span class="step-num">1</span>Affiche tous les produits de la catégorie <strong>'Informatique'</strong>, triés par prix croissant.</div>
+        <div class="step-item"><span class="step-num">2</span>Quel est le <strong>prix moyen</strong>, le <strong>plus cher</strong> et le <strong>moins cher</strong> ? (3 colonnes dans une seule requête)</div>
+        <div class="step-item"><span class="step-num">3</span>Combien de produits sont <strong>en rupture de stock</strong> (stock = 0) ?</div>
+      </div>`,
+      hint: `SELECT nom, prix, stock FROM produits WHERE categorie = 'Informatique' ORDER BY prix ASC;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'e3', num:3, title:'Gestion employés', tag:'Exercice', difficulty:'easy',
+      story: `🏢 La DRH d'une entreprise veut des rapports sur ses <strong>employés</strong>. La base contient les employés et leurs départements.`,
+      theory:`<div class="callout info"><span class="callout-icon">📋</span><div>Tables : <strong>employes</strong> (id, nom, prenom, departement_id, salaire, date_embauche, manager_id) | <strong>departements</strong> (id, nom, budget, ville)</div></div>`,
+      tables: ['employes','departements'],
+      exercise: `Questions RH :<br><br>
+      <div class="steps-list">
+        <div class="step-item"><span class="step-num">1</span>Affiche tous les employés avec leur <strong>salaire supérieur à 50 000€</strong>. Colonnes : nom, prenom, salaire.</div>
+        <div class="step-item"><span class="step-num">2</span>Quel est le <strong>salaire moyen par département</strong> (avec l'id du département) ?</div>
+        <div class="step-item"><span class="step-num">3</span>Affiche les employés <strong>sans manager</strong> (manager_id IS NULL).</div>
+      </div>`,
+      hint: `SELECT nom, prenom, salaire FROM employes WHERE salaire > 50000 ORDER BY salaire DESC;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    // ─── MOYEN ───
+    {
+      id:'e4', num:4, title:'Jointures complexes — Films & stats', tag:'Exercice', difficulty:'medium',
+      story: `📊 La plateforme de streaming veut des statistiques approfondies. Il faut joindre les données et les analyser.`,
+      theory:`<div class="callout info"><span class="callout-icon">📋</span><div>Table : <strong>films</strong> (id, titre, realisateur, annee, genre, note_publique, box_office)</div></div>`,
+      tables: ['films'],
+      exercise: `Exercices de niveau intermédiaire :<br><br>
+      <div class="steps-list">
+        <div class="step-item"><span class="step-num">1</span>Pour chaque <strong>réalisateur</strong> avec plus d'1 film dans la base, affiche son nom, le nombre de ses films et sa note publique moyenne. Trie par note moyenne décroissante.</div>
+        <div class="step-item"><span class="step-num">2</span>Affiche les films avec une note <strong>supérieure à la moyenne générale</strong> de tous les films. Utilise une sous-requête.</div>
+        <div class="step-item"><span class="step-num">3</span>Classe chaque film en catégorie selon son box_office :<br>'Blockbuster' si > 1 milliard | 'Succès' si > 200M | 'Indépendant' sinon.<br>Alias : "categorie_bo".</div>
+      </div>`,
+      hint: `-- Q1:\nSELECT realisateur, COUNT(*) AS nb_films, AVG(note_publique) AS note_moy FROM films GROUP BY realisateur HAVING COUNT(*) > 1 ORDER BY note_moy DESC;\n-- Q2:\nSELECT titre, note_publique FROM films WHERE note_publique > (SELECT AVG(note_publique) FROM films);\n-- Q3:\nSELECT titre, box_office, CASE WHEN box_office > 1000000000 THEN 'Blockbuster' WHEN box_office > 200000000 THEN 'Succès' ELSE 'Indépendant' END AS categorie_bo FROM films;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'e5', num:5, title:'RH avancé — Jointures employés', tag:'Exercice', difficulty:'medium',
+      story: `🏢 La DRH veut un rapport complet : noms des employés avec leur département, leur manager, et des analyses de salaire.`,
+      theory:`<div class="callout info"><span class="callout-icon">📋</span><div>Tables : <strong>employes</strong> (id, nom, prenom, departement_id, salaire, date_embauche, manager_id) | <strong>departements</strong> (id, nom, budget, ville)</div></div>`,
+      tables: ['employes','departements'],
+      exercise: `<div class="steps-list">
+        <div class="step-item"><span class="step-num">1</span>Affiche chaque employé avec le <strong>nom de son département</strong>. (JOIN employes + departements)</div>
+        <div class="step-item"><span class="step-num">2</span>Pour chaque département, affiche le <strong>nom du département, le nombre d'employés et la masse salariale</strong> (SUM des salaires). Trie par masse salariale décroissante.</div>
+        <div class="step-item"><span class="step-num">3</span>Affiche les employés dont le salaire est <strong>supérieur à la moyenne de leur propre département</strong>. (sous-requête corrélée en utilisant departement_id)</div>
+      </div>`,
+      hint: `-- Q1:\nSELECT e.nom, e.prenom, d.nom AS departement FROM employes e JOIN departements d ON e.departement_id = d.id;\n-- Q2:\nSELECT d.nom, COUNT(*) AS nb, SUM(e.salaire) AS masse FROM employes e JOIN departements d ON e.departement_id = d.id GROUP BY d.nom ORDER BY masse DESC;\n-- Q3:\nSELECT nom, prenom, salaire FROM employes e WHERE salaire > (SELECT AVG(salaire) FROM employes WHERE departement_id = e.departement_id);`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'e6', num:6, title:'Commandes & produits — Analyse', tag:'Exercice', difficulty:'medium',
+      story: `🛒 L'équipe e-commerce veut analyser les commandes. Les tables commandes et produits sont liées via produit_id.`,
+      theory:`<div class="callout info"><span class="callout-icon">📋</span><div>Tables : <strong>commandes</strong> (id, client, produit_id, quantite, date_cmd, statut) | <strong>produits</strong> (id, nom, categorie, prix, stock, fournisseur_id)</div></div>`,
+      tables: ['commandes','produits'],
+      exercise: `<div class="steps-list">
+        <div class="step-item"><span class="step-num">1</span>Affiche toutes les commandes avec le <strong>nom du produit commandé</strong>, la quantité et le statut.</div>
+        <div class="step-item"><span class="step-num">2</span>Calcule le <strong>chiffre d'affaires total</strong> de chaque produit (prix × quantite). Trie du plus vendu au moins vendu.</div>
+        <div class="step-item"><span class="step-num">3</span>Quels sont les clients qui ont passé <strong>plus de 2 commandes</strong> ? Affiche leur nom et le nombre de commandes.</div>
+      </div>`,
+      hint: `-- Q1:\nSELECT c.client, p.nom, c.quantite, c.statut FROM commandes c JOIN produits p ON c.produit_id = p.id;\n-- Q2: (difficile - GROUP BY + JOIN)\nSELECT p.nom, SUM(p.prix * c.quantite) AS ca FROM commandes c JOIN produits p ON c.produit_id = p.id GROUP BY p.nom ORDER BY ca DESC;\n-- Q3:\nSELECT client, COUNT(*) AS nb_cmd FROM commandes GROUP BY client HAVING COUNT(*) > 2;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    // ─── DIFFICILE ───
+    {
+      id:'e7', num:7, title:'Analyse NSI complète', tag:'Exercice', difficulty:'hard',
+      story: `🎓 DÉFI DIFFICILE — Le proviseur du lycée Victor Hugo veut un rapport annuel complet. Tu dois exploiter les 3 tables principales avec des requêtes sophistiquées.`,
+      theory:`<div class="callout info"><span class="callout-icon">📋</span><div>Tables : <strong>eleves</strong>, <strong>notes</strong>, <strong>matieres</strong> — tu les connais bien maintenant !</div></div>`,
+      tables: ['eleves','notes','matieres'],
+      exercise: `<div class="steps-list">
+        <div class="step-item"><span class="step-num">1</span>Affiche le <strong>classement des élèves</strong> : nom, prénom, nombre de notes enregistrées, et <strong>moyenne de leurs notes</strong> (pas la colonne moyenne, mais calculée depuis la table notes). Trie par moyenne calculée.</div>
+        <div class="step-item"><span class="step-num">2</span>Quelle est la <strong>matière la plus difficile</strong> ? (celle avec la plus basse moyenne de notes). Affiche le nom de la matière, la moyenne, min et max.</div>
+        <div class="step-item"><span class="step-num">3</span>Affiche les élèves qui ont eu <strong>au moins une note supérieure à 17</strong>. Utilise une sous-requête avec IN.</div>
+        <div class="step-item"><span class="step-num">4</span>Pour chaque classe, affiche le <strong>top 1 élève</strong> (celui avec la meilleure moyenne calculée depuis notes). </div>
+      </div>`,
+      hint: `-- Q1:\nSELECT e.nom, e.prenom, COUNT(n.note) AS nb_notes, AVG(n.note) AS moy_calc FROM eleves e LEFT JOIN notes n ON e.id = n.eleve_id GROUP BY e.nom, e.prenom ORDER BY moy_calc DESC;\n-- Q2:\nSELECT m.nom_matiere, AVG(n.note) AS moy, MIN(n.note) AS min_n, MAX(n.note) AS max_n FROM matieres m JOIN notes n ON m.id = n.matiere_id GROUP BY m.nom_matiere ORDER BY moy ASC;\n-- Q3:\nSELECT nom, prenom FROM eleves WHERE id IN (SELECT eleve_id FROM notes WHERE note > 17);\n-- Q4:\nSELECT e.classe, e.nom, e.prenom, AVG(n.note) AS moy FROM eleves e JOIN notes n ON e.id = n.eleve_id GROUP BY e.classe, e.nom, e.prenom ORDER BY e.classe, moy DESC;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+    {
+      id:'e8', num:8, title:'Mutations RH — INSERT/UPDATE/DELETE', tag:'Exercice', difficulty:'hard',
+      story: `🏢 DÉFI — C'est le mois des mutations chez TechCorp. Tu dois effectuer plusieurs opérations de modification sur la base employés, puis vérifier les résultats.`,
+      theory:`<div class="callout warn"><span class="callout-icon">⚠️</span><div>Souviens-toi : toujours mettre un WHERE dans UPDATE et DELETE !</div></div>`,
+      tables: ['employes','departements'],
+      exercise: `<div class="steps-list">
+        <div class="step-item"><span class="step-num">1</span>Embauche un nouvel employé : id=16, nom='Petit', prenom='Alicia', departement_id=4, salaire=58000, date_embauche='2024-03-01', manager_id=8.</div>
+        <div class="step-item"><span class="step-num">2</span>Augmente de <strong>10%</strong> le salaire de tous les employés du département Technique (id=4). (salaire = salaire * 1.1)</div>
+        <div class="step-item"><span class="step-num">3</span>Supprime les employés embauchés <strong>après 2022</strong> (date_embauche > '2022-12-31').</div>
+        <div class="step-item"><span class="step-num">4</span>Vérifie l'état final : affiche tous les employés avec leur département, triés par salaire décroissant.</div>
+      </div>`,
+      hint: `-- Q1:\nINSERT INTO employes (id, nom, prenom, departement_id, salaire, date_embauche, manager_id) VALUES (16, 'Petit', 'Alicia', 4, 58000, '2024-03-01', 8);\n-- Q2:\nUPDATE employes SET salaire = salaire * 1.1 WHERE departement_id = 4;\n-- Q3:\nDELETE FROM employes WHERE date_embauche > '2022-12-31';\n-- Q4:\nSELECT e.nom, e.prenom, d.nom AS dept, e.salaire FROM employes e JOIN departements d ON e.departement_id = d.id ORDER BY e.salaire DESC;`,
+      validate: (res) => res.type === 'ok' || (res.type === 'select' && res.rows.length > 0),
+    },
+    {
+      id:'e9', num:9, title:'Restructuration BDD — DDL avancé', tag:'Exercice', difficulty:'hard',
+      story: `🏗️ DÉFI DDL — L'entreprise restructure sa base. Tu dois créer de nouvelles tables, les relier, et y importer des données.`,
+      theory:`<div class="callout info"><span class="callout-icon">📋</span><div>Tu vas créer une mini-base de gestion de projets liée aux employés existants.</div></div>`,
+      tables: ['employes'],
+      exercise: `<div class="steps-list">
+        <div class="step-item"><span class="step-num">1</span>Crée une table <strong>projets</strong> : id INTEGER, nom VARCHAR(100), budget FLOAT, responsable_id INTEGER, date_debut VARCHAR(20), FOREIGN KEY(responsable_id) REFERENCES employes(id).</div>
+        <div class="step-item"><span class="step-num">2</span>Insère 3 projets de ton choix (avec des responsable_id qui existent dans employes !).</div>
+        <div class="step-item"><span class="step-num">3</span>Crée une table <strong>affectations</strong> : id INTEGER, employe_id INTEGER, projet_id INTEGER, role VARCHAR(50), heures INTEGER, FOREIGN KEY(employe_id) REFERENCES employes(id).</div>
+        <div class="step-item"><span class="step-num">4</span>Insère au moins 4 affectations, puis affiche-les en joignant les 3 tables (employe.nom, projet.nom, role, heures).</div>
+      </div>`,
+      hint: `-- Q1:\nCREATE TABLE projets (id INTEGER, nom VARCHAR(100), budget FLOAT, responsable_id INTEGER, date_debut VARCHAR(20), FOREIGN KEY (responsable_id) REFERENCES employes(id));\n-- Q2:\nINSERT INTO projets VALUES (1, 'Site Web', 50000, 8, '2024-01-01');\n-- Q3:\nCREATE TABLE affectations (id INTEGER, employe_id INTEGER, projet_id INTEGER, role VARCHAR(50), heures INTEGER, FOREIGN KEY (employe_id) REFERENCES employes(id));\n-- Q4:\nINSERT INTO affectations VALUES (1, 1, 1, 'Dev', 80);\nSELECT e.nom, p.nom AS projet, a.role, a.heures FROM affectations a JOIN employes e ON a.employe_id = e.id JOIN projets p ON a.projet_id = p.id;`,
+      validate: (res) => res.type === 'ok' || (res.type === 'select' && res.rows.length > 0),
+    },
+    // ─── BOSS ───
+    {
+      id:'e10', num:10, title:'🏆 BOSS — Analyse complète multi-tables', tag:'Exercice', difficulty:'boss',
+      story: `🔥 BOSS FINAL — Tu es analyste data pour TechCorp. Le PDG veut un rapport complet croisant TOUTES les tables disponibles : employés, départements, commandes, produits, fournisseurs. Montre ce que tu sais faire.`,
+      theory:`<div class="callout info"><span class="callout-icon">🗄️</span><div>Toutes les tables sont disponibles : <strong>employes, departements, commandes, produits, fournisseurs, films, eleves, notes, matieres</strong></div></div>`,
+      tables: ['employes','departements','commandes','produits','fournisseurs'],
+      exercise: `<div class="steps-list">
+        <div class="step-item"><span class="step-num">1</span><strong>[Jointure 3 tables]</strong> Affiche chaque commande avec le nom du produit, son prix, la quantité, le CA (prix×quantite), et le nom du fournisseur. Trie par CA décroissant.</div>
+        <div class="step-item"><span class="step-num">2</span><strong>[GROUP BY complexe]</strong> Par fournisseur, affiche : nom du fournisseur, nombre de produits fournis, prix moyen, et valeur totale du stock (prix × stock). Trie par valeur stock décroissante.</div>
+        <div class="step-item"><span class="step-num">3</span><strong>[Sous-requête + CASE]</strong> Pour chaque département, affiche son nom, sa ville, sa masse salariale, et une catégorie : 'Rich' si masse > 250000, 'Medium' si > 150000, 'Lean' sinon.</div>
+        <div class="step-item"><span class="step-num">4</span><strong>[SELF JOIN]</strong> Affiche chaque employé avec le nom de son manager (self join sur employes). Inclus les employés sans manager (LEFT JOIN).</div>
+        <div class="step-item"><span class="step-num">5</span><strong>[LIBRE]</strong> Invente et exécute une requête complexe de ton choix qui utilise au moins : 2 tables, GROUP BY, HAVING, et un tri.</div>
+      </div>`,
+      hint: `-- Q1:\nSELECT c.client, p.nom, p.prix, c.quantite, p.prix*c.quantite AS ca, f.nom AS fournisseur FROM commandes c JOIN produits p ON c.produit_id = p.id JOIN fournisseurs f ON p.fournisseur_id = f.id ORDER BY ca DESC;\n-- Q2:\nSELECT f.nom, COUNT(*) AS nb_produits, AVG(p.prix) AS prix_moy, SUM(p.prix*p.stock) AS val_stock FROM fournisseurs f JOIN produits p ON f.id = p.fournisseur_id GROUP BY f.nom ORDER BY val_stock DESC;\n-- Q3:\nSELECT d.nom, d.ville, SUM(e.salaire) AS masse, CASE WHEN SUM(e.salaire) > 250000 THEN 'Rich' WHEN SUM(e.salaire) > 150000 THEN 'Medium' ELSE 'Lean' END AS categorie FROM departements d JOIN employes e ON d.id = e.departement_id GROUP BY d.nom, d.ville;\n-- Q4:\nSELECT e.nom AS employe, m.nom AS manager FROM employes e LEFT JOIN employes m ON e.manager_id = m.id;`,
+      validate: (res) => res.type === 'select' && res.rows.length > 0,
+    },
+  ]
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//  UI STATE
+// ═══════════════════════════════════════════════════════════════════════
+
+let currentCategory = 'requete';
+let currentLessonId = null;
+let completedLessons = JSON.parse(localStorage.getItem('sql_nsi_completed') || '{}');
+let focusMode = false;
+
+function saveProgress() {
+  localStorage.setItem('sql_nsi_completed', JSON.stringify(completedLessons));
+}
+
+function toggleFocusMode() {
+  focusMode = !focusMode;
+  document.body.classList.toggle('focus-mode', focusMode);
+  const btn = document.getElementById('focus-btn');
+  btn.classList.toggle('active', focusMode);
+  btn.textContent = focusMode ? '🔓 Quitter Focus' : '🔒 Mode Focus';
+
+  if (focusMode) {
+    window.onbeforeunload = (e) => {
+      e.preventDefault();
+      e.returnValue = 'Tu es en Mode Focus ! Es-tu sûr(e) de vouloir quitter ?';
+      return e.returnValue;
+    };
+    document.addEventListener('keydown', blockNavKeys);
+  } else {
+    window.onbeforeunload = null;
+    document.removeEventListener('keydown', blockNavKeys);
+  }
+}
+
+function blockNavKeys(e) {
+  // Block Ctrl+L (address bar), Ctrl+T (new tab), Ctrl+W (close tab) in focus mode
+  if (focusMode && e.ctrlKey && (e.key === 'l' || e.key === 't' || e.key === 'w')) {
+    e.preventDefault();
+    showFocusAlert();
+  }
+}
+
+function showFocusAlert() {
+  const overlay = document.getElementById('focus-overlay');
+  overlay.style.animation = 'none';
+  setTimeout(() => overlay.style.animation = '', 50);
+}
+
+function switchCategory(cat) {
+  currentCategory = cat;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  const idx = ['requete','ajout','param','exo'].indexOf(cat);
+  const btns = document.querySelectorAll('.tab-btn');
+  if (btns[idx]) btns[idx].classList.add('active');
+  buildSidebar();
+  document.getElementById('welcome-screen').style.display = 'none';
+  if (currentLessonId) {
+    const lessons = LESSONS[cat];
+    if (!lessons.find(l=>l.id===currentLessonId)) currentLessonId = null;
+  }
+  if (!currentLessonId) showWelcome();
+  else renderLesson(currentLessonId);
+}
+
+function buildSidebar() {
+  const lessons = LESSONS[currentCategory];
+  const list = document.getElementById('lesson-list');
+  list.innerHTML = '';
+  const sect = document.createElement('div');
+  sect.className = 'sidebar-section';
+  const catNames = {requete:'Requêtes SQL', ajout:'Ajout & Modif', param:'Paramétrage', exo:'Exercices pratiques'};
+  sect.innerHTML = `<h3>${catNames[currentCategory]}</h3>`;
+
+  lessons.forEach(l => {
+    const btn = document.createElement('button');
+    const isDone = completedLessons[l.id];
+    btn.className = 'lesson-btn' + (l.id===currentLessonId?' active':'') + (isDone?' done':'');
+    const diffBadge = l.difficulty ? `<span class="difficulty-badge diff-${l.difficulty}">${l.difficulty==='easy'?'Facile':l.difficulty==='medium'?'Moyen':l.difficulty==='hard'?'Difficile':'BOSS'}</span>` : '';
+    btn.innerHTML = `<span class="lesson-num">${isDone?'✓':l.num}</span> ${l.title}${diffBadge}`;
+    btn.onclick = () => renderLesson(l.id);
+    sect.appendChild(btn);
+  });
+  list.appendChild(sect);
+  updateProgress();
+}
+
+function updateProgress() {
+  const lessons = LESSONS[currentCategory];
+  const done = lessons.filter(l=>completedLessons[l.id]).length;
+  const total = lessons.length;
+  document.getElementById('progress-text').textContent = `${done} / ${total}`;
+  document.getElementById('progress-fill').style.width = `${total>0?done/total*100:0}%`;
+}
+
+function showWelcome() {
+  document.getElementById('welcome-screen').style.display = 'flex';
+  document.getElementById('lesson-container').innerHTML = '';
+}
+
+function startCourse() {
+  renderLesson(LESSONS[currentCategory][0].id);
+}
+
+function renderLesson(id) {
+  // restore DB
+  restoreSnapshot();
+
+  const lessons = LESSONS[currentCategory];
+  const lesson = lessons.find(l=>l.id===id);
+  if (!lesson) return;
+
+  currentLessonId = id;
+  document.getElementById('welcome-screen').style.display = 'none';
+  const idx = lessons.indexOf(lesson);
+  const prevLesson = idx > 0 ? lessons[idx-1] : null;
+  const nextLesson = idx < lessons.length-1 ? lessons[idx+1] : null;
+
+  document.querySelectorAll('.lesson-btn').forEach((b,i) => {
+    if (lessons[i]) b.classList.toggle('active', lessons[i].id === id);
+  });
+
+  const tablesHTML = lesson.tables.length > 0 ? buildTablesHTML(lesson.tables) : '';
+  const catClass = {requete:'cat-requete', ajout:'cat-ajout', param:'cat-param', exo:'cat-exo'}[currentCategory];
+  const diffLabel = lesson.difficulty ? ` <span class="difficulty-badge diff-${lesson.difficulty}" style="margin-left:0.4rem">${lesson.difficulty==='easy'?'Facile':lesson.difficulty==='medium'?'Moyen':lesson.difficulty==='hard'?'Difficile':'★ BOSS'}</span>` : '';
+
+  const storyHTML = lesson.story ? `<div class="story-box">${lesson.story}</div>` : '';
+
+  const container = document.getElementById('lesson-container');
+  container.innerHTML = `
+    <div class="lesson-view active" id="lv_${id}">
+      <div class="lesson-header">
+        <div class="lesson-tag">
+          <span class="cat-badge ${catClass}">${lesson.tag}</span>
+          ${lesson.difficulty ? '' : `&nbsp;Leçon ${lesson.num}`}
+          ${diffLabel}
+        </div>
+        <h1 class="lesson-title">${lesson.title}</h1>
+      </div>
+
+      ${storyHTML}
+
+      <div class="card">
+        <div class="card-header"><div class="dot"></div> Cours</div>
+        <div class="card-body">
+          <div class="theory">${lesson.theory}</div>
+        </div>
+      </div>
+
+      ${tablesHTML ? `
+      <div class="card">
+        <div class="card-header"><div class="dot yellow"></div> Tables disponibles</div>
+        <div class="card-body">${tablesHTML}</div>
+      </div>` : ''}
+
+      <div class="card">
+        <div class="card-header"><div class="dot green"></div> Exercice${lesson.difficulty ? ' · ' + (lesson.difficulty==='easy'?'Facile':lesson.difficulty==='medium'?'Niveau Moyen':lesson.difficulty==='hard'?'Difficile':'BOSS FINAL') : ''}</div>
+        <div class="card-body" style="display:flex;flex-direction:column;gap:1rem;">
+          <div style="font-size:0.88rem;line-height:1.75;color:var(--text)">${lesson.exercise}</div>
+
+          <div class="sql-editor-wrap">
+            <div class="editor-toolbar">
+              <span class="editor-label">✦ Éditeur SQL</span>
+              <div class="editor-actions">
+                <button class="btn btn-hint" onclick="toggleHint('${id}')">💡 Indice</button>
+                <button class="btn btn-solution" onclick="showSolution('${id}')">👁 Solution</button>
+                <button class="btn btn-reset" onclick="resetEditor('${id}')">↺ Reset</button>
+                <button class="btn btn-run" onclick="runQuery('${id}')">▶ Exécuter</button>
+              </div>
+            </div>
+            <textarea class="sql-input" id="input_${id}" placeholder="-- Écris ta requête SQL ici...
+-- Ctrl+Entrée pour exécuter" onkeydown="handleKeydown(event, '${id}')"></textarea>
+            <div class="result-area" id="result_${id}">
+              <div class="result-status info">En attente d'une requête...</div>
+            </div>
+          </div>
+
+          <div class="hint-box" id="hint_${id}">💡 <strong>Indice :</strong><br><code>${escHtml(lesson.hint.split('\n')[0])}</code></div>
+          <div class="hint-box" id="solution_${id}" style="border-color:rgba(255,107,107,0.3);color:var(--accent2);background:rgba(255,107,107,0.06)">📋 <strong>Solution complète :</strong><pre style="margin-top:0.5rem;white-space:pre-wrap;font-size:0.82rem">${escHtml(lesson.hint)}</pre></div>
+          <div class="success-banner" id="success_${id}">✅ Excellent ! Requête validée — tu peux passer à la suite.</div>
+        </div>
+      </div>
+
+      <div class="lesson-nav">
+        <button class="btn-nav" ${!prevLesson?'disabled':''} onclick="${prevLesson?`renderLesson('${prevLesson.id}')`:''}" >← Précédent</button>
+        <span style="font-size:0.73rem;color:var(--text-muted);font-family:var(--font-mono);">${idx+1} / ${lessons.length}</span>
+        <button class="btn-nav" ${!nextLesson?'disabled':''} onclick="${nextLesson?`renderLesson('${nextLesson.id}')`:''}" >Suivant →</button>
+      </div>
+    </div>
+  `;
+
+  if (completedLessons[id]) {
+    const s = document.getElementById(`success_${id}`);
+    if (s) s.classList.add('show');
+  }
+}
+
+function buildTablesHTML(tableNames) {
+  const available = tableNames.filter(n => DB.tables[n]);
+  if (available.length === 0) return '';
+  if (available.length === 1) return buildTableHTML(available[0]);
+  return `<div class="schema-grid">${available.map(t => buildTableHTMLCompact(t)).join('')}</div>`;
+}
+
+function buildTableHTML(name) {
+  const t = DB.tables[name];
+  if (!t) return '';
+  const preview = t.rows.slice(0,5);
+  return `
+    <div class="schema-wrap">
+      <div style="font-family:var(--font-mono);font-size:0.68rem;color:var(--accent);margin-bottom:0.4rem;font-weight:700;">TABLE: ${name.toUpperCase()} (${t.rows.length} lignes)</div>
+      <table class="schema-table">
+        <thead><tr>${t.columns.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+        <tbody>${preview.map(r=>`<tr>${r.map(v=>`<td>${v===null?'<span class="null-val">NULL</span>':v}</td>`).join('')}</tr>`).join('')}
+        ${t.rows.length>5?`<tr><td colspan="${t.columns.length}" style="color:var(--text-muted);font-style:italic;text-align:center;padding:0.35rem;font-size:0.75rem">... ${t.rows.length-5} autres lignes</td></tr>`:''}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function buildTableHTMLCompact(name) {
+  const t = DB.tables[name];
+  if (!t) return '';
+  const preview = t.rows.slice(0,3);
+  return `
+    <div class="schema-card">
+      <div class="schema-card-title">TABLE: ${name.toUpperCase()} (${t.rows.length} lignes)</div>
+      <table class="schema-table">
+        <thead><tr>${t.columns.map(c=>`<th>${c}</th>`).join('')}</tr></thead>
+        <tbody>${preview.map(r=>`<tr>${r.map(v=>`<td>${v===null?'<span class="null-val">NULL</span>':escHtml(String(v))}</td>`).join('')}</tr>`).join('')}
+        ${t.rows.length>3?`<tr><td colspan="${t.columns.length}" style="color:var(--text-muted);text-align:center;font-style:italic;padding:0.3rem;font-size:0.72rem">+${t.rows.length-3} lignes</td></tr>`:''}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function handleKeydown(e, id) {
+  if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); runQuery(id); }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const ta = e.target, s = ta.selectionStart;
+    ta.value = ta.value.slice(0,s) + '  ' + ta.value.slice(ta.selectionEnd);
+    ta.selectionStart = ta.selectionEnd = s+2;
+  }
+}
+
+function toggleHint(id) {
+  document.getElementById(`hint_${id}`).classList.toggle('show');
+}
+
+function showSolution(id) {
+  document.getElementById(`solution_${id}`).classList.toggle('show');
+}
+
+function resetEditor(id) {
+  document.getElementById(`input_${id}`).value = '';
+  document.getElementById(`result_${id}`).innerHTML = '<div class="result-status info">En attente d\'une requête...</div>';
+  document.getElementById(`hint_${id}`).classList.remove('show');
+  document.getElementById(`solution_${id}`).classList.remove('show');
+  restoreSnapshot();
+}
+
+function runQuery(id) {
+  const input = document.getElementById(`input_${id}`);
+  const resultDiv = document.getElementById(`result_${id}`);
+  const sql = input.value.trim();
+
+  if (!sql) { resultDiv.innerHTML = '<div class="result-status error">⚠ Requête vide.</div>'; return; }
+
+  const result = executeSQL(sql);
+  renderResult(resultDiv, result);
+
+  const lesson = [...LESSONS.requete,...LESSONS.ajout,...LESSONS.param,...LESSONS.exo].find(l=>l.id===id);
+  if (lesson && result.type !== 'error') {
+    try {
+      if (lesson.validate(result)) {
+        completedLessons[id] = true;
+        saveProgress();
+        buildSidebar();
+        const banner = document.getElementById(`success_${id}`);
+        if (banner) banner.classList.add('show');
+      }
+    } catch(e) {}
+  }
+}
+
+function renderResult(div, result) {
+  if (result.type === 'error') {
+    div.innerHTML = `<div class="result-status error">❌ ERREUR SQL : ${escHtml(result.message)}</div>`;
+    return;
+  }
+  if (result.type === 'ok') {
+    div.innerHTML = `<div class="result-status success">✓ ${escHtml(result.message)}</div>`;
+    return;
+  }
+  if (result.type === 'select') {
+    let html = `<div class="result-status success">✓ ${escHtml(result.message)}</div>`;
+    if (result.rows.length > 0) {
+      const displayRows = result.rows.slice(0, 50);
+      html += `<div class="result-table-wrap"><table class="result-table">
+        <thead><tr>${result.columns.map(c=>`<th>${escHtml(String(c))}</th>`).join('')}</tr></thead>
+        <tbody>${displayRows.map(r=>`<tr>${r.map(v=>`<td>${v===null?'<span class="null-val">NULL</span>':escHtml(String(v))}</td>`).join('')}</tr>`).join('')}</tbody>
+      </table>`;
+      if (result.rows.length > 50) html += `<div style="padding:0.5rem;font-size:0.72rem;color:var(--text-muted);font-family:var(--font-mono)">... ${result.rows.length - 50} lignes supplémentaires non affichées</div>`;
+      html += `</div>`;
+    }
+    div.innerHTML = html;
+  }
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ─── INIT ───
+buildSidebar();
+showWelcome();
+</script>
+</body>
+</html>
