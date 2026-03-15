@@ -526,8 +526,21 @@
 <body>
 
 <div id="focus-overlay">
-  <span>🔒 MODE FOCUS ACTIVÉ — Concentration maximale</span>
-  <button onclick="toggleFocusMode()">Quitter</button>
+  <span>🔒 MODE FOCUS — Plein écran activé</span>
+  <button onclick="askExitFocus()">Quitter</button>
+</div>
+
+<!-- FOCUS EXIT CONFIRMATION DIALOG -->
+<div id="focus-exit-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;align-items:center;justify-content:center;backdrop-filter:blur(8px);">
+  <div style="background:#161922;border:1px solid #c084fc;border-radius:16px;padding:2.5rem 2rem;max-width:460px;width:90%;text-align:center;display:flex;flex-direction:column;gap:1.2rem;box-shadow:0 0 60px rgba(192,132,252,0.3);">
+    <div style="font-size:2.5rem">🧠</div>
+    <div style="font-size:1.1rem;font-weight:800;color:#c084fc;letter-spacing:-0.3px">Quitter le Mode Focus ?</div>
+    <div style="font-size:0.9rem;color:#a0a8bc;line-height:1.7">Apprendre <strong style="color:#e8eaf0">sans internet</strong> est la meilleure solution pour devenir un pro du SQL.<br>Chercher les réponses en ligne t'empêche de vraiment mémoriser.</div>
+    <div style="display:flex;gap:0.8rem;justify-content:center;margin-top:0.5rem;">
+      <button onclick="cancelExitFocus()" style="flex:1;padding:0.75rem 1.2rem;background:#c084fc;color:#000;border:none;border-radius:8px;font-family:'Syne',sans-serif;font-size:0.88rem;font-weight:800;cursor:pointer;">🔒 Rester en Focus</button>
+      <button onclick="confirmExitFocus()" style="flex:1;padding:0.75rem 1.2rem;background:transparent;color:#7a859a;border:1px solid #2a3045;border-radius:8px;font-family:'Syne',sans-serif;font-size:0.88rem;font-weight:700;cursor:pointer;">Quitter quand même</button>
+    </div>
+  </div>
 </div>
 
 <header>
@@ -861,6 +874,20 @@ function buildRowObj(columns, row, tableName) {
     obj[`${tableName}.${col}`] = row[i];
     obj[col] = row[i];
   });
+  // Track ordered column list for SELECT * expansion
+  if (!obj.__cols__) obj.__cols__ = [];
+  columns.forEach(col => {
+    if (!obj.__cols__.includes(col)) obj.__cols__.push(col);
+  });
+  return obj;
+}
+
+function mergeRowObjs(left, right, rightCols) {
+  // Merge two row objects, preserving both __cols__ lists
+  const obj = Object.assign({}, left, right);
+  const leftCols = left.__cols__ || [];
+  const addCols = (rightCols || []).filter(c => !leftCols.includes(c));
+  obj.__cols__ = [...leftCols, ...addCols];
   return obj;
 }
 
@@ -884,13 +911,14 @@ function performJoin(leftRows, rightTable, condition, aliases, isLeft, rightTabl
   for (const lrow of leftRows) {
     let matched = false;
     for (const rrow of rightRows) {
-      const combined = {...lrow, ...rrow};
+      const combined = mergeRowObjs(lrow, rrow, rightTable.columns);
       if (evalCondition(condition, combined, aliases)) { result.push(combined); matched = true; }
     }
     if (isLeft && !matched) {
       const nullRight = {};
       rightTable.columns.forEach(c => { nullRight[`${rightTableName}.${c}`] = null; nullRight[c] = null; });
-      result.push({...lrow, ...nullRight});
+      nullRight.__cols__ = rightTable.columns;
+      result.push(mergeRowObjs(lrow, nullRight, rightTable.columns));
     }
   }
   return result;
@@ -1009,44 +1037,36 @@ function parseRawVal(s) {
 
 function applySelect(colsRaw, rows, aliases, allowNonAgg) {
   const colDefs = splitCols(colsRaw);
-  const selectedCols = [];
   const resultRows = [];
   const hasAgg = colDefs.some(c => /\b(COUNT|SUM|AVG|MAX|MIN)\s*\(/i.test(c));
 
+  // Helper: expand a single col def into [{alias, expr}] — handles * expansion
+  function expandColDef(cd, sampleRow) {
+    const {alias, expr} = colAlias(cd);
+    if (expr.trim() === '*') {
+      // Use __cols__ to preserve original table column order
+      const cols = (sampleRow && sampleRow.__cols__) ? sampleRow.__cols__ : [];
+      return cols.map(k => ({alias: k, expr: k}));
+    }
+    return [{alias: alias || computeColName(expr), expr}];
+  }
+
   if (hasAgg && rows.length === 0) {
-    colDefs.forEach(cd => { const {alias,expr} = colAlias(cd); selectedCols.push(alias||computeColName(expr)); });
+    const selectedCols = colDefs.map(cd => { const {alias,expr} = colAlias(cd); return alias||computeColName(expr); });
     resultRows.push(colDefs.map(cd => /\bCOUNT\s*\(/i.test(cd) ? 0 : null));
     return { selectedCols, resultRows };
   }
 
   if (hasAgg && rows[0] && !('__group__' in rows[0])) {
-    colDefs.forEach(cd => { const {alias,expr} = colAlias(cd); selectedCols.push(alias||computeColName(expr)); });
+    const selectedCols = colDefs.map(cd => { const {alias,expr} = colAlias(cd); return alias||computeColName(expr); });
     resultRows.push(colDefs.map(cd => { const {expr} = colAlias(cd); return computeAgg(expr, rows, aliases); }));
     return { selectedCols, resultRows };
   }
 
-  colDefs.forEach(cd => { const {alias,expr} = colAlias(cd); selectedCols.push(alias||computeColName(expr)); });
-
-  // Handle SELECT * expansion
-  const expandedCols = [];
-  const expandedDefs = [];
-  for (const cd of colDefs) {
-    const {alias, expr} = colAlias(cd);
-    if (expr.trim() === '*') {
-      // expand all columns from all available rows keys
-      if (rows.length > 0) {
-        const keys = Object.keys(rows[0]).filter(k => !k.includes('.') && !k.startsWith('__'));
-        keys.forEach(k => { expandedCols.push(k); expandedDefs.push({alias: k, expr: k}); });
-      }
-    } else {
-      expandedCols.push(alias||computeColName(expr));
-      expandedDefs.push({alias, expr});
-    }
-  }
-
-  // Rebuild selectedCols with expansion
-  selectedCols.length = 0;
-  expandedCols.forEach(c => selectedCols.push(c));
+  // Build expanded defs using first row as sample
+  const sampleRow = rows[0] || null;
+  const expandedDefs = colDefs.flatMap(cd => expandColDef(cd, sampleRow));
+  const selectedCols = expandedDefs.map(d => d.alias);
 
   for (const row of rows) {
     const resultRow = expandedDefs.map(({alias, expr}) => {
@@ -1076,8 +1096,8 @@ function colAlias(colDef) {
 function evalExpr(expr, row, aliases) {
   expr = expr.trim();
   if (expr === '*') {
-    const vals = Object.entries(row).filter(([k]) => !k.includes('.') && !k.startsWith('__')).map(([,v])=>v);
-    return vals[0] ?? null;
+    // Should not be called — * is expanded in applySelect. Return null safely.
+    return null;
   }
   if (/^CASE\b/i.test(expr)) return evalCase(expr, row, aliases);
   const substrM = expr.match(/^SUBSTR(?:ING)?\s*\(\s*(.+?)\s*,\s*(\d+)\s*(?:,\s*(\d+)\s*)?\)$/i);
@@ -1137,7 +1157,8 @@ function performGroupBy(rows, groupByClause, colsRaw) {
     groups[keyStr].rows.push(row);
   }
   return Object.values(groups).map(g => {
-    const baseRow = {...g.rows[0], '__group__':true};
+    const baseRow = Object.assign({}, g.rows[0], { '__group__': true });
+    // precompute aggregates
     splitCols(colsRaw).forEach(cd => {
       const {expr} = colAlias(cd);
       if (/\b(COUNT|SUM|AVG|MAX|MIN)\s*\(/i.test(expr)) baseRow['__agg__'+expr.toUpperCase()] = computeAgg(expr, g.rows, {});
@@ -1927,37 +1948,61 @@ function saveProgress() {
 }
 
 function toggleFocusMode() {
-  focusMode = !focusMode;
-  document.body.classList.toggle('focus-mode', focusMode);
+  if (!focusMode) { enableFocusMode(); } else { askExitFocus(); }
+}
+
+function enableFocusMode() {
+  focusMode = true;
+  document.body.classList.add('focus-mode');
   const btn = document.getElementById('focus-btn');
-  btn.classList.toggle('active', focusMode);
-  btn.textContent = focusMode ? '🔓 Quitter Focus' : '🔒 Mode Focus';
-
-  if (focusMode) {
-    window.onbeforeunload = (e) => {
-      e.preventDefault();
-      e.returnValue = 'Tu es en Mode Focus ! Es-tu sûr(e) de vouloir quitter ?';
-      return e.returnValue;
-    };
-    document.addEventListener('keydown', blockNavKeys);
-  } else {
-    window.onbeforeunload = null;
-    document.removeEventListener('keydown', blockNavKeys);
-  }
+  btn.classList.add('active');
+  btn.textContent = '🔓 Quitter Focus';
+  const el = document.documentElement;
+  if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+  document.addEventListener('webkitfullscreenchange', onFullscreenChange);
 }
 
-function blockNavKeys(e) {
-  // Block Ctrl+L (address bar), Ctrl+T (new tab), Ctrl+W (close tab) in focus mode
-  if (focusMode && e.ctrlKey && (e.key === 'l' || e.key === 't' || e.key === 'w')) {
-    e.preventDefault();
-    showFocusAlert();
-  }
+function onFullscreenChange() {
+  const isFs = !!(document.fullscreenElement || document.webkitFullscreenElement);
+  if (!isFs && focusMode) { showFocusExitDialog(); }
 }
 
-function showFocusAlert() {
-  const overlay = document.getElementById('focus-overlay');
-  overlay.style.animation = 'none';
-  setTimeout(() => overlay.style.animation = '', 50);
+function showFocusExitDialog() {
+  document.getElementById('focus-exit-overlay').style.display = 'flex';
+}
+
+function confirmExitFocus() {
+  document.getElementById('focus-exit-overlay').style.display = 'none';
+  disableFocusMode();
+}
+
+function cancelExitFocus() {
+  document.getElementById('focus-exit-overlay').style.display = 'none';
+  const el = document.documentElement;
+  if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+}
+
+function askExitFocus() {
+  if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+  else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  setTimeout(() => { if (focusMode) showFocusExitDialog(); }, 150);
+}
+
+function disableFocusMode() {
+  focusMode = false;
+  document.body.classList.remove('focus-mode');
+  const btn = document.getElementById('focus-btn');
+  btn.classList.remove('active');
+  btn.textContent = '🔒 Mode Focus';
+  document.removeEventListener('fullscreenchange', onFullscreenChange);
+  document.removeEventListener('webkitfullscreenchange', onFullscreenChange);
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  }
 }
 
 function switchCategory(cat) {
