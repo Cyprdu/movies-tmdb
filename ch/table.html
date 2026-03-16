@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -471,14 +472,15 @@
   /* ─── EXERCISE VIEW ─── */
   #exercise-view {
     display: none;
-    padding: 40px 48px;
-    max-width: 1100px;
+    padding: 28px 36px 48px;
+    max-width: 1400px;
     margin: 0 auto;
   }
   #exercise-view.active { display: block; }
 
   .ex-header {
-    display: flex; align-items: center; gap: 16px; margin-bottom: 40px;
+    display: flex; align-items: center; gap: 16px; margin-bottom: 24px;
+    flex-wrap: wrap;
   }
   .btn-back {
     display: flex; align-items: center; gap: 8px;
@@ -488,57 +490,102 @@
     font-size: 0.85rem; font-weight: 700; transition: all 0.2s;
   }
   .btn-back:hover { color: var(--text); border-color: var(--accent); }
-  .ex-title { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em; }
+  .ex-title { font-size: 1.4rem; font-weight: 800; letter-spacing: -0.03em; }
   .ex-diff { margin-left: auto; }
 
-  .ex-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px; }
-  @media (max-width: 800px) { .ex-layout { grid-template-columns: 1fr; } }
+  /* Save indicator */
+  .save-indicator {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.75rem; font-weight: 600; color: var(--text3);
+    padding: 6px 12px; border-radius: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    transition: all 0.3s;
+  }
+  .save-indicator.saving { color: var(--gold); border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.06); }
+  .save-indicator.saved { color: var(--green); border-color: rgba(16,185,129,0.3); background: rgba(16,185,129,0.06); }
+  .save-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
-  .ex-panel {
+  /* Resume banner */
+  .resume-banner {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 20px; border-radius: 14px; margin-bottom: 20px;
+    background: rgba(108,99,255,0.07); border: 1px solid rgba(108,99,255,0.25);
+    animation: fadeUp 0.4s ease;
+  }
+  .resume-banner .rb-icon { font-size: 1.3rem; flex-shrink: 0; }
+  .resume-banner .rb-text { font-size: 0.88rem; color: var(--text2); flex: 1; }
+  .resume-banner .rb-text strong { color: var(--accent2); }
+  .resume-banner .rb-dismiss {
+    font-size: 0.75rem; font-weight: 700; color: var(--text3);
+    cursor: pointer; padding: 4px 8px; border-radius: 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
+  }
+  .resume-banner .rb-dismiss:hover { color: var(--text); }
+
+  /* Main exercise layout: sticky graph left, table right */
+  .ex-workspace {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+    align-items: start;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 900px) { .ex-workspace { grid-template-columns: 1fr; } }
+
+  .ex-graph-panel {
+    position: sticky;
+    top: 84px;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 20px; overflow: hidden;
   }
+  .ex-table-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px; overflow: hidden;
+    min-width: 0;
+  }
+
   .ex-panel-header {
-    padding: 16px 24px;
+    padding: 14px 20px;
     border-bottom: 1px solid var(--border);
     display: flex; align-items: center; gap: 10px;
     background: var(--bg2);
   }
-  .ex-panel-header h3 { font-size: 0.85rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; }
-  .ex-panel-body { padding: 24px; }
+  .ex-panel-header h3 { font-size: 0.8rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; }
+  .ex-panel-body { padding: 16px; }
 
   /* SVG Graph in exercise */
-  .ex-graph-svg { width: 100%; max-height: 320px; }
+  .ex-graph-svg { width: 100%; max-height: 280px; }
 
-  /* Routing table input */
-  .routing-table-wrap { overflow-x: auto; }
+  /* Routing table — fills available width, no horizontal scroll */
+  .routing-table-wrap { width: 100%; overflow: visible; }
   .routing-table {
     width: 100%; border-collapse: collapse;
-    font-family: 'DM Mono', monospace; font-size: 0.8rem;
+    table-layout: fixed;
+    font-family: 'DM Mono', monospace; font-size: 0.72rem;
   }
   .routing-table th {
     background: var(--bg2); border: 1px solid var(--border2);
-    padding: 8px 10px; color: var(--accent2); font-weight: 700;
-    text-align: center; font-size: 0.72rem; text-transform: uppercase;
-    white-space: nowrap;
+    padding: 7px 3px; color: var(--accent2); font-weight: 700;
+    text-align: center; font-size: 0.65rem; text-transform: uppercase;
+    word-break: break-word; overflow-wrap: anywhere;
   }
-  .routing-table th.fixed-col { min-width: 90px; }
   .routing-table td {
     border: 1px solid var(--border);
-    padding: 4px;
-    text-align: center;
-    vertical-align: middle;
+    padding: 2px; text-align: center; vertical-align: middle;
+    word-break: break-word; overflow-wrap: anywhere;
   }
   .routing-table td.row-info {
     background: var(--bg2); color: var(--text2); font-weight: 600;
-    padding: 6px 10px; font-size: 0.8rem; white-space: nowrap;
+    padding: 5px 3px; font-size: 0.68rem; white-space: normal;
+    word-break: break-word;
   }
   .routing-table input {
-    width: 100%; min-width: 70px;
-    background: transparent; border: none;
-    color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.78rem;
-    text-align: center; padding: 8px 4px; outline: none;
+    width: 100%; background: transparent; border: none;
+    color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.68rem;
+    text-align: center; padding: 6px 2px; outline: none;
     transition: background 0.15s;
   }
   .routing-table input:focus { background: rgba(108,99,255,0.08); border-radius: 4px; }
@@ -1040,25 +1087,37 @@
         <button class="btn-back" onclick="closeExercise()">← Retour</button>
         <div class="ex-title" id="ex-title">Exercice 1</div>
         <div class="ex-diff" id="ex-diff-badge"></div>
+        <div class="save-indicator" id="save-indicator">
+          <div class="save-dot"></div>
+          <span id="save-label">Prêt</span>
+        </div>
       </div>
 
-      <div class="ex-layout">
-        <div class="ex-panel">
+      <div id="resume-banner" class="resume-banner" style="display:none">
+        <div class="rb-icon">💾</div>
+        <div class="rb-text"><strong>Progression restaurée !</strong> Votre avancement a été sauvegardé automatiquement. Vous reprenez là où vous vous étiez arrêté.</div>
+        <span class="rb-dismiss" onclick="document.getElementById('resume-banner').style.display='none'">Fermer ×</span>
+      </div>
+
+      <div class="ex-workspace">
+        <!-- LEFT: sticky graph -->
+        <div class="ex-graph-panel">
           <div class="ex-panel-header">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
             <h3>Graphe du réseau</h3>
           </div>
-          <div class="ex-panel-body" style="display:flex;justify-content:center;align-items:center;min-height:280px;">
+          <div class="ex-panel-body" style="display:flex;justify-content:center;align-items:center;min-height:240px;">
             <svg id="ex-graph-svg" viewBox="0 0 400 300" class="ex-graph-svg"></svg>
           </div>
         </div>
 
-        <div class="ex-panel">
+        <!-- RIGHT: routing table -->
+        <div class="ex-table-panel">
           <div class="ex-panel-header">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
             <h3>Table de routage à compléter</h3>
           </div>
-          <div class="ex-panel-body">
+          <div class="ex-panel-body" style="padding:12px">
             <div class="routing-table-wrap">
               <table class="routing-table" id="routing-table"></table>
             </div>
@@ -1105,6 +1164,85 @@
 
 <script>
 // ══════════════════════════════════════════════════════
+//  CACHE / AUTOSAVE SYSTEM
+// ══════════════════════════════════════════════════════
+const CACHE_KEY = 'routeforge_state';
+let saveTimer = null;
+
+function saveState() {
+  if (!currentExercise) return;
+  const inputs = {};
+  document.querySelectorAll('.rt-input').forEach(inp => {
+    const key = `${inp.dataset.row}_${inp.dataset.col}`;
+    inputs[key] = inp.value;
+  });
+  const state = {
+    exerciseId: currentExercise.id,
+    inputs,
+    timestamp: Date.now(),
+    section: 'exercices'
+  };
+  try {
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify(state));
+    localStorage.setItem(CACHE_KEY, JSON.stringify(state));
+  } catch(e) {}
+  showSaveIndicator('saved');
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY) || sessionStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch(e) { return null; }
+}
+
+function clearState() {
+  try {
+    localStorage.removeItem(CACHE_KEY);
+    sessionStorage.removeItem(CACHE_KEY);
+  } catch(e) {}
+}
+
+function scheduleSave() {
+  showSaveIndicator('saving');
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 800);
+}
+
+function showSaveIndicator(status) {
+  const el = document.getElementById('save-indicator');
+  const label = document.getElementById('save-label');
+  if (!el) return;
+  el.className = `save-indicator ${status}`;
+  label.textContent = status === 'saving' ? 'Sauvegarde…' : status === 'saved' ? 'Sauvegardé ✓' : 'Prêt';
+  if (status === 'saved') {
+    clearTimeout(el._resetTimer);
+    el._resetTimer = setTimeout(() => {
+      el.className = 'save-indicator';
+      label.textContent = 'Prêt';
+    }, 2500);
+  }
+}
+
+function restoreInputs(inputs) {
+  Object.entries(inputs).forEach(([key, val]) => {
+    const [row, ...colParts] = key.split('_');
+    const col = colParts.join('_');
+    const inp = document.querySelector(`input[data-row="${row}"][data-col="${col}"]`);
+    if (inp) inp.value = val;
+  });
+}
+
+// Auto-save on page hide / unload
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden' && currentExercise) saveState();
+});
+window.addEventListener('beforeunload', () => {
+  if (currentExercise) saveState();
+});
+
+// ══════════════════════════════════════════════════════
 //  NAVIGATION
 // ══════════════════════════════════════════════════════
 function showSection(id) {
@@ -1137,9 +1275,7 @@ const EXERCISES = [
     edges: [{u:'R1',v:'R2',w:3},{u:'R1',v:'R3',w:5},{u:'R2',v:'R3',w:1},{u:'R2',v:'R4',w:4},{u:'R3',v:'R4',w:2}],
     source: 'R1',
     hint: 'Commencez par identifier tous les voisins directs de R1. R2 est à coût 3, R3 à coût 5. Ensuite le sommet courant est R2 (coût minimum = 3).',
-    svgLayout: {
-      R1: [60, 150], R2: [180, 60], R3: [180, 240], R4: [320, 150]
-    }
+    svgLayout: { R1: [60, 150], R2: [180, 60], R3: [180, 240], R4: [320, 150] }
   },
   {
     id: 'ex2',
@@ -1150,9 +1286,7 @@ const EXERCISES = [
     edges: [{u:'R1',v:'R2',w:2},{u:'R1',v:'R3',w:4},{u:'R1',v:'R4',w:1},{u:'R2',v:'R5',w:3},{u:'R3',v:'R5',w:1},{u:'R4',v:'R5',w:5}],
     source: 'R1',
     hint: 'R4 est le voisin le plus proche de R1 (coût 1). Explorez-le en second. Via R4, cherchez si on peut atteindre R5 moins cher.',
-    svgLayout: {
-      R1: [80, 150], R2: [220, 60], R3: [220, 150], R4: [220, 240], R5: [340, 150]
-    }
+    svgLayout: { R1: [80, 150], R2: [220, 60], R3: [220, 150], R4: [220, 240], R5: [340, 150] }
   },
   {
     id: 'ex3',
@@ -1163,9 +1297,7 @@ const EXERCISES = [
     edges: [{u:'R1',v:'R2',w:2},{u:'R1',v:'R3',w:6},{u:'R2',v:'R3',w:3},{u:'R2',v:'R4',w:8},{u:'R3',v:'R4',w:2},{u:'R3',v:'R5',w:5},{u:'R4',v:'R5',w:1}],
     source: 'R1',
     hint: 'Attention ! Pour atteindre R4, comparez le chemin R1→R2→R4 (10) vs R1→R2→R3→R4 (7) vs R1→R3→R4 (8). Le plus court n\'est pas toujours le plus direct !',
-    svgLayout: {
-      R1: [60, 150], R2: [180, 60], R3: [180, 240], R4: [300, 150], R5: [360, 60]
-    }
+    svgLayout: { R1: [60, 150], R2: [180, 60], R3: [180, 240], R4: [300, 150], R5: [360, 60] }
   },
   {
     id: 'ex4',
@@ -1176,22 +1308,18 @@ const EXERCISES = [
     edges: [{u:'R1',v:'R2',w:5},{u:'R1',v:'R3',w:3},{u:'R1',v:'R4',w:2},{u:'R2',v:'R5',w:2},{u:'R3',v:'R5',w:4},{u:'R3',v:'R4',w:3},{u:'R4',v:'R6',w:2},{u:'R5',v:'R6',w:1}],
     source: 'R1',
     hint: 'Identifiez d\'abord les 3 voisins de R1. R4 (coût 2) sera le 2ème sommet exploré. Vérifiez si passer par R4 améliore le chemin vers R6.',
-    svgLayout: {
-      R1: [60, 180], R2: [180, 60], R3: [180, 180], R4: [180, 300], R5: [300, 100], R6: [300, 240]
-    }
+    svgLayout: { R1: [60, 180], R2: [180, 60], R3: [180, 180], R4: [180, 300], R5: [300, 100], R6: [300, 240] }
   },
   {
     id: 'ex5',
-    title: 'Topologie complexe 7 nœuds',
+    title: 'Topologie complexe 8 nœuds',
     desc: 'Proche de l\'exercice du cours — 8 routeurs, nombreux chemins',
     difficulty: 'hard',
     nodes: ['R1','R2','R3','R4','R5','R6','R7','R8'],
     edges: [{u:'R1',v:'R2',w:5},{u:'R1',v:'R3',w:3},{u:'R1',v:'R4',w:2},{u:'R2',v:'R5',w:2},{u:'R2',v:'R3',w:1},{u:'R3',v:'R7',w:1},{u:'R4',v:'R3',w:3},{u:'R4',v:'R7',w:3},{u:'R5',v:'R6',w:1},{u:'R5',v:'R8',w:2},{u:'R6',v:'R7',w:2},{u:'R6',v:'R8',w:4},{u:'R7',v:'R6',w:2}],
     source: 'R1',
     hint: 'Ce graphe a 8 sommets et 13 arêtes. Prenez votre temps. R4 (2) et R3 (3) sont les premiers explorés. Via R3, R7 devient accessible à coût 4.',
-    svgLayout: {
-      R1: [50, 180], R2: [160, 70], R3: [200, 180], R4: [160, 290], R5: [300, 70], R6: [380, 180], R7: [300, 290], R8: [440, 100]
-    }
+    svgLayout: { R1: [50, 180], R2: [160, 70], R3: [200, 180], R4: [160, 290], R5: [300, 70], R6: [380, 180], R7: [300, 290], R8: [440, 100] }
   },
   {
     id: 'ex6',
@@ -1202,9 +1330,7 @@ const EXERCISES = [
     edges: [{u:'R1',v:'R2',w:1},{u:'R1',v:'R3',w:10},{u:'R2',v:'R4',w:1},{u:'R2',v:'R5',w:8},{u:'R3',v:'R5',w:1},{u:'R4',v:'R6',w:5},{u:'R4',v:'R3',w:3},{u:'R5',v:'R7',w:1},{u:'R6',v:'R7',w:1}],
     source: 'R1',
     hint: 'R1→R2 coûte seulement 1. Mais attention : pour atteindre R3, le chemin R1→R2→R4→R3 (coût 5) est meilleur que R1→R3 (coût 10) !',
-    svgLayout: {
-      R1: [50, 180], R2: [160, 80], R3: [200, 280], R4: [280, 80], R5: [320, 200], R6: [380, 80], R7: [420, 200]
-    }
+    svgLayout: { R1: [50, 180], R2: [160, 80], R3: [200, 280], R4: [280, 80], R5: [320, 200], R6: [380, 80], R7: [420, 200] }
   }
 ];
 
@@ -1215,21 +1341,14 @@ function runDijkstra(nodes, edges, source) {
   const dist = {}, prev = {}, visited = new Set();
   nodes.forEach(n => { dist[n] = Infinity; prev[n] = null; });
   dist[source] = 0;
-
-  // adjacency
   const adj = {};
   nodes.forEach(n => adj[n] = []);
   edges.forEach(({u,v,w}) => { adj[u].push({to:v,w}); adj[v].push({to:u,w}); });
-
   const steps = [];
-
-  // Row 0: init
   const initRow = { current: '∅', E: [], V: [source], dists: {} };
   nodes.forEach(n => initRow.dists[n] = { d: n===source?0:Infinity, p: null });
   steps.push(initRow);
-
   while (visited.size < nodes.length) {
-    // Pick min
     let u = null;
     nodes.forEach(n => {
       if (!visited.has(n) && dist[n] !== Infinity) {
@@ -1238,11 +1357,8 @@ function runDijkstra(nodes, edges, source) {
     });
     if (u === null) break;
     visited.add(u);
-
     const row = { current: u, E: [...visited], V: [], dists: {} };
     nodes.forEach(n => row.dists[n] = { d: dist[n], p: prev[n] });
-
-    // Relax
     adj[u].forEach(({to, w}) => {
       if (!visited.has(to)) {
         row.V.push(to);
@@ -1253,10 +1369,8 @@ function runDijkstra(nodes, edges, source) {
         }
       }
     });
-
     steps.push(row);
   }
-
   return steps;
 }
 
@@ -1266,15 +1380,11 @@ function runDijkstra(nodes, edges, source) {
 function renderGraph(svgEl, nodes, edges, layout, source) {
   svgEl.innerHTML = '';
   const ns = 'http://www.w3.org/2000/svg';
-
-  // Compute bounds
   const xs = nodes.map(n => layout[n][0]);
   const ys = nodes.map(n => layout[n][1]);
   const minX = Math.min(...xs) - 40, maxX = Math.max(...xs) + 40;
   const minY = Math.min(...ys) - 40, maxY = Math.max(...ys) + 40;
   svgEl.setAttribute('viewBox', `${minX} ${minY} ${maxX-minX} ${maxY-minY}`);
-
-  // Edges
   edges.forEach(({u,v,w}) => {
     const [x1,y1] = layout[u], [x2,y2] = layout[v];
     const line = document.createElementNS(ns, 'line');
@@ -1282,48 +1392,38 @@ function renderGraph(svgEl, nodes, edges, layout, source) {
     line.setAttribute('x2',x2); line.setAttribute('y2',y2);
     line.setAttribute('stroke','#2a2a3e'); line.setAttribute('stroke-width','2');
     svgEl.appendChild(line);
-
     const mx = (x1+x2)/2, my = (y1+y2)/2;
-    // White bg circle for label
     const bg = document.createElementNS(ns, 'circle');
     bg.setAttribute('cx',mx); bg.setAttribute('cy',my); bg.setAttribute('r','10');
-    bg.setAttribute('fill','#111118');
-    svgEl.appendChild(bg);
-
+    bg.setAttribute('fill','#111118'); svgEl.appendChild(bg);
     const txt = document.createElementNS(ns, 'text');
     txt.setAttribute('x',mx); txt.setAttribute('y',my+4);
     txt.setAttribute('fill','#9191a8'); txt.setAttribute('font-size','11');
     txt.setAttribute('font-family','DM Mono'); txt.setAttribute('text-anchor','middle');
-    txt.textContent = w;
-    svgEl.appendChild(txt);
+    txt.textContent = w; svgEl.appendChild(txt);
   });
-
-  // Nodes
   nodes.forEach(n => {
     const [cx,cy] = layout[n];
     const isSource = n === source;
+    if (isSource) {
+      const glow = document.createElementNS(ns, 'circle');
+      glow.setAttribute('cx',cx); glow.setAttribute('cy',cy); glow.setAttribute('r','26');
+      glow.setAttribute('fill','none'); glow.setAttribute('stroke','#6c63ff');
+      glow.setAttribute('stroke-width','1'); glow.setAttribute('opacity','0.3');
+      svgEl.appendChild(glow);
+    }
     const circle = document.createElementNS(ns, 'circle');
     circle.setAttribute('cx',cx); circle.setAttribute('cy',cy); circle.setAttribute('r','22');
     circle.setAttribute('fill','#1c1c28');
     circle.setAttribute('stroke', isSource ? '#6c63ff' : '#363650');
     circle.setAttribute('stroke-width', isSource ? '2.5' : '1.5');
     svgEl.appendChild(circle);
-
-    if (isSource) {
-      const glow = document.createElementNS(ns, 'circle');
-      glow.setAttribute('cx',cx); glow.setAttribute('cy',cy); glow.setAttribute('r','26');
-      glow.setAttribute('fill','none'); glow.setAttribute('stroke','#6c63ff');
-      glow.setAttribute('stroke-width','1'); glow.setAttribute('opacity','0.3');
-      svgEl.insertBefore(glow, circle);
-    }
-
     const txt = document.createElementNS(ns, 'text');
     txt.setAttribute('x',cx); txt.setAttribute('y',cy+5);
     txt.setAttribute('fill', isSource ? '#a78bfa' : '#9191a8');
     txt.setAttribute('font-size','12'); txt.setAttribute('font-weight','bold');
     txt.setAttribute('font-family','Syne'); txt.setAttribute('text-anchor','middle');
-    txt.textContent = n;
-    svgEl.appendChild(txt);
+    txt.textContent = n; svgEl.appendChild(txt);
   });
 }
 
@@ -1335,7 +1435,6 @@ function renderMiniGraph(svgEl, nodes, edges, layout, source) {
   const minX = Math.min(...xs)-30, maxX = Math.max(...xs)+30;
   const minY = Math.min(...ys)-30, maxY = Math.max(...ys)+30;
   svgEl.setAttribute('viewBox', `${minX} ${minY} ${maxX-minX} ${maxY-minY}`);
-
   edges.forEach(({u,v,w}) => {
     const [x1,y1] = layout[u], [x2,y2] = layout[v];
     const line = document.createElementNS(ns, 'line');
@@ -1346,15 +1445,13 @@ function renderMiniGraph(svgEl, nodes, edges, layout, source) {
     const mx=(x1+x2)/2, my=(y1+y2)/2;
     const bg = document.createElementNS(ns, 'circle');
     bg.setAttribute('cx',mx); bg.setAttribute('cy',my); bg.setAttribute('r','8');
-    bg.setAttribute('fill','#0a0a0f');
-    svgEl.appendChild(bg);
+    bg.setAttribute('fill','#0a0a0f'); svgEl.appendChild(bg);
     const t = document.createElementNS(ns, 'text');
     t.setAttribute('x',mx); t.setAttribute('y',my+3);
     t.setAttribute('fill','#5a5a72'); t.setAttribute('font-size','9');
     t.setAttribute('font-family','DM Mono'); t.setAttribute('text-anchor','middle');
     t.textContent = w; svgEl.appendChild(t);
   });
-
   nodes.forEach(n => {
     const [cx,cy] = layout[n];
     const c = document.createElementNS(ns, 'circle');
@@ -1378,6 +1475,8 @@ function renderMiniGraph(svgEl, nodes, edges, layout, source) {
 function buildCards() {
   const grid = document.getElementById('exercises-grid');
   grid.innerHTML = '';
+  const savedState = loadState();
+
   EXERCISES.forEach(ex => {
     const card = document.createElement('div');
     card.className = `exercise-card ${ex.difficulty}`;
@@ -1387,12 +1486,19 @@ function buildCards() {
     const diffLabel = {easy:'Facile',medium:'Moyen',hard:'Difficile'}[ex.difficulty];
     const nodeCount = ex.nodes.length;
     const edgeCount = ex.edges.length;
+    const hasSave = savedState && savedState.exerciseId === ex.id;
+    const saveChip = hasSave
+      ? `<div style="display:flex;align-items:center;gap:6px;font-size:0.72rem;color:var(--accent2);font-weight:700;margin-top:6px">
+           <span style="width:6px;height:6px;border-radius:50%;background:var(--accent2);display:inline-block"></span>
+           Progression sauvegardée
+         </div>` : '';
 
     card.innerHTML = `
       <div class="card-top">
         <div>
           <div class="card-title">${ex.title}</div>
           <div class="card-desc">${ex.desc}</div>
+          ${saveChip}
         </div>
         <span class="difficulty-badge">${diffLabel}</span>
       </div>
@@ -1408,13 +1514,12 @@ function buildCards() {
         </div>
       </div>
       <div class="card-cta">
-        <span>Commencer l'exercice</span>
-        <div class="card-arrow">→</div>
+        <span>${hasSave ? 'Reprendre l\'exercice' : 'Commencer l\'exercice'}</span>
+        <div class="card-arrow">${hasSave ? '↩' : '→'}</div>
       </div>
     `;
     grid.appendChild(card);
 
-    // render mini graph after DOM insert
     setTimeout(() => {
       const svg = document.getElementById(`mini-svg-${ex.id}`);
       if (svg) renderMiniGraph(svg, ex.nodes, ex.edges, ex.svgLayout, ex.source);
@@ -1443,28 +1548,39 @@ function openExercise(id) {
   const ex = EXERCISES.find(e => e.id === id);
   if (!ex) return;
   currentExercise = ex;
-
-  // Compute correct answer
   correctSteps = runDijkstra(ex.nodes, ex.edges, ex.source);
 
-  // Header
   document.getElementById('ex-title').textContent = ex.title;
   const diffLabel = {easy:'🟢 Facile',medium:'🟡 Moyen',hard:'🔴 Difficile'}[ex.difficulty];
   document.getElementById('ex-diff-badge').innerHTML =
     `<span class="difficulty-badge ${ex.difficulty}">${diffLabel}</span>`;
 
-  // Graph
   const svg = document.getElementById('ex-graph-svg');
   renderGraph(svg, ex.nodes, ex.edges, ex.svgLayout, ex.source);
 
-  // Table
   buildRoutingTable(ex, correctSteps);
 
-  // Reset feedback
+  // Check for saved state
+  const saved = loadState();
+  const resumeBanner = document.getElementById('resume-banner');
+  if (saved && saved.exerciseId === id && saved.inputs && Object.keys(saved.inputs).length > 0) {
+    restoreInputs(saved.inputs);
+    resumeBanner.style.display = 'flex';
+  } else {
+    resumeBanner.style.display = 'none';
+  }
+
+  // Attach autosave listeners after table built
+  setTimeout(() => {
+    document.querySelectorAll('.rt-input').forEach(inp => {
+      inp.addEventListener('input', scheduleSave);
+      inp.addEventListener('change', scheduleSave);
+    });
+  }, 100);
+
   document.getElementById('feedback-panel').classList.remove('show');
   document.getElementById('hint-box').classList.remove('show');
 
-  // Show
   document.getElementById('exercises-grid').style.display = 'none';
   document.querySelector('.exercises-filters').style.display = 'none';
   document.getElementById('exercise-view').style.display = 'block';
@@ -1473,12 +1589,14 @@ function openExercise(id) {
 }
 
 function closeExercise() {
+  if (currentExercise) saveState();
   document.getElementById('exercise-view').style.display = 'none';
   document.getElementById('exercise-view').classList.remove('active');
   document.getElementById('exercises-grid').style.display = '';
   const f = document.querySelector('.exercises-filters');
   if (f) f.style.display = '';
   currentExercise = null;
+  buildCards(); // refresh to show/update save indicators
 }
 
 // ══════════════════════════════════════════════════════
@@ -1487,15 +1605,12 @@ function closeExercise() {
 function buildRoutingTable(ex, steps) {
   const table = document.getElementById('routing-table');
   table.innerHTML = '';
-
   const nodes = ex.nodes;
 
   // Header
   const thead = document.createElement('thead');
   let hrow = '<tr>';
-  hrow += `<th class="fixed-col">Courant</th>`;
-  hrow += `<th class="fixed-col">E</th>`;
-  hrow += `<th class="fixed-col">V</th>`;
+  hrow += `<th>Courant</th><th>E</th><th>V</th>`;
   nodes.forEach(n => hrow += `<th>${n}</th>`);
   hrow += '</tr>';
   thead.innerHTML = hrow;
@@ -1503,19 +1618,19 @@ function buildRoutingTable(ex, steps) {
 
   const tbody = document.createElement('tbody');
 
-  // Row 0 (init) — given
+  // Row 0 — given
   const step0 = steps[0];
   const r0 = document.createElement('tr');
   let r0html = `<td class="row-info">∅</td><td class="row-info">∅</td><td class="row-info">${step0.V.join(', ')}</td>`;
   nodes.forEach(n => {
     const {d, p} = step0.dists[n];
-    const val = `${d === Infinity ? '∞' : d}, ${p === null ? '∅' : p}`;
-    r0html += `<td class="row-info" style="font-size:0.75rem">${val}</td>`;
+    const val = `${d===Infinity?'∞':d}, ${p===null?'∅':p}`;
+    r0html += `<td class="row-info">${val}</td>`;
   });
   r0.innerHTML = r0html;
   tbody.appendChild(r0);
 
-  // Row 1 (first exploration) — given
+  // Row 1 — given
   const step1 = steps[1];
   const r1 = document.createElement('tr');
   let r1html = `<td class="row-info">${step1.current}</td>`;
@@ -1523,21 +1638,20 @@ function buildRoutingTable(ex, steps) {
   r1html += `<td class="row-info">${step1.V.join(', ')}</td>`;
   nodes.forEach(n => {
     const {d, p} = step1.dists[n];
-    const val = `${d === Infinity ? '∞' : d}, ${p === null ? '∅' : p}`;
-    r1html += `<td class="row-info" style="font-size:0.75rem">${val}</td>`;
+    const val = `${d===Infinity?'∞':d}, ${p===null?'∅':p}`;
+    r1html += `<td class="row-info">${val}</td>`;
   });
   r1.innerHTML = r1html;
   tbody.appendChild(r1);
 
-  // Remaining rows — editable
+  // Remaining — editable inputs
   for (let i = 2; i < steps.length; i++) {
-    const step = steps[i];
     const tr = document.createElement('tr');
     let html = `<td><input type="text" placeholder="?" data-row="${i}" data-col="current" class="rt-input"></td>`;
     html += `<td><input type="text" placeholder="?" data-row="${i}" data-col="E" class="rt-input"></td>`;
     html += `<td><input type="text" placeholder="?" data-row="${i}" data-col="V" class="rt-input"></td>`;
-    nodes.forEach((n,ni) => {
-      html += `<td><input type="text" placeholder="?, ?" data-row="${i}" data-col="node_${n}" class="rt-input"></td>`;
+    nodes.forEach(n => {
+      html += `<td><input type="text" placeholder="?,?" data-row="${i}" data-col="node_${n}" class="rt-input"></td>`;
     });
     tr.innerHTML = html;
     tbody.appendChild(tr);
@@ -1556,6 +1670,9 @@ function resetExercise() {
   });
   document.getElementById('feedback-panel').classList.remove('show');
   document.getElementById('hint-box').classList.remove('show');
+  document.getElementById('resume-banner').style.display = 'none';
+  clearState();
+  showSaveIndicator('');
 }
 
 // ══════════════════════════════════════════════════════
@@ -1584,104 +1701,75 @@ function submitExercise() {
   const ex = currentExercise;
   const steps = correctSteps;
   const nodes = ex.nodes;
-
   const errors = [];
   let totalCells = 0, correctCells = 0;
 
   for (let i = 2; i < steps.length; i++) {
     const step = steps[i];
-    const row = i;
 
-    // current
-    const curInp = document.querySelector(`input[data-row="${row}"][data-col="current"]`);
+    const curInp = document.querySelector(`input[data-row="${i}"][data-col="current"]`);
     if (curInp) {
       totalCells++;
       const expected = step.current.toLowerCase();
       const got = normalizeInput(curInp.value);
-      if (got === expected) {
-        curInp.className = 'rt-input correct'; correctCells++;
-      } else {
+      if (got === expected) { curInp.className = 'rt-input correct'; correctCells++; }
+      else {
         curInp.className = 'rt-input wrong';
-        errors.push({
-          loc: `Ligne ${row} — Sommet courant`,
-          msg: `Vous avez écrit "${curInp.value || '(vide)'}". Attendu : "${step.current}". Le sommet courant est celui avec la distance minimale parmi les non-explorés.`,
-          lesson: 'l2', lessonLabel: 'L\'algorithme pas à pas'
-        });
+        errors.push({ loc:`Ligne ${i} — Sommet courant`, msg:`Vous avez écrit "${curInp.value||'(vide)'}". Attendu : "${step.current}". Le sommet courant est celui avec la distance minimale parmi les non-explorés.`, lesson:'l2', lessonLabel:'L\'algorithme pas à pas' });
       }
     }
 
-    // E
-    const eInp = document.querySelector(`input[data-row="${row}"][data-col="E"]`);
+    const eInp = document.querySelector(`input[data-row="${i}"][data-col="E"]`);
     if (eInp) {
       totalCells++;
       const expected = step.E.slice().sort().join(',').toLowerCase();
       const got = normalizeInput(eInp.value).split(',').filter(Boolean).sort().join(',');
-      if (got === expected) {
-        eInp.className = 'rt-input correct'; correctCells++;
-      } else {
+      if (got === expected) { eInp.className = 'rt-input correct'; correctCells++; }
+      else {
         eInp.className = 'rt-input wrong';
-        errors.push({
-          loc: `Ligne ${row} — Ensemble E`,
-          msg: `Vous avez écrit "${eInp.value || '(vide)'}". E doit contenir : {${step.E.join(', ')}}. E s'enrichit du sommet courant à chaque étape.`,
-          lesson: 'l2', lessonLabel: 'L\'algorithme pas à pas'
-        });
+        errors.push({ loc:`Ligne ${i} — Ensemble E`, msg:`Vous avez écrit "${eInp.value||'(vide)'}". E doit contenir : {${step.E.join(', ')}}. E s'enrichit du sommet courant à chaque étape.`, lesson:'l2', lessonLabel:'L\'algorithme pas à pas' });
       }
     }
 
-    // V
-    const vInp = document.querySelector(`input[data-row="${row}"][data-col="V"]`);
+    const vInp = document.querySelector(`input[data-row="${i}"][data-col="V"]`);
     if (vInp) {
       totalCells++;
       const expected = step.V.slice().sort().join(',').toLowerCase();
       const got = normalizeInput(vInp.value).split(',').filter(Boolean).sort().join(',');
-      if (got === expected) {
-        vInp.className = 'rt-input correct'; correctCells++;
-      } else {
+      if (got === expected) { vInp.className = 'rt-input correct'; correctCells++; }
+      else {
         vInp.className = 'rt-input wrong';
-        errors.push({
-          loc: `Ligne ${row} — Voisins V`,
-          msg: `Attendu : {${step.V.length ? step.V.join(', ') : '∅'}}. Ce sont les voisins directs du sommet courant non encore dans E.`,
-          lesson: 'l3', lessonLabel: 'Remplir le tableau'
-        });
+        errors.push({ loc:`Ligne ${i} — Voisins V`, msg:`Attendu : {${step.V.length?step.V.join(', '):'∅'}}. Ce sont les voisins directs du sommet courant non encore dans E.`, lesson:'l3', lessonLabel:'Remplir le tableau' });
       }
     }
 
-    // Nodes
     nodes.forEach(n => {
-      const inp = document.querySelector(`input[data-row="${row}"][data-col="node_${n}"]`);
+      const inp = document.querySelector(`input[data-row="${i}"][data-col="node_${n}"]`);
       if (inp) {
         totalCells++;
-        const {d, p} = step.dists[n];
+        const {d,p} = step.dists[n];
         const expected = formatExpected(d, p);
         const got = normalizeInput(inp.value);
-        if (got === expected) {
-          inp.className = 'rt-input correct'; correctCells++;
-        } else if (got === '') {
+        if (got === expected) { inp.className = 'rt-input correct'; correctCells++; }
+        else if (got === '') {
           inp.className = 'rt-input wrong';
-          errors.push({
-            loc: `Ligne ${row} — Colonne ${n}`,
-            msg: `Cellule vide. La valeur attendue est "${d === Infinity ? '∞' : d}, ${p || '∅'}".`,
-            lesson: 'l3', lessonLabel: 'Remplir le tableau'
-          });
+          errors.push({ loc:`Ligne ${i} — Col. ${n}`, msg:`Cellule vide. Valeur attendue : "${d===Infinity?'∞':d}, ${p||'∅'}".`, lesson:'l3', lessonLabel:'Remplir le tableau' });
         } else {
           inp.className = 'rt-input wrong';
-          const gotParts = got.split(',');
-          const expParts = expected.split(',');
-          let msg = '';
-          if (gotParts[0] !== expParts[0]) {
-            msg = `Distance incorrecte pour ${n} ligne ${row}. Vous avez mis ${gotParts[0]}, attendu ${expParts[0]}. Vérifiez la formule : d[u] + coût(u,${n}).`;
-          } else {
-            msg = `Distance correcte (${gotParts[0]}) mais prédécesseur incorrect. Attendu : "${expParts[1]||'∅'}". Le prédécesseur est le sommet via lequel on atteint ${n} au moindre coût.`;
-          }
-          errors.push({ loc: `Ligne ${row} — Colonne ${n}`, msg, lesson: 'l3', lessonLabel: 'Remplir le tableau' });
+          const gotParts = got.split(','), expParts = expected.split(',');
+          const msg = gotParts[0] !== expParts[0]
+            ? `Distance incorrecte pour ${n} ligne ${i}. Vous avez ${gotParts[0]}, attendu ${expParts[0]}. Vérifiez : d[u] + coût(u,${n}).`
+            : `Distance ok (${gotParts[0]}) mais prédécesseur incorrect. Attendu : "${expParts[1]||'∅'}".`;
+          errors.push({ loc:`Ligne ${i} — Col. ${n}`, msg, lesson:'l3', lessonLabel:'Remplir le tableau' });
         }
       }
     });
   }
 
-  // Score
-  const pct = totalCells > 0 ? Math.round((correctCells / totalCells) * 100) : 0;
+  const pct = totalCells > 0 ? Math.round((correctCells/totalCells)*100) : 0;
   showFeedback(pct, errors, steps, nodes);
+  // Save after submit too
+  saveState();
 }
 
 function showFeedback(pct, errors, steps, nodes) {
@@ -1690,73 +1778,62 @@ function showFeedback(pct, errors, steps, nodes) {
   panel.classList.add('show');
 
   let cls, icon, label;
-  if (pct === 100) { cls='perfect'; icon='🏆'; label='Parfait ! Vous maîtrisez Dijkstra !'; }
-  else if (pct >= 80) { cls='good'; icon='🎯'; label='Très bien ! Quelques ajustements nécessaires.'; }
-  else if (pct >= 50) { cls='medium'; icon='📖'; label='En progrès — relisez les points indiqués.'; }
-  else { cls='bad'; icon='💪'; label='Continuez ! Relisez le cours et réessayez.'; }
+  if (pct===100){cls='perfect';icon='🏆';label='Parfait ! Vous maîtrisez Dijkstra !';}
+  else if(pct>=80){cls='good';icon='🎯';label='Très bien ! Quelques ajustements nécessaires.';}
+  else if(pct>=50){cls='medium';icon='📖';label='En progrès — relisez les points indiqués.';}
+  else{cls='bad';icon='💪';label='Continuez ! Relisez le cours et réessayez.';}
 
   banner.className = `score-banner ${cls}`;
   document.getElementById('score-icon').textContent = icon;
   document.getElementById('score-num').textContent = `${pct}%`;
   document.getElementById('score-label').textContent = label;
-  const colors = {perfect:'var(--green)',good:'var(--accent3)',medium:'var(--gold)',bad:'var(--red)'};
-  document.getElementById('progress-fill').style.width = pct + '%';
+  const colors={perfect:'var(--green)',good:'var(--accent3)',medium:'var(--gold)',bad:'var(--red)'};
+  document.getElementById('progress-fill').style.width = pct+'%';
   document.getElementById('progress-fill').style.background = colors[cls];
 
-  // Errors
   const errList = document.getElementById('error-list');
   errList.innerHTML = '';
-  if (errors.length === 0) {
+  if (errors.length===0) {
     errList.innerHTML = `<div style="color:var(--green);font-size:0.9rem;font-weight:700;padding:12px 0">✅ Aucune erreur — table de routage parfaite !</div>`;
   } else {
-    errors.slice(0, 8).forEach(e => {
+    errors.slice(0,8).forEach(e => {
       const div = document.createElement('div');
       div.className = 'error-item';
-      div.innerHTML = `
-        <div class="err-location">${e.loc}</div>
-        <div class="err-msg">${e.msg}</div>
-        <span class="err-link" onclick="goToLesson('${e.lesson}')">📚 Revoir : ${e.lessonLabel} →</span>
-      `;
+      div.innerHTML = `<div class="err-location">${e.loc}</div><div class="err-msg">${e.msg}</div><span class="err-link" onclick="goToLesson('${e.lesson}')">📚 Revoir : ${e.lessonLabel} →</span>`;
       errList.appendChild(div);
     });
-    if (errors.length > 8) {
+    if (errors.length>8) {
       const more = document.createElement('div');
-      more.style.cssText = 'color:var(--text3);font-size:0.82rem;padding:8px 0;text-align:center';
-      more.textContent = `... et ${errors.length - 8} autre(s) erreur(s). Corrigez d'abord celles-ci.`;
+      more.style.cssText='color:var(--text3);font-size:0.82rem;padding:8px 0;text-align:center';
+      more.textContent=`... et ${errors.length-8} autre(s) erreur(s). Corrigez d'abord celles-ci.`;
       errList.appendChild(more);
     }
   }
 
-  // Correction table
   buildCorrectionTable(steps, nodes);
-
-  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  panel.scrollIntoView({ behavior:'smooth', block:'start' });
 }
 
 function buildCorrectionTable(steps, nodes) {
   const table = document.getElementById('correction-table');
   table.innerHTML = '';
-
   const thead = document.createElement('thead');
   let hrow = '<tr><th>Courant</th><th>E</th><th>V</th>';
   nodes.forEach(n => hrow += `<th>${n}</th>`);
   hrow += '</tr>';
   thead.innerHTML = hrow;
   table.appendChild(thead);
-
   const tbody = document.createElement('tbody');
-  steps.forEach((step, i) => {
+  steps.forEach((step,i) => {
     const tr = document.createElement('tr');
-    const prevStep = i > 0 ? steps[i-1] : null;
+    const prevStep = i>0?steps[i-1]:null;
     let html = `<td class="row-label">${step.current}</td>`;
-    html += `<td class="row-label">${step.E.length ? step.E.join(',') : '∅'}</td>`;
-    html += `<td class="row-label">${step.V.length ? step.V.join(',') : '∅'}</td>`;
+    html += `<td class="row-label">${step.E.length?step.E.join(','):'∅'}</td>`;
+    html += `<td class="row-label">${step.V.length?step.V.join(','):'∅'}</td>`;
     nodes.forEach(n => {
       const {d,p} = step.dists[n];
-      const changed = prevStep && (prevStep.dists[n].d !== d || prevStep.dists[n].p !== p);
-      const ds = d === Infinity ? '∞' : d;
-      const ps = p === null ? '∅' : p;
-      html += `<td class="${changed ? 'correct-val' : ''}">${ds}, ${ps}</td>`;
+      const changed = prevStep&&(prevStep.dists[n].d!==d||prevStep.dists[n].p!==p);
+      html += `<td class="${changed?'correct-val':''}">${d===Infinity?'∞':d}, ${p===null?'∅':p}</td>`;
     });
     tr.innerHTML = html;
     tbody.appendChild(tr);
@@ -1767,16 +1844,42 @@ function buildCorrectionTable(steps, nodes) {
 function goToLesson(lessonId) {
   showSection('cours');
   showLesson(lessonId, null);
-  const lessonIndex = {'l1':0,'l2':1,'l3':2,'l4':3}[lessonId];
+  const idx={'l1':0,'l2':1,'l3':2,'l4':3}[lessonId];
   const items = document.querySelectorAll('.sidebar-item');
   items.forEach(i => i.classList.remove('active'));
-  if (items[lessonIndex]) items[lessonIndex].classList.add('active');
+  if (items[idx]) items[idx].classList.add('active');
 }
 
 // ══════════════════════════════════════════════════════
-//  INIT
+//  INIT — restore session if any
 // ══════════════════════════════════════════════════════
 buildCards();
+
+// If there's a saved exercise, show a notification in the exercises header
+(function checkResume() {
+  const saved = loadState();
+  if (saved && saved.exerciseId) {
+    const ex = EXERCISES.find(e => e.id === saved.exerciseId);
+    if (ex) {
+      const mins = Math.round((Date.now() - saved.timestamp) / 60000);
+      const timeStr = mins < 1 ? 'il y a quelques secondes' : mins < 60 ? `il y a ${mins} min` : 'récemment';
+      const banner = document.createElement('div');
+      banner.id = 'global-resume-banner';
+      banner.style.cssText = `display:flex;align-items:center;gap:14px;padding:12px 48px;background:rgba(108,99,255,0.06);border-bottom:1px solid rgba(108,99,255,0.15);animation:fadeUp 0.4s ease`;
+      banner.innerHTML = `
+        <span style="font-size:1.1rem">💾</span>
+        <span style="font-size:0.85rem;color:var(--text2)">
+          <strong style="color:var(--accent2)">Progression non terminée</strong> sur « ${ex.title} » (${timeStr})
+        </span>
+        <button onclick="showSection('exercices');openExercise('${ex.id}')" style="padding:6px 16px;border-radius:8px;background:var(--accent);color:#fff;border:none;cursor:pointer;font-family:'Syne',sans-serif;font-size:0.78rem;font-weight:700;flex-shrink:0">Reprendre →</button>
+        <button onclick="this.parentElement.remove();clearState();buildCards()" style="padding:6px 12px;border-radius:8px;background:var(--surface);color:var(--text3);border:1px solid var(--border);cursor:pointer;font-family:'Syne',sans-serif;font-size:0.75rem;font-weight:700;flex-shrink:0">Effacer</button>
+      `;
+      // Insert after nav
+      const main = document.querySelector('main');
+      if (main && main.firstChild) main.insertBefore(banner, main.firstChild);
+    }
+  }
+})();
 </script>
 </body>
 </html>
