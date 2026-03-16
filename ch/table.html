@@ -1,0 +1,1782 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RouteForge — Maîtrisez Dijkstra</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:ital,wght@0,400;0,500;1,400&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #16161f;
+    --surface: #1c1c28;
+    --surface2: #242433;
+    --border: #2a2a3e;
+    --border2: #363650;
+    --accent: #6c63ff;
+    --accent2: #a78bfa;
+    --accent3: #38bdf8;
+    --gold: #f59e0b;
+    --green: #10b981;
+    --red: #ef4444;
+    --orange: #f97316;
+    --text: #e8e8f0;
+    --text2: #9191a8;
+    --text3: #5a5a72;
+    --glow: 0 0 40px rgba(108,99,255,0.15);
+    --glow2: 0 0 80px rgba(108,99,255,0.08);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ─── NOISE OVERLAY ─── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 1000; opacity: 0.4;
+  }
+
+  /* ─── ANIMATED BG ─── */
+  .bg-orbs {
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    overflow: hidden;
+  }
+  .bg-orbs span {
+    position: absolute; border-radius: 50%;
+    filter: blur(80px); opacity: 0.12;
+    animation: orbFloat 20s ease-in-out infinite;
+  }
+  .bg-orbs span:nth-child(1) { width: 600px; height: 600px; background: var(--accent); top: -200px; left: -200px; animation-delay: 0s; }
+  .bg-orbs span:nth-child(2) { width: 400px; height: 400px; background: var(--accent3); bottom: -100px; right: -100px; animation-delay: -7s; }
+  .bg-orbs span:nth-child(3) { width: 300px; height: 300px; background: var(--gold); top: 40%; left: 40%; animation-delay: -14s; }
+
+  @keyframes orbFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -30px) scale(1.05); }
+    66% { transform: translate(-20px, 20px) scale(0.95); }
+  }
+
+  /* ─── NAVBAR ─── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 48px;
+    height: 72px;
+    background: rgba(10,10,15,0.7);
+    backdrop-filter: blur(24px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .nav-logo .logo-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+    box-shadow: 0 0 20px rgba(108,99,255,0.4);
+  }
+  .nav-links { display: flex; gap: 8px; }
+  .nav-links a {
+    padding: 8px 20px; border-radius: 8px;
+    color: var(--text2); font-size: 0.9rem; font-weight: 600;
+    text-decoration: none; cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+  }
+  .nav-links a:hover, .nav-links a.active {
+    color: var(--text);
+    background: var(--surface);
+    border-color: var(--border2);
+  }
+  .nav-links a.active { color: var(--accent2); }
+
+  /* ─── MAIN WRAPPER ─── */
+  main {
+    position: relative; z-index: 1;
+    padding-top: 72px;
+  }
+
+  /* ─── SECTIONS ─── */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ─── HERO ─── */
+  .hero {
+    min-height: calc(100vh - 72px);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    padding: 80px 24px;
+    gap: 32px;
+    position: relative;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 16px; border-radius: 100px;
+    background: rgba(108,99,255,0.12);
+    border: 1px solid rgba(108,99,255,0.3);
+    font-size: 0.8rem; font-weight: 600; color: var(--accent2);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    animation: fadeUp 0.6s ease both;
+  }
+  .hero-badge::before { content: '⬡'; font-size: 1rem; }
+  .hero-title {
+    font-size: clamp(3rem, 8vw, 7rem);
+    font-weight: 800; line-height: 1;
+    letter-spacing: -0.04em;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+  .hero-title .line1 { display: block; color: var(--text); }
+  .hero-title .line2 {
+    display: block;
+    background: linear-gradient(135deg, var(--accent2) 0%, var(--accent3) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    max-width: 560px; font-family: 'Instrument Serif', serif;
+    font-size: 1.25rem; color: var(--text2); line-height: 1.7;
+    font-style: italic;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+  .hero-cta {
+    display: flex; gap: 16px; flex-wrap: wrap; justify-content: center;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+  .btn-primary {
+    padding: 14px 32px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    color: #fff; font-family: 'Syne', sans-serif;
+    font-size: 0.95rem; font-weight: 700;
+    border: none; cursor: pointer;
+    box-shadow: 0 0 30px rgba(108,99,255,0.4);
+    transition: all 0.2s; letter-spacing: 0.02em;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 0 50px rgba(108,99,255,0.6); }
+  .btn-secondary {
+    padding: 14px 32px; border-radius: 12px;
+    background: transparent; color: var(--text);
+    font-family: 'Syne', sans-serif; font-size: 0.95rem; font-weight: 700;
+    border: 1px solid var(--border2); cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-secondary:hover { background: var(--surface); border-color: var(--accent); }
+
+  .hero-stats {
+    display: flex; gap: 48px; flex-wrap: wrap; justify-content: center;
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+  .stat { text-align: center; }
+  .stat-num {
+    font-size: 2rem; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent2), var(--accent3));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .stat-label { font-size: 0.8rem; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── COURSE SECTION ─── */
+  .page-header {
+    padding: 64px 48px 32px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(108,99,255,0.05) 0%, transparent 100%);
+  }
+  .page-header h1 {
+    font-size: 2.5rem; font-weight: 800; letter-spacing: -0.03em;
+    margin-bottom: 8px;
+  }
+  .page-header p { color: var(--text2); font-size: 1.05rem; }
+
+  .course-layout {
+    display: grid; grid-template-columns: 280px 1fr;
+    min-height: calc(100vh - 72px - 120px);
+  }
+
+  .course-sidebar {
+    border-right: 1px solid var(--border);
+    padding: 32px 0;
+    position: sticky; top: 72px; height: calc(100vh - 72px);
+    overflow-y: auto;
+  }
+  .sidebar-section { margin-bottom: 8px; }
+  .sidebar-title {
+    padding: 8px 24px; font-size: 0.72rem; font-weight: 700;
+    color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em;
+  }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 24px; cursor: pointer;
+    font-size: 0.88rem; font-weight: 600; color: var(--text2);
+    transition: all 0.15s; border-left: 2px solid transparent;
+  }
+  .sidebar-item:hover { color: var(--text); background: rgba(108,99,255,0.05); }
+  .sidebar-item.active {
+    color: var(--accent2);
+    background: rgba(108,99,255,0.08);
+    border-left-color: var(--accent);
+  }
+  .sidebar-item .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text3); flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .sidebar-item.active .dot, .sidebar-item:hover .dot { background: var(--accent2); }
+
+  .course-content {
+    padding: 48px 64px;
+    max-width: 860px;
+  }
+
+  /* ─── LESSON CARDS ─── */
+  .lesson { display: none; }
+  .lesson.active { display: block; }
+
+  .lesson-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 6px;
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 16px;
+  }
+  .lesson-tag.intro { background: rgba(16,185,129,0.12); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+  .lesson-tag.algo { background: rgba(108,99,255,0.12); color: var(--accent2); border: 1px solid rgba(108,99,255,0.2); }
+  .lesson-tag.tips { background: rgba(245,158,11,0.12); color: var(--gold); border: 1px solid rgba(245,158,11,0.2); }
+  .lesson-tag.table { background: rgba(56,189,248,0.12); color: var(--accent3); border: 1px solid rgba(56,189,248,0.2); }
+
+  .lesson h2 {
+    font-size: 2rem; font-weight: 800; letter-spacing: -0.03em;
+    margin-bottom: 16px; line-height: 1.2;
+  }
+  .lesson .intro-text {
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.15rem; color: var(--text2); line-height: 1.7;
+    margin-bottom: 40px; font-style: italic;
+  }
+  .lesson h3 {
+    font-size: 1.1rem; font-weight: 700; margin: 32px 0 12px;
+    color: var(--accent2);
+  }
+  .lesson p { color: var(--text2); line-height: 1.75; margin-bottom: 16px; font-size: 0.95rem; }
+  .lesson strong { color: var(--text); font-weight: 700; }
+
+  /* Info cards */
+  .info-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 28px;
+    margin: 24px 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .info-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+  }
+  .info-card.definition::before { background: linear-gradient(90deg, var(--accent), var(--accent3)); }
+  .info-card.tip::before { background: linear-gradient(90deg, var(--gold), var(--orange)); }
+  .info-card.warning::before { background: linear-gradient(90deg, var(--red), var(--orange)); }
+  .info-card.example::before { background: linear-gradient(90deg, var(--green), var(--accent3)); }
+
+  .info-card .card-header {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+  .info-card.definition .card-header { color: var(--accent2); }
+  .info-card.tip .card-header { color: var(--gold); }
+  .info-card.warning .card-header { color: var(--red); }
+  .info-card.example .card-header { color: var(--green); }
+
+  /* Step list */
+  .step-list { list-style: none; margin: 16px 0; }
+  .step-list li {
+    display: flex; gap: 16px; align-items: flex-start;
+    padding: 12px 0; border-bottom: 1px solid var(--border);
+  }
+  .step-list li:last-child { border-bottom: none; }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+    background: rgba(108,99,255,0.15); border: 1px solid rgba(108,99,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 800; color: var(--accent2);
+  }
+  .step-list li .step-text { color: var(--text2); font-size: 0.92rem; line-height: 1.6; }
+  .step-list li .step-text strong { color: var(--text); }
+
+  /* Formula */
+  .formula-box {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 20px 0;
+    font-family: 'DM Mono', monospace;
+    font-size: 1.1rem; color: var(--accent3);
+    text-align: center;
+    letter-spacing: 0.04em;
+  }
+  .formula-box .formula-label {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem; color: var(--text3);
+    text-transform: uppercase; letter-spacing: 0.1em;
+    margin-bottom: 8px; font-weight: 700;
+  }
+
+  /* Mini graph for course */
+  .mini-graph-container {
+    background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px; margin: 24px 0;
+    display: flex; justify-content: center;
+  }
+  .mini-graph-container svg { max-width: 100%; }
+
+  /* Table preview */
+  .table-preview {
+    overflow-x: auto; margin: 24px 0;
+  }
+  .table-preview table {
+    width: 100%; border-collapse: collapse;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+  }
+  .table-preview th {
+    background: var(--surface); border: 1px solid var(--border2);
+    padding: 10px 14px; font-weight: 700; color: var(--accent2);
+    text-align: center; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .table-preview td {
+    border: 1px solid var(--border);
+    padding: 9px 14px; color: var(--text2); text-align: center;
+  }
+  .table-preview tr.highlight td { background: rgba(108,99,255,0.06); color: var(--text); }
+  .table-preview td.current-node { color: var(--accent2); font-weight: 700; }
+  .table-preview td.updated { color: var(--green); }
+
+  /* Lesson nav */
+  .lesson-nav {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 48px; padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+  .lesson-nav .btn-nav {
+    display: flex; align-items: center; gap: 8px;
+    padding: 12px 24px; border-radius: 10px;
+    background: var(--surface); border: 1px solid var(--border2);
+    color: var(--text2); cursor: pointer; font-family: 'Syne', sans-serif;
+    font-size: 0.88rem; font-weight: 700; transition: all 0.2s;
+  }
+  .lesson-nav .btn-nav:hover { color: var(--text); border-color: var(--accent); background: var(--surface2); }
+  .lesson-nav .btn-nav.next { background: linear-gradient(135deg, var(--accent), var(--accent3)); color: #fff; border-color: transparent; }
+  .lesson-nav .btn-nav.next:hover { box-shadow: 0 0 30px rgba(108,99,255,0.4); transform: translateY(-1px); }
+
+  /* ─── EXERCISES ─── */
+  .exercises-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 24px;
+    padding: 48px;
+  }
+
+  .exercise-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+  }
+  .exercise-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 20px 60px rgba(108,99,255,0.15);
+  }
+  .exercise-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    transition: opacity 0.2s;
+  }
+  .exercise-card.easy::before { background: linear-gradient(90deg, var(--green), #34d399); }
+  .exercise-card.medium::before { background: linear-gradient(90deg, var(--gold), var(--orange)); }
+  .exercise-card.hard::before { background: linear-gradient(90deg, var(--red), #f472b6); }
+
+  .card-top {
+    padding: 24px 24px 16px;
+    display: flex; justify-content: space-between; align-items: flex-start;
+  }
+  .card-title { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; }
+  .card-desc { color: var(--text2); font-size: 0.85rem; line-height: 1.5; margin-top: 6px; }
+  .difficulty-badge {
+    padding: 4px 12px; border-radius: 6px;
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    flex-shrink: 0;
+  }
+  .easy .difficulty-badge { background: rgba(16,185,129,0.15); color: var(--green); }
+  .medium .difficulty-badge { background: rgba(245,158,11,0.15); color: var(--gold); }
+  .hard .difficulty-badge { background: rgba(239,68,68,0.15); color: var(--red); }
+
+  .card-graph {
+    padding: 16px 24px;
+    background: var(--bg2); margin: 0 16px 16px;
+    border-radius: 12px; border: 1px solid var(--border);
+    display: flex; justify-content: center;
+    min-height: 140px; align-items: center;
+  }
+  .card-graph svg { max-width: 100%; }
+
+  .card-meta {
+    padding: 0 24px 20px;
+    display: flex; gap: 16px;
+  }
+  .meta-chip {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.78rem; color: var(--text3); font-weight: 600;
+  }
+  .meta-chip svg { width: 14px; height: 14px; }
+
+  .card-cta {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-cta span { font-size: 0.85rem; font-weight: 700; color: var(--accent2); }
+  .card-arrow {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(108,99,255,0.1); border: 1px solid rgba(108,99,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--accent2); transition: all 0.2s;
+  }
+  .exercise-card:hover .card-arrow { background: var(--accent); color: #fff; border-color: transparent; }
+
+  /* ─── EXERCISE VIEW ─── */
+  #exercise-view {
+    display: none;
+    padding: 40px 48px;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+  #exercise-view.active { display: block; }
+
+  .ex-header {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 40px;
+  }
+  .btn-back {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 20px; border-radius: 10px;
+    background: var(--surface); border: 1px solid var(--border2);
+    color: var(--text2); cursor: pointer; font-family: 'Syne', sans-serif;
+    font-size: 0.85rem; font-weight: 700; transition: all 0.2s;
+  }
+  .btn-back:hover { color: var(--text); border-color: var(--accent); }
+  .ex-title { font-size: 1.6rem; font-weight: 800; letter-spacing: -0.03em; }
+  .ex-diff { margin-left: auto; }
+
+  .ex-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 32px; }
+  @media (max-width: 800px) { .ex-layout { grid-template-columns: 1fr; } }
+
+  .ex-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px; overflow: hidden;
+  }
+  .ex-panel-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+    background: var(--bg2);
+  }
+  .ex-panel-header h3 { font-size: 0.85rem; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.08em; }
+  .ex-panel-body { padding: 24px; }
+
+  /* SVG Graph in exercise */
+  .ex-graph-svg { width: 100%; max-height: 320px; }
+
+  /* Routing table input */
+  .routing-table-wrap { overflow-x: auto; }
+  .routing-table {
+    width: 100%; border-collapse: collapse;
+    font-family: 'DM Mono', monospace; font-size: 0.8rem;
+  }
+  .routing-table th {
+    background: var(--bg2); border: 1px solid var(--border2);
+    padding: 8px 10px; color: var(--accent2); font-weight: 700;
+    text-align: center; font-size: 0.72rem; text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .routing-table th.fixed-col { min-width: 90px; }
+  .routing-table td {
+    border: 1px solid var(--border);
+    padding: 4px;
+    text-align: center;
+    vertical-align: middle;
+  }
+  .routing-table td.row-info {
+    background: var(--bg2); color: var(--text2); font-weight: 600;
+    padding: 6px 10px; font-size: 0.8rem; white-space: nowrap;
+  }
+  .routing-table input {
+    width: 100%; min-width: 70px;
+    background: transparent; border: none;
+    color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.78rem;
+    text-align: center; padding: 8px 4px; outline: none;
+    transition: background 0.15s;
+  }
+  .routing-table input:focus { background: rgba(108,99,255,0.08); border-radius: 4px; }
+  .routing-table input.correct { color: var(--green) !important; background: rgba(16,185,129,0.06); }
+  .routing-table input.wrong { color: var(--red) !important; background: rgba(239,68,68,0.06); }
+  .routing-table input.partial { color: var(--gold) !important; background: rgba(245,158,11,0.06); }
+
+  /* Submit + score */
+  .ex-actions { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; margin-bottom: 24px; }
+  .btn-submit {
+    padding: 14px 32px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    color: #fff; font-family: 'Syne', sans-serif;
+    font-size: 0.95rem; font-weight: 700;
+    border: none; cursor: pointer;
+    box-shadow: 0 0 20px rgba(108,99,255,0.3);
+    transition: all 0.2s;
+  }
+  .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 0 40px rgba(108,99,255,0.5); }
+  .btn-reset {
+    padding: 14px 24px; border-radius: 12px;
+    background: transparent; color: var(--text2);
+    font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700;
+    border: 1px solid var(--border2); cursor: pointer; transition: all 0.2s;
+  }
+  .btn-reset:hover { color: var(--text); border-color: var(--text3); }
+  .btn-hint {
+    padding: 14px 24px; border-radius: 12px;
+    background: rgba(245,158,11,0.08); color: var(--gold);
+    font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700;
+    border: 1px solid rgba(245,158,11,0.2); cursor: pointer; transition: all 0.2s;
+    margin-left: auto;
+  }
+  .btn-hint:hover { background: rgba(245,158,11,0.15); }
+
+  /* Feedback */
+  #feedback-panel { display: none; margin-top: 16px; }
+  #feedback-panel.show { display: block; animation: fadeUp 0.4s ease; }
+
+  .score-banner {
+    display: flex; align-items: center; gap: 20px;
+    padding: 24px 28px; border-radius: 16px; margin-bottom: 24px;
+    border: 1px solid; position: relative; overflow: hidden;
+  }
+  .score-banner::after {
+    content: ''; position: absolute; top: 0; right: 0;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, currentColor 0%, transparent 70%);
+    opacity: 0.05; transform: translate(50%, -50%);
+  }
+  .score-banner.perfect { background: rgba(16,185,129,0.06); border-color: rgba(16,185,129,0.3); color: var(--green); }
+  .score-banner.good { background: rgba(56,189,248,0.06); border-color: rgba(56,189,248,0.3); color: var(--accent3); }
+  .score-banner.medium { background: rgba(245,158,11,0.06); border-color: rgba(245,158,11,0.3); color: var(--gold); }
+  .score-banner.bad { background: rgba(239,68,68,0.06); border-color: rgba(239,68,68,0.3); color: var(--red); }
+
+  .score-icon { font-size: 2.5rem; flex-shrink: 0; }
+  .score-text .score-num { font-size: 1.8rem; font-weight: 800; }
+  .score-text .score-label { font-size: 0.85rem; opacity: 0.8; margin-top: 2px; }
+
+  /* Error analysis */
+  .error-list { display: flex; flex-direction: column; gap: 12px; }
+  .error-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px; padding: 16px 20px;
+    border-left: 3px solid var(--red);
+  }
+  .error-item.warn { border-left-color: var(--gold); }
+  .error-item .err-location {
+    font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--text3); margin-bottom: 6px;
+  }
+  .error-item .err-msg { color: var(--text); font-size: 0.9rem; line-height: 1.5; margin-bottom: 8px; }
+  .error-item .err-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 0.78rem; font-weight: 700; color: var(--accent2);
+    cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+    transition: color 0.15s;
+  }
+  .error-item .err-link:hover { color: var(--accent3); }
+
+  /* Correction table */
+  .correction-section { margin-top: 24px; }
+  .correction-section h4 {
+    font-size: 0.85rem; font-weight: 700; color: var(--text2);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px;
+  }
+  .correction-table {
+    width: 100%; border-collapse: collapse;
+    font-family: 'DM Mono', monospace; font-size: 0.78rem;
+    overflow-x: auto;
+  }
+  .correction-table th {
+    background: var(--bg2); border: 1px solid var(--border2);
+    padding: 8px 10px; color: var(--accent2); font-size: 0.7rem;
+    text-transform: uppercase;
+  }
+  .correction-table td {
+    border: 1px solid var(--border); padding: 7px 10px;
+    text-align: center; color: var(--text2);
+  }
+  .correction-table td.correct-val { color: var(--green); font-weight: 700; }
+  .correction-table td.row-label { background: var(--bg2); color: var(--text2); font-weight: 600; }
+
+  /* Hint box */
+  .hint-box {
+    background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 12px; padding: 16px 20px; margin-top: 16px; display: none;
+    animation: fadeUp 0.3s ease;
+  }
+  .hint-box.show { display: block; }
+  .hint-box .hint-title {
+    font-size: 0.75rem; font-weight: 700; color: var(--gold);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .hint-box p { color: var(--text2); font-size: 0.88rem; line-height: 1.6; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 768px) {
+    nav { padding: 0 16px; }
+    .course-layout { grid-template-columns: 1fr; }
+    .course-sidebar { display: none; }
+    .course-content { padding: 24px; }
+    .exercises-grid { padding: 24px; grid-template-columns: 1fr; }
+    #exercise-view { padding: 24px 16px; }
+    .ex-layout { grid-template-columns: 1fr; }
+    .page-header { padding: 40px 24px 24px; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+  /* ─── TOOLTIP ─── */
+  .tooltip-wrap { position: relative; }
+  .tooltip-wrap:hover .tooltip { opacity: 1; pointer-events: auto; transform: translateY(0); }
+  .tooltip {
+    position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(4px);
+    background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 6px 12px;
+    font-size: 0.75rem; color: var(--text2); white-space: nowrap;
+    opacity: 0; pointer-events: none; transition: all 0.15s;
+    font-family: 'Syne', sans-serif;
+  }
+
+  /* loading */
+  .exercises-filters {
+    display: flex; gap: 12px; align-items: center;
+    padding: 24px 48px 0;
+  }
+  .filter-btn {
+    padding: 8px 20px; border-radius: 8px;
+    background: transparent; color: var(--text2);
+    font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 700;
+    border: 1px solid var(--border); cursor: pointer; transition: all 0.2s;
+  }
+  .filter-btn:hover { border-color: var(--border2); color: var(--text); }
+  .filter-btn.active { background: var(--surface); border-color: var(--accent); color: var(--accent2); }
+  .filter-btn.easy.active { border-color: var(--green); color: var(--green); background: rgba(16,185,129,0.06); }
+  .filter-btn.medium.active { border-color: var(--gold); color: var(--gold); background: rgba(245,158,11,0.06); }
+  .filter-btn.hard.active { border-color: var(--red); color: var(--red); background: rgba(239,68,68,0.06); }
+
+  /* ─── PROGRESS BAR ─── */
+  .progress-row {
+    display: flex; gap: 8px; align-items: center; margin-top: 4px;
+  }
+  .progress-bar-track {
+    flex: 1; height: 4px; background: var(--border); border-radius: 4px; overflow: hidden;
+  }
+  .progress-bar-fill { height: 100%; border-radius: 4px; transition: width 0.4s ease; }
+</style>
+</head>
+<body>
+
+<div class="bg-orbs">
+  <span></span><span></span><span></span>
+</div>
+
+<!-- NAVBAR -->
+<nav>
+  <a class="nav-logo" onclick="showSection('home')">
+    <div class="logo-icon">⬡</div>
+    RouteForge
+  </a>
+  <div class="nav-links">
+    <a onclick="showSection('home')" id="nav-home" class="active">Accueil</a>
+    <a onclick="showSection('cours')" id="nav-cours">Cours</a>
+    <a onclick="showSection('exercices')" id="nav-exercices">Exercices</a>
+  </div>
+</nav>
+
+<main>
+
+  <!-- ════════════════════════════════════════
+       HOME
+  ════════════════════════════════════════ -->
+  <section id="home" class="section active">
+    <div class="hero">
+      <div class="hero-badge">Algorithme de Dijkstra</div>
+      <h1 class="hero-title">
+        <span class="line1">Maîtrisez le</span>
+        <span class="line2">Routage Réseau</span>
+      </h1>
+      <p class="hero-sub">
+        Apprenez à remplir les tables de routage avec Dijkstra — des explications claires, des exercices interactifs, une correction instantanée.
+      </p>
+      <div class="hero-cta">
+        <button class="btn-primary" onclick="showSection('cours')">Commencer le cours →</button>
+        <button class="btn-secondary" onclick="showSection('exercices')">Voir les exercices</button>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-num">4</div>
+          <div class="stat-label">Leçons</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">6</div>
+          <div class="stat-label">Exercices</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">3</div>
+          <div class="stat-label">Niveaux</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       COURS
+  ════════════════════════════════════════ -->
+  <section id="cours" class="section">
+    <div class="page-header">
+      <h1>📖 Cours Dijkstra</h1>
+      <p>Tout ce qu'il faut savoir pour remplir une table de routage</p>
+    </div>
+    <div class="course-layout">
+      <aside class="course-sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-title">Fondamentaux</div>
+          <div class="sidebar-item active" onclick="showLesson('l1', this)">
+            <div class="dot"></div> Introduction & Graphes
+          </div>
+          <div class="sidebar-item" onclick="showLesson('l2', this)">
+            <div class="dot"></div> L'Algorithme pas à pas
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-title">Pratique</div>
+          <div class="sidebar-item" onclick="showLesson('l3', this)">
+            <div class="dot"></div> Remplir le tableau
+          </div>
+          <div class="sidebar-item" onclick="showLesson('l4', this)">
+            <div class="dot"></div> Astuces & Erreurs communes
+          </div>
+        </div>
+      </aside>
+
+      <div class="course-content">
+
+        <!-- LEÇON 1 -->
+        <div class="lesson active" id="l1">
+          <div class="lesson-tag intro">Introduction</div>
+          <h2>Graphes et chemins les plus courts</h2>
+          <p class="intro-text">Avant de comprendre Dijkstra, il faut visualiser le réseau comme un graphe — des nœuds reliés par des arêtes pondérées.</p>
+
+          <div class="info-card definition">
+            <div class="card-header">📌 Définition — Graphe pondéré</div>
+            <p style="color:var(--text2); font-size:0.92rem; line-height:1.7; margin:0">
+              Un <strong>graphe pondéré</strong> est composé de <strong>sommets</strong> (routeurs, R1, R2…) reliés par des <strong>arêtes</strong> auxquelles on associe un <strong>poids</strong> (coût, distance, latence). L'objectif de Dijkstra : trouver le chemin de coût minimal depuis un sommet source vers tous les autres.
+            </p>
+          </div>
+
+          <h3>Vocabulaire essentiel</h3>
+          <ul class="step-list">
+            <li><div class="step-num">S</div><div class="step-text"><strong>Sommet (nœud)</strong> — Représente un routeur ou hôte dans le réseau. Noté R1, R2, etc.</div></li>
+            <li><div class="step-num">A</div><div class="step-text"><strong>Arête (lien)</strong> — Connexion entre deux sommets. Elle porte un <strong>poids</strong> (coût).</div></li>
+            <li><div class="step-num">P</div><div class="step-text"><strong>Poids / Coût</strong> — Valeur numérique sur une arête. Peut représenter la bande passante, latence, etc.</div></li>
+            <li><div class="step-num">d</div><div class="step-text"><strong>Distance</strong> — Coût cumulé du chemin depuis la source jusqu'à un sommet donné.</div></li>
+          </ul>
+
+          <h3>Exemple de graphe simple</h3>
+          <div class="mini-graph-container">
+            <svg viewBox="0 0 420 260" xmlns="http://www.w3.org/2000/svg" style="max-width:420px">
+              <!-- edges -->
+              <line x1="80" y1="130" x2="200" y2="60" stroke="#363650" stroke-width="2"/>
+              <line x1="80" y1="130" x2="200" y2="200" stroke="#363650" stroke-width="2"/>
+              <line x1="200" y1="60" x2="340" y2="130" stroke="#363650" stroke-width="2"/>
+              <line x1="200" y1="200" x2="340" y2="130" stroke="#363650" stroke-width="2"/>
+              <line x1="200" y1="60" x2="200" y2="200" stroke="#363650" stroke-width="2"/>
+              <!-- edge labels -->
+              <text x="130" y="82" fill="#9191a8" font-size="13" font-family="DM Mono" text-anchor="middle">3</text>
+              <text x="130" y="180" fill="#9191a8" font-size="13" font-family="DM Mono" text-anchor="middle">5</text>
+              <text x="280" y="82" fill="#9191a8" font-size="13" font-family="DM Mono" text-anchor="middle">2</text>
+              <text x="280" y="180" fill="#9191a8" font-size="13" font-family="DM Mono" text-anchor="middle">4</text>
+              <text x="216" y="135" fill="#9191a8" font-size="13" font-family="DM Mono" text-anchor="middle">1</text>
+              <!-- highlighted path -->
+              <line x1="80" y1="130" x2="200" y2="60" stroke="#6c63ff" stroke-width="3" stroke-dasharray="6,3" opacity="0.7"/>
+              <line x1="200" y1="60" x2="200" y2="200" stroke="#6c63ff" stroke-width="3" stroke-dasharray="6,3" opacity="0.7"/>
+              <!-- nodes -->
+              <circle cx="80" cy="130" r="26" fill="#1c1c28" stroke="#6c63ff" stroke-width="2"/>
+              <text x="80" y="135" fill="#a78bfa" font-size="13" font-weight="bold" font-family="Syne" text-anchor="middle">R1</text>
+              <circle cx="200" cy="60" r="26" fill="#1c1c28" stroke="#363650" stroke-width="2"/>
+              <text x="200" y="65" fill="#9191a8" font-size="13" font-weight="bold" font-family="Syne" text-anchor="middle">R2</text>
+              <circle cx="200" cy="200" r="26" fill="#1c1c28" stroke="#363650" stroke-width="2"/>
+              <text x="200" y="205" fill="#9191a8" font-size="13" font-weight="bold" font-family="Syne" text-anchor="middle">R3</text>
+              <circle cx="340" cy="130" r="26" fill="#1c1c28" stroke="#10b981" stroke-width="2"/>
+              <text x="340" y="135" fill="#10b981" font-size="13" font-weight="bold" font-family="Syne" text-anchor="middle">R4</text>
+              <!-- path label -->
+              <text x="210" y="245" fill="#6c63ff" font-size="11" font-family="Syne" text-anchor="middle" opacity="0.8">Chemin optimal R1→R4 : coût 4 (R1→R2→R3→R4... non, ici R1→R2→R4 = 5)</text>
+            </svg>
+          </div>
+
+          <div class="info-card tip">
+            <div class="card-header">💡 Astuce visuelle</div>
+            <p style="color:var(--text2); font-size:0.92rem; line-height:1.7; margin:0">
+              Toujours <strong>repérer d'abord les voisins directs</strong> du sommet source. Le premier sommet à explorer est le sommet source lui-même (coût 0). Les voisins directs ont un coût = poids de l'arête directe.
+            </p>
+          </div>
+
+          <div class="lesson-nav">
+            <span></span>
+            <button class="btn-nav next" onclick="showLesson('l2', document.querySelectorAll('.sidebar-item')[1])">Suivant : L'Algorithme →</button>
+          </div>
+        </div>
+
+        <!-- LEÇON 2 -->
+        <div class="lesson" id="l2">
+          <div class="lesson-tag algo">Algorithme</div>
+          <h2>Dijkstra — Le déroulement pas à pas</h2>
+          <p class="intro-text">Dijkstra explore le graphe de proche en proche, en choisissant toujours le sommet non-exploré au coût minimal.</p>
+
+          <div class="formula-box">
+            <div class="formula-label">Règle de mise à jour</div>
+            d[v] = min( d[v], d[u] + coût(u,v) )
+          </div>
+
+          <h3>Les 5 étapes de l'algorithme</h3>
+          <ul class="step-list">
+            <li><div class="step-num">1</div><div class="step-text"><strong>Initialisation :</strong> Distance source = 0, tous les autres = ∞. Aucun sommet exploré (E = ∅).</div></li>
+            <li><div class="step-num">2</div><div class="step-text"><strong>Choisir le sommet courant :</strong> Parmi les sommets non-explorés, prendre celui avec la <strong>distance minimale</strong>.</div></li>
+            <li><div class="step-num">3</div><div class="step-text"><strong>Marquer comme exploré :</strong> Ajouter ce sommet à l'ensemble E. Il ne sera plus modifié.</div></li>
+            <li><div class="step-num">4</div><div class="step-text"><strong>Mettre à jour les voisins :</strong> Pour chaque voisin non-exploré de u, appliquer la règle de mise à jour. Si d[u] + coût(u,v) &lt; d[v], mettre à jour d[v] et noter u comme prédécesseur.</div></li>
+            <li><div class="step-num">5</div><div class="step-text"><strong>Répéter :</strong> Retourner à l'étape 2 jusqu'à ce que tous les sommets soient explorés.</div></li>
+          </ul>
+
+          <div class="info-card warning">
+            <div class="card-header">⚠️ Règle fondamentale</div>
+            <p style="color:var(--text2); font-size:0.92rem; line-height:1.7; margin:0">
+              Une fois un sommet dans E (exploré), sa distance est <strong>définitive et ne change plus jamais</strong>. C'est la garantie de l'algorithme. Ne jamais re-mettre à jour un sommet déjà dans E !
+            </p>
+          </div>
+
+          <h3>Exemple de trace (graphe R1→R4)</h3>
+          <div class="table-preview">
+            <table>
+              <tr>
+                <th class="fixed-col">Courant</th><th>E</th><th>Voisins</th>
+                <th>R1</th><th>R2</th><th>R3</th><th>R4</th>
+              </tr>
+              <tr>
+                <td>∅</td><td>∅</td><td>R1</td>
+                <td>0, ∅</td><td>∞, ∅</td><td>∞, ∅</td><td>∞, ∅</td>
+              </tr>
+              <tr class="highlight">
+                <td class="current-node">R1</td><td>{R1}</td><td>R2, R3</td>
+                <td>0, ∅</td><td class="updated">3, R1</td><td class="updated">5, R1</td><td>∞, ∅</td>
+              </tr>
+              <tr>
+                <td class="current-node">R2</td><td>{R1,R2}</td><td>R3, R4</td>
+                <td>0, ∅</td><td>3, R1</td><td class="updated">4, R2</td><td class="updated">5, R2</td>
+              </tr>
+              <tr>
+                <td class="current-node">R3</td><td>{R1,R2,R3}</td><td>R4</td>
+                <td>0, ∅</td><td>3, R1</td><td>4, R2</td><td>5, R2</td>
+              </tr>
+            </table>
+          </div>
+
+          <div class="lesson-nav">
+            <button class="btn-nav" onclick="showLesson('l1', document.querySelectorAll('.sidebar-item')[0])">← Précédent</button>
+            <button class="btn-nav next" onclick="showLesson('l3', document.querySelectorAll('.sidebar-item')[2])">Suivant : Le tableau →</button>
+          </div>
+        </div>
+
+        <!-- LEÇON 3 -->
+        <div class="lesson" id="l3">
+          <div class="lesson-tag table">Tableau</div>
+          <h2>Comment remplir le tableau de routage</h2>
+          <p class="intro-text">Le tableau est la trace écrite de l'exécution de Dijkstra. Voici comment le décrypter et le compléter colonne par colonne.</p>
+
+          <h3>Structure du tableau</h3>
+          <div class="info-card definition">
+            <div class="card-header">📋 Les colonnes</div>
+            <ul class="step-list" style="margin:0">
+              <li><div class="step-num" style="background:rgba(108,99,255,0.15)">C</div><div class="step-text"><strong>Sommet courant</strong> : Le sommet actuellement traité (celui avec dist. min hors E). Ligne 1 = ∅.</div></li>
+              <li><div class="step-num" style="background:rgba(108,99,255,0.15)">E</div><div class="step-text"><strong>Sommets explorés (E)</strong> : L'ensemble des sommets déjà finalisés. Croît à chaque ligne.</div></li>
+              <li><div class="step-num" style="background:rgba(108,99,255,0.15)">V</div><div class="step-text"><strong>Sommets voisins (V)</strong> : Les voisins directs du sommet courant, non encore dans E.</div></li>
+              <li><div class="step-num" style="background:rgba(108,99,255,0.15)">Ri</div><div class="step-text"><strong>Colonne par sommet</strong> : Contient "distance, prédécesseur". Ex : <code style="color:var(--accent3)">5, R2</code> signifie distance = 5, arrivé via R2.</div></li>
+            </ul>
+          </div>
+
+          <h3>Format d'une cellule</h3>
+          <div class="formula-box">
+            <div class="formula-label">Format cellule Ri</div>
+            distance , prédécesseur &nbsp;|&nbsp; Ex: 5 , R1 &nbsp;|&nbsp; Non-atteint: ∞ , ∅
+          </div>
+
+          <div class="info-card tip">
+            <div class="card-header">💡 Méthode de remplissage ligne par ligne</div>
+            <p style="color:var(--text2); font-size:0.92rem; line-height:1.7; margin-bottom:8px">
+              <strong>1.</strong> Recopiez d'abord toutes les distances de la ligne précédente. <br>
+              <strong>2.</strong> Ensuite, regardez les voisins du sommet courant et appliquez la formule. <br>
+              <strong>3.</strong> Si la nouvelle distance est <em>strictement inférieure</em>, mettez à jour — sinon laissez tel quel. <br>
+              <strong>4.</strong> Les sommets dans E ne peuvent PAS changer.
+            </p>
+          </div>
+
+          <div class="lesson-nav">
+            <button class="btn-nav" onclick="showLesson('l2', document.querySelectorAll('.sidebar-item')[1])">← Précédent</button>
+            <button class="btn-nav next" onclick="showLesson('l4', document.querySelectorAll('.sidebar-item')[3])">Suivant : Astuces →</button>
+          </div>
+        </div>
+
+        <!-- LEÇON 4 -->
+        <div class="lesson" id="l4">
+          <div class="lesson-tag tips">Astuces</div>
+          <h2>Astuces & Erreurs classiques</h2>
+          <p class="intro-text">Les pièges dans lesquels tombent 80% des étudiants — et comment les éviter définitivement.</p>
+
+          <h3>✅ Les bonnes pratiques</h3>
+          <ul class="step-list">
+            <li><div class="step-num">✓</div><div class="step-text"><strong>Copiez toujours la ligne précédente en entier</strong> avant de modifier. C'est la base de chaque nouvelle ligne.</div></li>
+            <li><div class="step-num">✓</div><div class="step-text"><strong>Notez clairement le prédécesseur</strong> — il est aussi important que la distance. Sans lui, pas de chemin reconstructible.</div></li>
+            <li><div class="step-num">✓</div><div class="step-text"><strong>Vérifiez visuellement le graphe</strong> avant chaque mise à jour : regardez quelles arêtes partent du sommet courant.</div></li>
+            <li><div class="step-num">✓</div><div class="step-text"><strong>Le prédécesseur de la source est ∅</strong> — elle n'a pas été atteinte via un autre nœud.</div></li>
+          </ul>
+
+          <h3>❌ Les erreurs classiques</h3>
+          <div class="info-card warning">
+            <div class="card-header">❌ Erreur n°1 — Modifier un sommet exploré</div>
+            <p style="color:var(--text2); font-size:0.92rem; line-height:1.7; margin:0">
+              Si R3 est déjà dans E, sa distance <strong>ne change jamais</strong>, même si vous trouvez un chemin plus court en apparence. Dijkstra garantit que la première fois qu'un sommet est choisi, c'est sa distance minimale.
+            </p>
+          </div>
+          <div class="info-card warning">
+            <div class="card-header">❌ Erreur n°2 — Oublier de mettre à jour un voisin</div>
+            <p style="color:var(--text2); font-size:0.92rem; line-height:1.7; margin:0">
+              Bien regarder <strong>tous les voisins directs</strong> du sommet courant dans le graphe. Attention aux connexions indirectes : R1 peut atteindre R4 via R2, mais pas directement si aucune arête n'existe.
+            </p>
+          </div>
+          <div class="info-card warning">
+            <div class="card-header">❌ Erreur n°3 — Choisir le mauvais sommet courant</div>
+            <p style="color:var(--text2); font-size:0.92rem; line-height:1.7; margin:0">
+              Le sommet courant est toujours celui avec la <strong>distance minimale parmi les sommets non-explorés</strong>. En cas d'égalité, on prend généralement le plus petit indice alphabétique/numérique.
+            </p>
+          </div>
+          <div class="info-card tip">
+            <div class="card-header">💡 Astuce mnémotechnique</div>
+            <p style="color:var(--text2); font-size:0.92rem; line-height:1.7; margin:0">
+              Imaginez que vous êtes un GPS : vous cherchez toujours la <em>sortie d'autoroute la plus proche non encore visitée</em>. Une fois passée, elle est enregistrée définitivement. C'est exactement Dijkstra.
+            </p>
+          </div>
+
+          <div class="lesson-nav">
+            <button class="btn-nav" onclick="showLesson('l3', document.querySelectorAll('.sidebar-item')[2])">← Précédent</button>
+            <button class="btn-nav next" onclick="showSection('exercices')">Pratiquer →</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════════════════════════════════
+       EXERCICES LIST
+  ════════════════════════════════════════ -->
+  <section id="exercices" class="section">
+    <div class="page-header">
+      <h1>🎯 Exercices</h1>
+      <p>Remplissez les tables de routage, soumettez et obtenez une correction détaillée</p>
+    </div>
+
+    <div class="exercises-filters">
+      <button class="filter-btn active" onclick="filterExercises('all', this)">Tous</button>
+      <button class="filter-btn easy" onclick="filterExercises('easy', this)">🟢 Facile</button>
+      <button class="filter-btn medium" onclick="filterExercises('medium', this)">🟡 Moyen</button>
+      <button class="filter-btn hard" onclick="filterExercises('hard', this)">🔴 Difficile</button>
+    </div>
+
+    <div class="exercises-grid" id="exercises-grid">
+      <!-- Cards will be injected by JS -->
+    </div>
+
+    <!-- Exercise view (embedded) -->
+    <div id="exercise-view">
+      <div class="ex-header">
+        <button class="btn-back" onclick="closeExercise()">← Retour</button>
+        <div class="ex-title" id="ex-title">Exercice 1</div>
+        <div class="ex-diff" id="ex-diff-badge"></div>
+      </div>
+
+      <div class="ex-layout">
+        <div class="ex-panel">
+          <div class="ex-panel-header">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            <h3>Graphe du réseau</h3>
+          </div>
+          <div class="ex-panel-body" style="display:flex;justify-content:center;align-items:center;min-height:280px;">
+            <svg id="ex-graph-svg" viewBox="0 0 400 300" class="ex-graph-svg"></svg>
+          </div>
+        </div>
+
+        <div class="ex-panel">
+          <div class="ex-panel-header">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            <h3>Table de routage à compléter</h3>
+          </div>
+          <div class="ex-panel-body">
+            <div class="routing-table-wrap">
+              <table class="routing-table" id="routing-table"></table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ex-actions">
+        <button class="btn-submit" onclick="submitExercise()">Corriger →</button>
+        <button class="btn-reset" onclick="resetExercise()">Réinitialiser</button>
+        <button class="btn-hint" onclick="toggleHint()">💡 Indice</button>
+      </div>
+
+      <div class="hint-box" id="hint-box">
+        <div class="hint-title">💡 Indice</div>
+        <p id="hint-text"></p>
+      </div>
+
+      <div id="feedback-panel">
+        <div class="score-banner" id="score-banner">
+          <div class="score-icon" id="score-icon">🏆</div>
+          <div class="score-text">
+            <div class="score-num" id="score-num">100%</div>
+            <div class="score-label" id="score-label">Parfait !</div>
+          </div>
+          <div class="progress-row" style="flex:1">
+            <div class="progress-bar-track">
+              <div class="progress-bar-fill" id="progress-fill" style="width:0%;background:var(--green)"></div>
+            </div>
+          </div>
+        </div>
+
+        <div id="error-list" class="error-list"></div>
+
+        <div class="correction-section" id="correction-section">
+          <h4>Correction complète</h4>
+          <div style="overflow-x:auto"><table class="correction-table" id="correction-table"></table></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  const map = { home: 'nav-home', cours: 'nav-cours', exercices: 'nav-exercices' };
+  if (map[id]) document.getElementById(map[id]).classList.add('active');
+  if (id !== 'exercices') closeExercise();
+  window.scrollTo(0, 0);
+}
+
+function showLesson(id, el) {
+  document.querySelectorAll('.lesson').forEach(l => l.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  if (el) el.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════
+//  EXERCISES DATA
+// ══════════════════════════════════════════════════════
+const EXERCISES = [
+  {
+    id: 'ex1',
+    title: 'Réseau linéaire',
+    desc: 'Un petit réseau de 4 routeurs, idéal pour commencer',
+    difficulty: 'easy',
+    nodes: ['R1','R2','R3','R4'],
+    edges: [{u:'R1',v:'R2',w:3},{u:'R1',v:'R3',w:5},{u:'R2',v:'R3',w:1},{u:'R2',v:'R4',w:4},{u:'R3',v:'R4',w:2}],
+    source: 'R1',
+    hint: 'Commencez par identifier tous les voisins directs de R1. R2 est à coût 3, R3 à coût 5. Ensuite le sommet courant est R2 (coût minimum = 3).',
+    svgLayout: {
+      R1: [60, 150], R2: [180, 60], R3: [180, 240], R4: [320, 150]
+    }
+  },
+  {
+    id: 'ex2',
+    title: 'Réseau en étoile',
+    desc: 'Un hub central connecté à plusieurs routeurs',
+    difficulty: 'easy',
+    nodes: ['R1','R2','R3','R4','R5'],
+    edges: [{u:'R1',v:'R2',w:2},{u:'R1',v:'R3',w:4},{u:'R1',v:'R4',w:1},{u:'R2',v:'R5',w:3},{u:'R3',v:'R5',w:1},{u:'R4',v:'R5',w:5}],
+    source: 'R1',
+    hint: 'R4 est le voisin le plus proche de R1 (coût 1). Explorez-le en second. Via R4, cherchez si on peut atteindre R5 moins cher.',
+    svgLayout: {
+      R1: [80, 150], R2: [220, 60], R3: [220, 150], R4: [220, 240], R5: [340, 150]
+    }
+  },
+  {
+    id: 'ex3',
+    title: 'Réseau maillé 5 nœuds',
+    desc: '5 routeurs avec plusieurs chemins alternatifs',
+    difficulty: 'medium',
+    nodes: ['R1','R2','R3','R4','R5'],
+    edges: [{u:'R1',v:'R2',w:2},{u:'R1',v:'R3',w:6},{u:'R2',v:'R3',w:3},{u:'R2',v:'R4',w:8},{u:'R3',v:'R4',w:2},{u:'R3',v:'R5',w:5},{u:'R4',v:'R5',w:1}],
+    source: 'R1',
+    hint: 'Attention ! Pour atteindre R4, comparez le chemin R1→R2→R4 (10) vs R1→R2→R3→R4 (7) vs R1→R3→R4 (8). Le plus court n\'est pas toujours le plus direct !',
+    svgLayout: {
+      R1: [60, 150], R2: [180, 60], R3: [180, 240], R4: [300, 150], R5: [360, 60]
+    }
+  },
+  {
+    id: 'ex4',
+    title: 'Réseau 6 routeurs',
+    desc: 'Un réseau plus dense inspiré de l\'exercice original',
+    difficulty: 'medium',
+    nodes: ['R1','R2','R3','R4','R5','R6'],
+    edges: [{u:'R1',v:'R2',w:5},{u:'R1',v:'R3',w:3},{u:'R1',v:'R4',w:2},{u:'R2',v:'R5',w:2},{u:'R3',v:'R5',w:4},{u:'R3',v:'R4',w:3},{u:'R4',v:'R6',w:2},{u:'R5',v:'R6',w:1}],
+    source: 'R1',
+    hint: 'Identifiez d\'abord les 3 voisins de R1. R4 (coût 2) sera le 2ème sommet exploré. Vérifiez si passer par R4 améliore le chemin vers R6.',
+    svgLayout: {
+      R1: [60, 180], R2: [180, 60], R3: [180, 180], R4: [180, 300], R5: [300, 100], R6: [300, 240]
+    }
+  },
+  {
+    id: 'ex5',
+    title: 'Topologie complexe 7 nœuds',
+    desc: 'Proche de l\'exercice du cours — 8 routeurs, nombreux chemins',
+    difficulty: 'hard',
+    nodes: ['R1','R2','R3','R4','R5','R6','R7','R8'],
+    edges: [{u:'R1',v:'R2',w:5},{u:'R1',v:'R3',w:3},{u:'R1',v:'R4',w:2},{u:'R2',v:'R5',w:2},{u:'R2',v:'R3',w:1},{u:'R3',v:'R7',w:1},{u:'R4',v:'R3',w:3},{u:'R4',v:'R7',w:3},{u:'R5',v:'R6',w:1},{u:'R5',v:'R8',w:2},{u:'R6',v:'R7',w:2},{u:'R6',v:'R8',w:4},{u:'R7',v:'R6',w:2}],
+    source: 'R1',
+    hint: 'Ce graphe a 8 sommets et 13 arêtes. Prenez votre temps. R4 (2) et R3 (3) sont les premiers explorés. Via R3, R7 devient accessible à coût 4.',
+    svgLayout: {
+      R1: [50, 180], R2: [160, 70], R3: [200, 180], R4: [160, 290], R5: [300, 70], R6: [380, 180], R7: [300, 290], R8: [440, 100]
+    }
+  },
+  {
+    id: 'ex6',
+    title: 'Réseau asymétrique',
+    desc: 'Un graphe avec des pièges et des chemins contre-intuitifs',
+    difficulty: 'hard',
+    nodes: ['R1','R2','R3','R4','R5','R6','R7'],
+    edges: [{u:'R1',v:'R2',w:1},{u:'R1',v:'R3',w:10},{u:'R2',v:'R4',w:1},{u:'R2',v:'R5',w:8},{u:'R3',v:'R5',w:1},{u:'R4',v:'R6',w:5},{u:'R4',v:'R3',w:3},{u:'R5',v:'R7',w:1},{u:'R6',v:'R7',w:1}],
+    source: 'R1',
+    hint: 'R1→R2 coûte seulement 1. Mais attention : pour atteindre R3, le chemin R1→R2→R4→R3 (coût 5) est meilleur que R1→R3 (coût 10) !',
+    svgLayout: {
+      R1: [50, 180], R2: [160, 80], R3: [200, 280], R4: [280, 80], R5: [320, 200], R6: [380, 80], R7: [420, 200]
+    }
+  }
+];
+
+// ══════════════════════════════════════════════════════
+//  DIJKSTRA ENGINE
+// ══════════════════════════════════════════════════════
+function runDijkstra(nodes, edges, source) {
+  const dist = {}, prev = {}, visited = new Set();
+  nodes.forEach(n => { dist[n] = Infinity; prev[n] = null; });
+  dist[source] = 0;
+
+  // adjacency
+  const adj = {};
+  nodes.forEach(n => adj[n] = []);
+  edges.forEach(({u,v,w}) => { adj[u].push({to:v,w}); adj[v].push({to:u,w}); });
+
+  const steps = [];
+
+  // Row 0: init
+  const initRow = { current: '∅', E: [], V: [source], dists: {} };
+  nodes.forEach(n => initRow.dists[n] = { d: n===source?0:Infinity, p: null });
+  steps.push(initRow);
+
+  while (visited.size < nodes.length) {
+    // Pick min
+    let u = null;
+    nodes.forEach(n => {
+      if (!visited.has(n) && dist[n] !== Infinity) {
+        if (u === null || dist[n] < dist[u]) u = n;
+      }
+    });
+    if (u === null) break;
+    visited.add(u);
+
+    const row = { current: u, E: [...visited], V: [], dists: {} };
+    nodes.forEach(n => row.dists[n] = { d: dist[n], p: prev[n] });
+
+    // Relax
+    adj[u].forEach(({to, w}) => {
+      if (!visited.has(to)) {
+        row.V.push(to);
+        if (dist[u] + w < dist[to]) {
+          dist[to] = dist[u] + w;
+          prev[to] = u;
+          row.dists[to] = { d: dist[to], p: prev[to] };
+        }
+      }
+    });
+
+    steps.push(row);
+  }
+
+  return steps;
+}
+
+// ══════════════════════════════════════════════════════
+//  GRAPH SVG RENDERING
+// ══════════════════════════════════════════════════════
+function renderGraph(svgEl, nodes, edges, layout, source) {
+  svgEl.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+
+  // Compute bounds
+  const xs = nodes.map(n => layout[n][0]);
+  const ys = nodes.map(n => layout[n][1]);
+  const minX = Math.min(...xs) - 40, maxX = Math.max(...xs) + 40;
+  const minY = Math.min(...ys) - 40, maxY = Math.max(...ys) + 40;
+  svgEl.setAttribute('viewBox', `${minX} ${minY} ${maxX-minX} ${maxY-minY}`);
+
+  // Edges
+  edges.forEach(({u,v,w}) => {
+    const [x1,y1] = layout[u], [x2,y2] = layout[v];
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('stroke','#2a2a3e'); line.setAttribute('stroke-width','2');
+    svgEl.appendChild(line);
+
+    const mx = (x1+x2)/2, my = (y1+y2)/2;
+    // White bg circle for label
+    const bg = document.createElementNS(ns, 'circle');
+    bg.setAttribute('cx',mx); bg.setAttribute('cy',my); bg.setAttribute('r','10');
+    bg.setAttribute('fill','#111118');
+    svgEl.appendChild(bg);
+
+    const txt = document.createElementNS(ns, 'text');
+    txt.setAttribute('x',mx); txt.setAttribute('y',my+4);
+    txt.setAttribute('fill','#9191a8'); txt.setAttribute('font-size','11');
+    txt.setAttribute('font-family','DM Mono'); txt.setAttribute('text-anchor','middle');
+    txt.textContent = w;
+    svgEl.appendChild(txt);
+  });
+
+  // Nodes
+  nodes.forEach(n => {
+    const [cx,cy] = layout[n];
+    const isSource = n === source;
+    const circle = document.createElementNS(ns, 'circle');
+    circle.setAttribute('cx',cx); circle.setAttribute('cy',cy); circle.setAttribute('r','22');
+    circle.setAttribute('fill','#1c1c28');
+    circle.setAttribute('stroke', isSource ? '#6c63ff' : '#363650');
+    circle.setAttribute('stroke-width', isSource ? '2.5' : '1.5');
+    svgEl.appendChild(circle);
+
+    if (isSource) {
+      const glow = document.createElementNS(ns, 'circle');
+      glow.setAttribute('cx',cx); glow.setAttribute('cy',cy); glow.setAttribute('r','26');
+      glow.setAttribute('fill','none'); glow.setAttribute('stroke','#6c63ff');
+      glow.setAttribute('stroke-width','1'); glow.setAttribute('opacity','0.3');
+      svgEl.insertBefore(glow, circle);
+    }
+
+    const txt = document.createElementNS(ns, 'text');
+    txt.setAttribute('x',cx); txt.setAttribute('y',cy+5);
+    txt.setAttribute('fill', isSource ? '#a78bfa' : '#9191a8');
+    txt.setAttribute('font-size','12'); txt.setAttribute('font-weight','bold');
+    txt.setAttribute('font-family','Syne'); txt.setAttribute('text-anchor','middle');
+    txt.textContent = n;
+    svgEl.appendChild(txt);
+  });
+}
+
+function renderMiniGraph(svgEl, nodes, edges, layout, source) {
+  svgEl.innerHTML = '';
+  const ns = 'http://www.w3.org/2000/svg';
+  const xs = nodes.map(n => layout[n][0]);
+  const ys = nodes.map(n => layout[n][1]);
+  const minX = Math.min(...xs)-30, maxX = Math.max(...xs)+30;
+  const minY = Math.min(...ys)-30, maxY = Math.max(...ys)+30;
+  svgEl.setAttribute('viewBox', `${minX} ${minY} ${maxX-minX} ${maxY-minY}`);
+
+  edges.forEach(({u,v,w}) => {
+    const [x1,y1] = layout[u], [x2,y2] = layout[v];
+    const line = document.createElementNS(ns, 'line');
+    line.setAttribute('x1',x1); line.setAttribute('y1',y1);
+    line.setAttribute('x2',x2); line.setAttribute('y2',y2);
+    line.setAttribute('stroke','#2a2a3e'); line.setAttribute('stroke-width','1.5');
+    svgEl.appendChild(line);
+    const mx=(x1+x2)/2, my=(y1+y2)/2;
+    const bg = document.createElementNS(ns, 'circle');
+    bg.setAttribute('cx',mx); bg.setAttribute('cy',my); bg.setAttribute('r','8');
+    bg.setAttribute('fill','#0a0a0f');
+    svgEl.appendChild(bg);
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('x',mx); t.setAttribute('y',my+3);
+    t.setAttribute('fill','#5a5a72'); t.setAttribute('font-size','9');
+    t.setAttribute('font-family','DM Mono'); t.setAttribute('text-anchor','middle');
+    t.textContent = w; svgEl.appendChild(t);
+  });
+
+  nodes.forEach(n => {
+    const [cx,cy] = layout[n];
+    const c = document.createElementNS(ns, 'circle');
+    c.setAttribute('cx',cx); c.setAttribute('cy',cy); c.setAttribute('r','16');
+    c.setAttribute('fill','#1c1c28');
+    c.setAttribute('stroke', n===source?'#6c63ff':'#363650');
+    c.setAttribute('stroke-width', n===source?'2':'1');
+    svgEl.appendChild(c);
+    const t = document.createElementNS(ns, 'text');
+    t.setAttribute('x',cx); t.setAttribute('y',cy+4);
+    t.setAttribute('fill', n===source?'#a78bfa':'#5a5a72');
+    t.setAttribute('font-size','9'); t.setAttribute('font-weight','bold');
+    t.setAttribute('font-family','Syne'); t.setAttribute('text-anchor','middle');
+    t.textContent = n; svgEl.appendChild(t);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  BUILD EXERCISE CARDS
+// ══════════════════════════════════════════════════════
+function buildCards() {
+  const grid = document.getElementById('exercises-grid');
+  grid.innerHTML = '';
+  EXERCISES.forEach(ex => {
+    const card = document.createElement('div');
+    card.className = `exercise-card ${ex.difficulty}`;
+    card.dataset.diff = ex.difficulty;
+    card.onclick = () => openExercise(ex.id);
+
+    const diffLabel = {easy:'Facile',medium:'Moyen',hard:'Difficile'}[ex.difficulty];
+    const nodeCount = ex.nodes.length;
+    const edgeCount = ex.edges.length;
+
+    card.innerHTML = `
+      <div class="card-top">
+        <div>
+          <div class="card-title">${ex.title}</div>
+          <div class="card-desc">${ex.desc}</div>
+        </div>
+        <span class="difficulty-badge">${diffLabel}</span>
+      </div>
+      <div class="card-graph"><svg id="mini-svg-${ex.id}" viewBox="0 0 400 280" style="max-width:100%;max-height:120px"></svg></div>
+      <div class="card-meta">
+        <div class="meta-chip">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/></svg>
+          ${nodeCount} nœuds
+        </div>
+        <div class="meta-chip">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14"/></svg>
+          ${edgeCount} arêtes
+        </div>
+      </div>
+      <div class="card-cta">
+        <span>Commencer l'exercice</span>
+        <div class="card-arrow">→</div>
+      </div>
+    `;
+    grid.appendChild(card);
+
+    // render mini graph after DOM insert
+    setTimeout(() => {
+      const svg = document.getElementById(`mini-svg-${ex.id}`);
+      if (svg) renderMiniGraph(svg, ex.nodes, ex.edges, ex.svgLayout, ex.source);
+    }, 50);
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  FILTER
+// ══════════════════════════════════════════════════════
+function filterExercises(diff, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.exercise-card').forEach(card => {
+    card.style.display = (diff === 'all' || card.dataset.diff === diff) ? '' : 'none';
+  });
+}
+
+// ══════════════════════════════════════════════════════
+//  OPEN / CLOSE EXERCISE
+// ══════════════════════════════════════════════════════
+let currentExercise = null;
+let correctSteps = [];
+
+function openExercise(id) {
+  const ex = EXERCISES.find(e => e.id === id);
+  if (!ex) return;
+  currentExercise = ex;
+
+  // Compute correct answer
+  correctSteps = runDijkstra(ex.nodes, ex.edges, ex.source);
+
+  // Header
+  document.getElementById('ex-title').textContent = ex.title;
+  const diffLabel = {easy:'🟢 Facile',medium:'🟡 Moyen',hard:'🔴 Difficile'}[ex.difficulty];
+  document.getElementById('ex-diff-badge').innerHTML =
+    `<span class="difficulty-badge ${ex.difficulty}">${diffLabel}</span>`;
+
+  // Graph
+  const svg = document.getElementById('ex-graph-svg');
+  renderGraph(svg, ex.nodes, ex.edges, ex.svgLayout, ex.source);
+
+  // Table
+  buildRoutingTable(ex, correctSteps);
+
+  // Reset feedback
+  document.getElementById('feedback-panel').classList.remove('show');
+  document.getElementById('hint-box').classList.remove('show');
+
+  // Show
+  document.getElementById('exercises-grid').style.display = 'none';
+  document.querySelector('.exercises-filters').style.display = 'none';
+  document.getElementById('exercise-view').style.display = 'block';
+  document.getElementById('exercise-view').classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function closeExercise() {
+  document.getElementById('exercise-view').style.display = 'none';
+  document.getElementById('exercise-view').classList.remove('active');
+  document.getElementById('exercises-grid').style.display = '';
+  const f = document.querySelector('.exercises-filters');
+  if (f) f.style.display = '';
+  currentExercise = null;
+}
+
+// ══════════════════════════════════════════════════════
+//  BUILD ROUTING TABLE (editable)
+// ══════════════════════════════════════════════════════
+function buildRoutingTable(ex, steps) {
+  const table = document.getElementById('routing-table');
+  table.innerHTML = '';
+
+  const nodes = ex.nodes;
+
+  // Header
+  const thead = document.createElement('thead');
+  let hrow = '<tr>';
+  hrow += `<th class="fixed-col">Courant</th>`;
+  hrow += `<th class="fixed-col">E</th>`;
+  hrow += `<th class="fixed-col">V</th>`;
+  nodes.forEach(n => hrow += `<th>${n}</th>`);
+  hrow += '</tr>';
+  thead.innerHTML = hrow;
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+
+  // Row 0 (init) — given
+  const step0 = steps[0];
+  const r0 = document.createElement('tr');
+  let r0html = `<td class="row-info">∅</td><td class="row-info">∅</td><td class="row-info">${step0.V.join(', ')}</td>`;
+  nodes.forEach(n => {
+    const {d, p} = step0.dists[n];
+    const val = `${d === Infinity ? '∞' : d}, ${p === null ? '∅' : p}`;
+    r0html += `<td class="row-info" style="font-size:0.75rem">${val}</td>`;
+  });
+  r0.innerHTML = r0html;
+  tbody.appendChild(r0);
+
+  // Row 1 (first exploration) — given
+  const step1 = steps[1];
+  const r1 = document.createElement('tr');
+  let r1html = `<td class="row-info">${step1.current}</td>`;
+  r1html += `<td class="row-info">${step1.E.join(', ')}</td>`;
+  r1html += `<td class="row-info">${step1.V.join(', ')}</td>`;
+  nodes.forEach(n => {
+    const {d, p} = step1.dists[n];
+    const val = `${d === Infinity ? '∞' : d}, ${p === null ? '∅' : p}`;
+    r1html += `<td class="row-info" style="font-size:0.75rem">${val}</td>`;
+  });
+  r1.innerHTML = r1html;
+  tbody.appendChild(r1);
+
+  // Remaining rows — editable
+  for (let i = 2; i < steps.length; i++) {
+    const step = steps[i];
+    const tr = document.createElement('tr');
+    let html = `<td><input type="text" placeholder="?" data-row="${i}" data-col="current" class="rt-input"></td>`;
+    html += `<td><input type="text" placeholder="?" data-row="${i}" data-col="E" class="rt-input"></td>`;
+    html += `<td><input type="text" placeholder="?" data-row="${i}" data-col="V" class="rt-input"></td>`;
+    nodes.forEach((n,ni) => {
+      html += `<td><input type="text" placeholder="?, ?" data-row="${i}" data-col="node_${n}" class="rt-input"></td>`;
+    });
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  }
+
+  table.appendChild(tbody);
+}
+
+// ══════════════════════════════════════════════════════
+//  RESET
+// ══════════════════════════════════════════════════════
+function resetExercise() {
+  document.querySelectorAll('.rt-input').forEach(inp => {
+    inp.value = '';
+    inp.className = 'rt-input';
+  });
+  document.getElementById('feedback-panel').classList.remove('show');
+  document.getElementById('hint-box').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════
+//  HINT
+// ══════════════════════════════════════════════════════
+function toggleHint() {
+  const box = document.getElementById('hint-box');
+  document.getElementById('hint-text').textContent = currentExercise.hint;
+  box.classList.toggle('show');
+}
+
+// ══════════════════════════════════════════════════════
+//  SUBMIT & CORRECT
+// ══════════════════════════════════════════════════════
+function normalizeInput(raw) {
+  return raw.trim().replace(/\s+/g,'').replace(/,\s*/g,',').toLowerCase();
+}
+
+function formatExpected(d, p) {
+  const ds = d === Infinity ? '∞' : String(d);
+  const ps = p === null ? '∅' : p;
+  return `${ds},${ps.toLowerCase()}`;
+}
+
+function submitExercise() {
+  const ex = currentExercise;
+  const steps = correctSteps;
+  const nodes = ex.nodes;
+
+  const errors = [];
+  let totalCells = 0, correctCells = 0;
+
+  for (let i = 2; i < steps.length; i++) {
+    const step = steps[i];
+    const row = i;
+
+    // current
+    const curInp = document.querySelector(`input[data-row="${row}"][data-col="current"]`);
+    if (curInp) {
+      totalCells++;
+      const expected = step.current.toLowerCase();
+      const got = normalizeInput(curInp.value);
+      if (got === expected) {
+        curInp.className = 'rt-input correct'; correctCells++;
+      } else {
+        curInp.className = 'rt-input wrong';
+        errors.push({
+          loc: `Ligne ${row} — Sommet courant`,
+          msg: `Vous avez écrit "${curInp.value || '(vide)'}". Attendu : "${step.current}". Le sommet courant est celui avec la distance minimale parmi les non-explorés.`,
+          lesson: 'l2', lessonLabel: 'L\'algorithme pas à pas'
+        });
+      }
+    }
+
+    // E
+    const eInp = document.querySelector(`input[data-row="${row}"][data-col="E"]`);
+    if (eInp) {
+      totalCells++;
+      const expected = step.E.slice().sort().join(',').toLowerCase();
+      const got = normalizeInput(eInp.value).split(',').filter(Boolean).sort().join(',');
+      if (got === expected) {
+        eInp.className = 'rt-input correct'; correctCells++;
+      } else {
+        eInp.className = 'rt-input wrong';
+        errors.push({
+          loc: `Ligne ${row} — Ensemble E`,
+          msg: `Vous avez écrit "${eInp.value || '(vide)'}". E doit contenir : {${step.E.join(', ')}}. E s'enrichit du sommet courant à chaque étape.`,
+          lesson: 'l2', lessonLabel: 'L\'algorithme pas à pas'
+        });
+      }
+    }
+
+    // V
+    const vInp = document.querySelector(`input[data-row="${row}"][data-col="V"]`);
+    if (vInp) {
+      totalCells++;
+      const expected = step.V.slice().sort().join(',').toLowerCase();
+      const got = normalizeInput(vInp.value).split(',').filter(Boolean).sort().join(',');
+      if (got === expected) {
+        vInp.className = 'rt-input correct'; correctCells++;
+      } else {
+        vInp.className = 'rt-input wrong';
+        errors.push({
+          loc: `Ligne ${row} — Voisins V`,
+          msg: `Attendu : {${step.V.length ? step.V.join(', ') : '∅'}}. Ce sont les voisins directs du sommet courant non encore dans E.`,
+          lesson: 'l3', lessonLabel: 'Remplir le tableau'
+        });
+      }
+    }
+
+    // Nodes
+    nodes.forEach(n => {
+      const inp = document.querySelector(`input[data-row="${row}"][data-col="node_${n}"]`);
+      if (inp) {
+        totalCells++;
+        const {d, p} = step.dists[n];
+        const expected = formatExpected(d, p);
+        const got = normalizeInput(inp.value);
+        if (got === expected) {
+          inp.className = 'rt-input correct'; correctCells++;
+        } else if (got === '') {
+          inp.className = 'rt-input wrong';
+          errors.push({
+            loc: `Ligne ${row} — Colonne ${n}`,
+            msg: `Cellule vide. La valeur attendue est "${d === Infinity ? '∞' : d}, ${p || '∅'}".`,
+            lesson: 'l3', lessonLabel: 'Remplir le tableau'
+          });
+        } else {
+          inp.className = 'rt-input wrong';
+          const gotParts = got.split(',');
+          const expParts = expected.split(',');
+          let msg = '';
+          if (gotParts[0] !== expParts[0]) {
+            msg = `Distance incorrecte pour ${n} ligne ${row}. Vous avez mis ${gotParts[0]}, attendu ${expParts[0]}. Vérifiez la formule : d[u] + coût(u,${n}).`;
+          } else {
+            msg = `Distance correcte (${gotParts[0]}) mais prédécesseur incorrect. Attendu : "${expParts[1]||'∅'}". Le prédécesseur est le sommet via lequel on atteint ${n} au moindre coût.`;
+          }
+          errors.push({ loc: `Ligne ${row} — Colonne ${n}`, msg, lesson: 'l3', lessonLabel: 'Remplir le tableau' });
+        }
+      }
+    });
+  }
+
+  // Score
+  const pct = totalCells > 0 ? Math.round((correctCells / totalCells) * 100) : 0;
+  showFeedback(pct, errors, steps, nodes);
+}
+
+function showFeedback(pct, errors, steps, nodes) {
+  const panel = document.getElementById('feedback-panel');
+  const banner = document.getElementById('score-banner');
+  panel.classList.add('show');
+
+  let cls, icon, label;
+  if (pct === 100) { cls='perfect'; icon='🏆'; label='Parfait ! Vous maîtrisez Dijkstra !'; }
+  else if (pct >= 80) { cls='good'; icon='🎯'; label='Très bien ! Quelques ajustements nécessaires.'; }
+  else if (pct >= 50) { cls='medium'; icon='📖'; label='En progrès — relisez les points indiqués.'; }
+  else { cls='bad'; icon='💪'; label='Continuez ! Relisez le cours et réessayez.'; }
+
+  banner.className = `score-banner ${cls}`;
+  document.getElementById('score-icon').textContent = icon;
+  document.getElementById('score-num').textContent = `${pct}%`;
+  document.getElementById('score-label').textContent = label;
+  const colors = {perfect:'var(--green)',good:'var(--accent3)',medium:'var(--gold)',bad:'var(--red)'};
+  document.getElementById('progress-fill').style.width = pct + '%';
+  document.getElementById('progress-fill').style.background = colors[cls];
+
+  // Errors
+  const errList = document.getElementById('error-list');
+  errList.innerHTML = '';
+  if (errors.length === 0) {
+    errList.innerHTML = `<div style="color:var(--green);font-size:0.9rem;font-weight:700;padding:12px 0">✅ Aucune erreur — table de routage parfaite !</div>`;
+  } else {
+    errors.slice(0, 8).forEach(e => {
+      const div = document.createElement('div');
+      div.className = 'error-item';
+      div.innerHTML = `
+        <div class="err-location">${e.loc}</div>
+        <div class="err-msg">${e.msg}</div>
+        <span class="err-link" onclick="goToLesson('${e.lesson}')">📚 Revoir : ${e.lessonLabel} →</span>
+      `;
+      errList.appendChild(div);
+    });
+    if (errors.length > 8) {
+      const more = document.createElement('div');
+      more.style.cssText = 'color:var(--text3);font-size:0.82rem;padding:8px 0;text-align:center';
+      more.textContent = `... et ${errors.length - 8} autre(s) erreur(s). Corrigez d'abord celles-ci.`;
+      errList.appendChild(more);
+    }
+  }
+
+  // Correction table
+  buildCorrectionTable(steps, nodes);
+
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function buildCorrectionTable(steps, nodes) {
+  const table = document.getElementById('correction-table');
+  table.innerHTML = '';
+
+  const thead = document.createElement('thead');
+  let hrow = '<tr><th>Courant</th><th>E</th><th>V</th>';
+  nodes.forEach(n => hrow += `<th>${n}</th>`);
+  hrow += '</tr>';
+  thead.innerHTML = hrow;
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  steps.forEach((step, i) => {
+    const tr = document.createElement('tr');
+    const prevStep = i > 0 ? steps[i-1] : null;
+    let html = `<td class="row-label">${step.current}</td>`;
+    html += `<td class="row-label">${step.E.length ? step.E.join(',') : '∅'}</td>`;
+    html += `<td class="row-label">${step.V.length ? step.V.join(',') : '∅'}</td>`;
+    nodes.forEach(n => {
+      const {d,p} = step.dists[n];
+      const changed = prevStep && (prevStep.dists[n].d !== d || prevStep.dists[n].p !== p);
+      const ds = d === Infinity ? '∞' : d;
+      const ps = p === null ? '∅' : p;
+      html += `<td class="${changed ? 'correct-val' : ''}">${ds}, ${ps}</td>`;
+    });
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  });
+  table.appendChild(tbody);
+}
+
+function goToLesson(lessonId) {
+  showSection('cours');
+  showLesson(lessonId, null);
+  const lessonIndex = {'l1':0,'l2':1,'l3':2,'l4':3}[lessonId];
+  const items = document.querySelectorAll('.sidebar-item');
+  items.forEach(i => i.classList.remove('active'));
+  if (items[lessonIndex]) items[lessonIndex].classList.add('active');
+}
+
+// ══════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════
+buildCards();
+</script>
+</body>
+</html>
