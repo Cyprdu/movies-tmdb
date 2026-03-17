@@ -1,0 +1,2910 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PyTri — Maîtrise les algorithmes de tri</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════
+   ROOT & RESET
+═══════════════════════════════════════════════ */
+:root {
+  --bg: #0a0a0f;
+  --bg2: #0f0f18;
+  --bg3: #14141f;
+  --surface: #1a1a28;
+  --surface2: #222235;
+  --border: #2a2a40;
+  --border2: #3a3a55;
+
+  --accent: #7c6af7;
+  --accent2: #a594f9;
+  --accent3: #c8bfff;
+  --pink: #f06292;
+  --pink2: #f48fb1;
+  --teal: #26c6da;
+  --teal2: #80deea;
+  --amber: #ffb74d;
+  --green: #66bb6a;
+  --green2: #a5d6a7;
+  --red: #ef5350;
+
+  --text: #e8e8f4;
+  --text2: #a8a8c4;
+  --text3: #6868a0;
+
+  --easy: #66bb6a;
+  --medium: #ffb74d;
+  --hard: #ef5350;
+
+  --radius: 12px;
+  --radius2: 8px;
+  --font-display: 'Syne', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+  --font-body: 'DM Sans', sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.7;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════
+   NOISE TEXTURE OVERLAY
+═══════════════════════════════════════════════ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ═══════════════════════════════════════════════
+   ANIMATED BACKGROUND BLOBS
+═══════════════════════════════════════════════ */
+.bg-blobs {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.07;
+  animation: blobFloat 20s ease-in-out infinite;
+}
+.blob:nth-child(1) { width: 600px; height: 600px; background: var(--accent); top: -200px; left: -100px; animation-delay: 0s; }
+.blob:nth-child(2) { width: 400px; height: 400px; background: var(--pink); top: 30%; right: -150px; animation-delay: -7s; }
+.blob:nth-child(3) { width: 500px; height: 500px; background: var(--teal); bottom: -200px; left: 30%; animation-delay: -14s; }
+
+@keyframes blobFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -40px) scale(1.05); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+/* ═══════════════════════════════════════════════
+   LAYOUT WRAPPER
+═══════════════════════════════════════════════ */
+.wrapper {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ═══════════════════════════════════════════════
+   HEADER / HERO
+═══════════════════════════════════════════════ */
+header {
+  padding: 48px 0 32px;
+  text-align: center;
+  position: relative;
+}
+
+.logo-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 99px;
+  padding: 6px 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent3);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  animation: fadeDown 0.6s ease both;
+}
+.logo-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+h1 {
+  font-family: var(--font-display);
+  font-size: clamp(52px, 8vw, 96px);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+  animation: fadeDown 0.6s 0.1s ease both;
+}
+h1 .line1 { display: block; color: var(--text); }
+h1 .line2 { display: block; background: linear-gradient(135deg, var(--accent), var(--pink), var(--teal)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+.hero-sub {
+  margin-top: 20px;
+  font-size: 17px;
+  color: var(--text2);
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+  animation: fadeDown 0.6s 0.2s ease both;
+}
+
+.hero-pills {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 28px;
+  animation: fadeDown 0.6s 0.3s ease both;
+}
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid;
+}
+.pill.insertion { background: rgba(124,106,247,0.1); border-color: rgba(124,106,247,0.3); color: var(--accent3); }
+.pill.selection  { background: rgba(240,98,146,0.1); border-color: rgba(240,98,146,0.3); color: var(--pink2); }
+.pill.fusion    { background: rgba(38,198,218,0.1); border-color: rgba(38,198,218,0.3); color: var(--teal2); }
+.pill svg { width: 14px; height: 14px; }
+
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ═══════════════════════════════════════════════
+   TABS NAVIGATION
+═══════════════════════════════════════════════ */
+.tabs-nav {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px;
+  margin: 40px auto 0;
+  max-width: 440px;
+  animation: fadeDown 0.6s 0.35s ease both;
+}
+.tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text3);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  border-radius: var(--radius2);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.tab-btn:hover { color: var(--text2); background: var(--surface2); }
+.tab-btn.active {
+  background: linear-gradient(135deg, var(--accent), #5b4fd4);
+  color: white;
+  box-shadow: 0 4px 20px rgba(124,106,247,0.35);
+}
+.tab-btn .tab-icon { font-size: 16px; }
+
+/* ═══════════════════════════════════════════════
+   TABS CONTENT
+═══════════════════════════════════════════════ */
+.tab-panel { display: none; padding: 48px 0 80px; animation: fadeIn 0.4s ease; }
+.tab-panel.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ═══════════════════════════════════════════════
+   SECTION HEADINGS
+═══════════════════════════════════════════════ */
+.section-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.section-heading .num {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent);
+  background: rgba(124,106,247,0.1);
+  border: 1px solid rgba(124,106,247,0.25);
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+.section-heading h2 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+.section-heading .line { flex: 1; height: 1px; background: linear-gradient(to right, var(--border2), transparent); }
+
+/* ═══════════════════════════════════════════════
+   LESSON CARDS
+═══════════════════════════════════════════════ */
+.lesson-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 32px;
+  transition: border-color 0.25s ease;
+}
+.lesson-card:hover { border-color: var(--border2); }
+
+.lesson-card-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 28px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+}
+.lesson-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.lesson-icon.purple { background: rgba(124,106,247,0.15); border: 1px solid rgba(124,106,247,0.3); }
+.lesson-icon.pink   { background: rgba(240,98,146,0.15); border: 1px solid rgba(240,98,146,0.3); }
+.lesson-icon.teal   { background: rgba(38,198,218,0.15); border: 1px solid rgba(38,198,218,0.3); }
+.lesson-icon.amber  { background: rgba(255,183,77,0.15); border: 1px solid rgba(255,183,77,0.3); }
+.lesson-icon.green  { background: rgba(102,187,106,0.15); border: 1px solid rgba(102,187,106,0.3); }
+
+.lesson-card-header .meta { flex: 1; }
+.lesson-card-header .meta h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+.lesson-card-header .meta p { font-size: 13px; color: var(--text3); }
+
+.complexity-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  letter-spacing: 0.06em;
+}
+.complexity-badge.on   { background: rgba(102,187,106,0.12); border: 1px solid rgba(102,187,106,0.3); color: var(--green2); }
+.complexity-badge.on2  { background: rgba(255,183,77,0.12); border: 1px solid rgba(255,183,77,0.3); color: var(--amber); }
+.complexity-badge.on3  { background: rgba(38,198,218,0.12); border: 1px solid rgba(38,198,218,0.3); color: var(--teal2); }
+
+.lesson-body { padding: 28px; }
+
+/* ═══════════════════════════════════════════════
+   THEORY BLOCKS
+═══════════════════════════════════════════════ */
+.theory-text {
+  font-size: 15px;
+  color: var(--text2);
+  line-height: 1.8;
+  margin-bottom: 20px;
+}
+.theory-text strong { color: var(--text); font-weight: 600; }
+
+.concept-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.concept-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius2);
+  padding: 16px;
+}
+.concept-item .label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 6px;
+}
+.concept-item .value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--accent3);
+}
+.concept-item .desc {
+  font-size: 12px;
+  color: var(--text3);
+  margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════════════
+   ALGORITHM STEPS VISUALIZER
+═══════════════════════════════════════════════ */
+.algo-visualizer {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius2);
+  padding: 20px;
+  margin: 20px 0;
+}
+.algo-visualizer .viz-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.algo-visualizer .viz-title::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.viz-steps { display: flex; flex-direction: column; gap: 8px; }
+.viz-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  font-size: 13px;
+}
+.viz-step .step-n {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  width: 28px;
+  flex-shrink: 0;
+}
+.viz-step .arr-display { display: flex; gap: 4px; flex-wrap: wrap; }
+.arr-el {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  transition: all 0.3s ease;
+}
+.arr-el.active { background: rgba(124,106,247,0.2); border-color: var(--accent); color: var(--accent3); }
+.arr-el.sorted { background: rgba(102,187,106,0.15); border-color: var(--green); color: var(--green2); }
+.arr-el.comparing { background: rgba(255,183,77,0.15); border-color: var(--amber); color: var(--amber); }
+.arr-el.pivot { background: rgba(240,98,146,0.15); border-color: var(--pink); color: var(--pink2); }
+.viz-step .step-desc { color: var(--text3); font-size: 12px; flex: 1; text-align: right; }
+
+/* ═══════════════════════════════════════════════
+   CODE BLOCKS (syntax highlighting)
+═══════════════════════════════════════════════ */
+.code-block {
+  background: #0d0d16;
+  border: 1px solid var(--border);
+  border-radius: var(--radius2);
+  overflow: hidden;
+  margin: 20px 0;
+  position: relative;
+}
+.code-block .code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.code-block .code-lang {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.code-block .code-dots { display: flex; gap: 6px; }
+.code-block .code-dots span { width: 10px; height: 10px; border-radius: 50%; }
+.code-block .code-dots span:nth-child(1) { background: #ff5f57; }
+.code-block .code-dots span:nth-child(2) { background: #ffbd2e; }
+.code-block .code-dots span:nth-child(3) { background: #28c840; }
+
+pre {
+  padding: 20px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  color: #abb2bf;
+}
+.kw { color: #c678dd; }
+.fn { color: #61afef; }
+.str { color: #98c379; }
+.num { color: #d19a66; }
+.cm { color: #5c6370; font-style: italic; }
+.op { color: #56b6c2; }
+.var { color: #e06c75; }
+.par { color: #e5c07b; }
+
+/* ═══════════════════════════════════════════════
+   TIP BOXES
+═══════════════════════════════════════════════ */
+.tip-box {
+  display: flex;
+  gap: 14px;
+  padding: 16px 18px;
+  border-radius: var(--radius2);
+  margin: 16px 0;
+  font-size: 14px;
+}
+.tip-box.info   { background: rgba(124,106,247,0.08); border: 1px solid rgba(124,106,247,0.2); }
+.tip-box.warn   { background: rgba(255,183,77,0.08); border: 1px solid rgba(255,183,77,0.2); }
+.tip-box.success{ background: rgba(102,187,106,0.08); border: 1px solid rgba(102,187,106,0.2); }
+.tip-box .tip-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.tip-box .tip-content { color: var(--text2); }
+.tip-box .tip-content strong { color: var(--text); display: block; margin-bottom: 4px; font-size: 13px; }
+
+/* ═══════════════════════════════════════════════
+   MINI-QUIZ (liste à ordonner)
+═══════════════════════════════════════════════ */
+.mini-quiz {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 24px;
+  margin: 28px 0;
+}
+.mini-quiz .quiz-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.mini-quiz .quiz-header .badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 4px;
+  background: rgba(255,183,77,0.12);
+  border: 1px solid rgba(255,183,77,0.3);
+  color: var(--amber);
+}
+.mini-quiz .quiz-header h4 {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.sortable-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.sortable-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius2);
+  cursor: grab;
+  user-select: none;
+  transition: all 0.2s ease;
+  font-size: 13px;
+  color: var(--text);
+}
+.sortable-item:hover { border-color: var(--border2); background: var(--surface2); }
+.sortable-item.dragging { opacity: 0.5; cursor: grabbing; }
+.sortable-item.drag-over { border-color: var(--accent); background: rgba(124,106,247,0.08); }
+.sortable-item .drag-handle { color: var(--text3); font-size: 16px; cursor: grab; }
+.sortable-item .item-n {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+.sortable-item .item-text { flex: 1; }
+
+.order-input-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.order-input {
+  width: 46px;
+  height: 46px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.order-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124,106,247,0.15); }
+.order-input.correct { border-color: var(--green); background: rgba(102,187,106,0.08); color: var(--green2); }
+.order-input.wrong   { border-color: var(--red); background: rgba(239,83,80,0.08); color: var(--red); }
+
+/* ═══════════════════════════════════════════════
+   LESSON EXERCISE (Python editor)
+═══════════════════════════════════════════════ */
+.lesson-exercise {
+  background: #0d0d16;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 28px 0;
+}
+.lesson-exercise .ex-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.lesson-exercise .ex-header .ex-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.lesson-exercise .ex-header .ex-title .ex-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(102,187,106,0.15);
+  border: 1px solid rgba(102,187,106,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.ex-description {
+  padding: 16px 20px;
+  font-size: 13px;
+  color: var(--text2);
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  line-height: 1.7;
+}
+.ex-description code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  color: var(--accent3);
+}
+
+.editor-area {
+  position: relative;
+}
+.editor-area textarea {
+  width: 100%;
+  min-height: 160px;
+  padding: 20px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.7;
+  resize: vertical;
+  tab-size: 4;
+}
+.editor-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.editor-footer .hint-text {
+  font-size: 12px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+}
+
+/* ═══════════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════════ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--radius2);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+}
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #5b4fd4);
+  color: white;
+  box-shadow: 0 4px 16px rgba(124,106,247,0.3);
+}
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(124,106,247,0.4); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-green {
+  background: linear-gradient(135deg, var(--green), #388e3c);
+  color: white;
+  box-shadow: 0 4px 16px rgba(102,187,106,0.25);
+}
+.btn-green:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(102,187,106,0.35); }
+
+.btn-ghost {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text2);
+}
+.btn-ghost:hover { border-color: var(--border2); color: var(--text); }
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+}
+.btn-outline:hover { border-color: var(--accent); color: var(--accent3); background: rgba(124,106,247,0.05); }
+
+.btn-sm { padding: 7px 14px; font-size: 12px; }
+
+/* ═══════════════════════════════════════════════
+   OUTPUT BOX
+═══════════════════════════════════════════════ */
+.output-box {
+  margin: 0 20px 16px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius2);
+  overflow: hidden;
+  display: none;
+}
+.output-box.visible { display: block; }
+.output-box .output-header {
+  padding: 8px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.output-box .output-header .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.output-box .output-header .status-dot.ok { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.output-box .output-header .status-dot.err { background: var(--red); box-shadow: 0 0 8px var(--red); }
+.output-box pre {
+  padding: 14px;
+  font-size: 12px;
+  color: var(--text2);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.output-box.success pre { color: var(--green2); }
+.output-box.error   pre { color: #ef9a9a; }
+
+/* ═══════════════════════════════════════════════
+   DIVIDER
+═══════════════════════════════════════════════ */
+.lesson-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 48px 0 32px;
+}
+.lesson-divider .divider-line { flex: 1; height: 1px; background: var(--border); }
+.lesson-divider .divider-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ═══════════════════════════════════════════════
+   EXERCISES TAB
+═══════════════════════════════════════════════ */
+.exercises-header {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.stat-card .stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.stat-card.easy .stat-icon  { background: rgba(102,187,106,0.12); border: 1px solid rgba(102,187,106,0.25); }
+.stat-card.medium .stat-icon{ background: rgba(255,183,77,0.12); border: 1px solid rgba(255,183,77,0.25); }
+.stat-card.hard .stat-icon  { background: rgba(239,83,80,0.12); border: 1px solid rgba(239,83,80,0.25); }
+.stat-card .stat-info .stat-label { font-size: 12px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.06em; font-family: var(--font-mono); }
+.stat-card .stat-info .stat-val { font-family: var(--font-display); font-size: 22px; font-weight: 800; color: var(--text); margin-top: 2px; }
+.stat-card.easy  .stat-info .stat-val { color: var(--easy); }
+.stat-card.medium.stat-info .stat-val { color: var(--medium); }
+.stat-card.hard  .stat-info .stat-val { color: var(--hard); }
+
+/* Filter bar */
+.filter-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
+  align-items: center;
+}
+.filter-btn {
+  padding: 7px 16px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-display);
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text3);
+  transition: all 0.2s;
+}
+.filter-btn:hover { color: var(--text2); border-color: var(--border2); }
+.filter-btn.active { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+.filter-btn.f-easy.active    { background: rgba(102,187,106,0.12); border-color: var(--easy); color: var(--easy); }
+.filter-btn.f-medium.active  { background: rgba(255,183,77,0.12); border-color: var(--medium); color: var(--medium); }
+.filter-btn.f-hard.active    { background: rgba(239,83,80,0.12); border-color: var(--hard); color: var(--hard); }
+
+.filter-sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+
+/* Exercise cards */
+.exercises-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
+  gap: 20px;
+}
+
+.exercise-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.25s, transform 0.25s;
+}
+.exercise-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+
+.exercise-card-top {
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.exercise-card-top .ex-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.diff-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 4px;
+}
+.diff-badge.easy   { background: rgba(102,187,106,0.12); border: 1px solid rgba(102,187,106,0.25); color: var(--easy); }
+.diff-badge.medium { background: rgba(255,183,77,0.12); border: 1px solid rgba(255,183,77,0.25); color: var(--medium); }
+.diff-badge.hard   { background: rgba(239,83,80,0.12); border: 1px solid rgba(239,83,80,0.25); color: var(--hard); }
+
+.algo-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 9px;
+  border-radius: 4px;
+  background: rgba(124,106,247,0.1);
+  border: 1px solid rgba(124,106,247,0.2);
+  color: var(--accent3);
+  letter-spacing: 0.06em;
+}
+
+.exercise-card-top h3 {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.exercise-card-top p {
+  font-size: 13px;
+  color: var(--text3);
+  line-height: 1.6;
+}
+
+.exercise-card-body { padding: 20px 22px; }
+
+.list-display {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius2);
+}
+.list-display .el {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.exercise-card-body .editor-wrap {
+  border: 1px solid var(--border);
+  border-radius: var(--radius2);
+  overflow: hidden;
+  background: #0d0d16;
+}
+.exercise-card-body .editor-wrap .ew-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.exercise-card-body .editor-wrap .ew-header .ew-dots { display: flex; gap: 4px; }
+.exercise-card-body .editor-wrap .ew-header .ew-dots span { width: 8px; height: 8px; border-radius: 50%; }
+.exercise-card-body .editor-wrap .ew-header .ew-dots span:nth-child(1){background:#ff5f57;}
+.exercise-card-body .editor-wrap .ew-header .ew-dots span:nth-child(2){background:#ffbd2e;}
+.exercise-card-body .editor-wrap .ew-header .ew-dots span:nth-child(3){background:#28c840;}
+
+.exercise-card-body textarea {
+  width: 100%;
+  min-height: 130px;
+  padding: 14px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.7;
+  resize: vertical;
+  tab-size: 4;
+}
+
+.exercise-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  background: var(--bg3);
+  border-top: 1px solid var(--border);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.points-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--amber);
+  background: rgba(255,183,77,0.1);
+  border: 1px solid rgba(255,183,77,0.2);
+  padding: 4px 10px;
+  border-radius: 4px;
+}
+
+.ex-result-box {
+  margin: 8px 22px 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius2);
+  font-size: 13px;
+  display: none;
+}
+.ex-result-box.show { display: block; }
+.ex-result-box.ok  { background: rgba(102,187,106,0.08); border: 1px solid rgba(102,187,106,0.25); color: var(--green2); }
+.ex-result-box.err { background: rgba(239,83,80,0.08); border: 1px solid rgba(239,83,80,0.25); color: #ef9a9a; }
+.ex-result-box.partial { background: rgba(255,183,77,0.08); border: 1px solid rgba(255,183,77,0.25); color: var(--amber); }
+.ex-result-box .result-title { font-family: var(--font-display); font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+.ex-result-box pre { font-family: var(--font-mono); font-size: 11px; white-space: pre-wrap; word-break: break-all; margin-top: 6px; opacity: 0.8; }
+
+/* PHP exec warning */
+.php-notice {
+  background: rgba(255,183,77,0.06);
+  border: 1px solid rgba(255,183,77,0.2);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 28px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.php-notice .notice-icon { font-size: 22px; flex-shrink: 0; }
+.php-notice .notice-content h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--amber);
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+.php-notice .notice-content p { font-size: 13px; color: var(--text2); line-height: 1.7; }
+.php-notice .notice-content code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 4px;
+  color: var(--accent3);
+}
+
+/* ═══════════════════════════════════════════════
+   PROGRESS BAR
+═══════════════════════════════════════════════ */
+.progress-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent), var(--teal));
+  transition: width 0.5s ease;
+}
+.progress-label { font-family: var(--font-mono); font-size: 12px; color: var(--text3); }
+
+/* ═══════════════════════════════════════════════
+   SCORE DISPLAY
+═══════════════════════════════════════════════ */
+#score-display {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.score-block .score-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); }
+.score-block .score-val { font-family: var(--font-display); font-size: 32px; font-weight: 800; color: var(--accent3); }
+.score-block.correct .score-val { color: var(--green2); }
+.score-block.wrong .score-val { color: var(--red); }
+.score-sep { width: 1px; height: 40px; background: var(--border); }
+
+/* ═══════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════ */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 32px 0;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text3);
+  font-family: var(--font-mono);
+}
+footer span { color: var(--accent); }
+
+/* ═══════════════════════════════════════════════
+   SCROLLBAR
+═══════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .exercises-grid { grid-template-columns: 1fr; }
+  .exercises-header { grid-template-columns: 1fr; }
+  .concept-grid { grid-template-columns: 1fr 1fr; }
+  h1 { font-size: 42px; }
+}
+@media (max-width: 500px) {
+  .wrapper { padding: 0 16px; }
+  .section-heading h2 { font-size: 22px; }
+  .tabs-nav { max-width: 100%; }
+}
+
+/* ═══════════════════════════════════════════════
+   ANIMATED BARS (visualizer animated)
+═══════════════════════════════════════════════ */
+.bar-viz {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 60px;
+  padding: 0 4px;
+}
+.bar-viz .bar {
+  flex: 1;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(to top, var(--accent), var(--teal));
+  opacity: 0.7;
+  transition: height 0.4s ease, background 0.3s;
+  min-width: 12px;
+}
+.bar-viz .bar.active { background: linear-gradient(to top, var(--pink), var(--amber)); opacity: 1; }
+.bar-viz .bar.sorted { background: linear-gradient(to top, var(--green), #26c6da); opacity: 0.9; }
+
+/* ═══════════════════════════════════════════════
+   TABLE DE COMPLEXITÉ
+═══════════════════════════════════════════════ */
+.complexity-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 16px 0;
+}
+.complexity-table th {
+  padding: 10px 14px;
+  text-align: left;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+}
+.complexity-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+}
+.complexity-table tr:last-child td { border-bottom: none; }
+.complexity-table tr:hover td { background: rgba(255,255,255,0.02); }
+.complexity-table .mono { font-family: var(--font-mono); color: var(--accent3); }
+.complexity-table .good { color: var(--green2); font-weight: 600; }
+.complexity-table .avg  { color: var(--amber); font-weight: 600; }
+.complexity-table .bad  { color: var(--red); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- Background effects -->
+<div class="bg-blobs">
+  <div class="blob"></div>
+  <div class="blob"></div>
+  <div class="blob"></div>
+</div>
+
+<div class="wrapper">
+
+  <!-- ══════════════ HEADER ══════════════ -->
+  <header>
+    <div class="logo-tag">
+      <span class="dot"></span>
+      Python · Algorithmes de Tri · Interactif
+    </div>
+    <h1>
+      <span class="line1">Maîtrise les</span>
+      <span class="line2">Algorithmes de Tri</span>
+    </h1>
+    <p class="hero-sub">
+      Apprends étape par étape les tris par insertion, par sélection et par fusion en Python — avec des cours, des exercices interactifs et un éditeur de code intégré.
+    </p>
+    <div class="hero-pills">
+      <span class="pill insertion">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7-7 7 7"/></svg>
+        Tri par Insertion
+      </span>
+      <span class="pill selection">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        Tri par Sélection
+      </span>
+      <span class="pill fusion">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+        Tri Fusion
+      </span>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs-nav">
+      <button class="tab-btn active" onclick="switchTab('cours')">
+        <span class="tab-icon">📘</span> Cours
+      </button>
+      <button class="tab-btn" onclick="switchTab('exercices')">
+        <span class="tab-icon">🎯</span> Exercices
+      </button>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════
+       TAB: COURS
+  ══════════════════════════════════════════ -->
+  <div class="tab-panel active" id="panel-cours">
+
+    <!-- ──── LEÇON 0 : INTRO PYTHON ──── -->
+    <div class="lesson-card">
+      <div class="lesson-card-header">
+        <div class="lesson-icon amber">🐍</div>
+        <div class="meta">
+          <h3>Leçon 0 — Bases de Python avant les tris</h3>
+          <p>Rappels essentiels : listes, boucles, fonctions</p>
+        </div>
+        <span class="complexity-badge on">Prérequis</span>
+      </div>
+      <div class="lesson-body">
+        <p class="theory-text">
+          Avant de plonger dans les algorithmes de tri, voici les concepts Python que tu dois maîtriser.
+          <strong>Les listes</strong> sont la structure de données principale que l'on va trier. Une liste Python est une séquence ordonnée et modifiable.
+        </p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span></span><span></span><span></span></div>
+            <span class="code-lang">python</span>
+          </div>
+          <pre><span class="cm"># Créer et manipuler une liste</span>
+<span class="var">ma_liste</span> <span class="op">=</span> [<span class="num">64</span>, <span class="num">34</span>, <span class="num">25</span>, <span class="num">12</span>, <span class="num">22</span>, <span class="num">11</span>, <span class="num">90</span>]
+
+<span class="cm"># Accès par index (commence à 0)</span>
+<span class="fn">print</span>(ma_liste[<span class="num">0</span>])   <span class="cm"># → 64</span>
+<span class="fn">print</span>(ma_liste[<span class="op">-</span><span class="num">1</span>])  <span class="cm"># → 90 (dernier élément)</span>
+
+<span class="cm"># Longueur d'une liste</span>
+<span class="var">n</span> <span class="op">=</span> <span class="fn">len</span>(ma_liste)   <span class="cm"># → 7</span>
+
+<span class="cm"># Échanger deux éléments (indispensable pour les tris !)</span>
+ma_liste[<span class="num">0</span>], ma_liste[<span class="num">1</span>] <span class="op">=</span> ma_liste[<span class="num">1</span>], ma_liste[<span class="num">0</span>]
+<span class="fn">print</span>(ma_liste)  <span class="cm"># → [34, 64, 25, 12, 22, 11, 90]</span></pre>
+        </div>
+
+        <p class="theory-text">
+          La <strong>boucle for avec range()</strong> est omniprésente dans les tris. La boucle <strong>while</strong> est utilisée pour reculer dans la liste.
+        </p>
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span></span><span></span><span></span></div>
+            <span class="code-lang">python</span>
+          </div>
+          <pre><span class="cm"># Parcourir une liste avec for</span>
+<span class="kw">for</span> <span class="var">i</span> <span class="kw">in</span> <span class="fn">range</span>(<span class="fn">len</span>(ma_liste)):
+    <span class="fn">print</span>(<span class="str">f"Index {i} → {ma_liste[i]}"</span>)
+
+<span class="cm"># range(n) génère 0, 1, 2, ..., n-1</span>
+<span class="cm"># range(1, n) génère 1, 2, ..., n-1</span>
+<span class="cm"># range(n-1, -1, -1) génère n-1, ..., 1, 0 (en sens inverse)</span>
+
+<span class="cm"># Boucle while (utile pour le tri par insertion)</span>
+<span class="var">j</span> <span class="op">=</span> <span class="num">3</span>
+<span class="kw">while</span> <span class="var">j</span> <span class="op">&gt;</span> <span class="num">0</span> <span class="kw">and</span> ma_liste[<span class="var">j</span><span class="op">-</span><span class="num">1</span>] <span class="op">&gt;</span> ma_liste[<span class="var">j</span>]:
+    ma_liste[<span class="var">j</span>], ma_liste[<span class="var">j</span><span class="op">-</span><span class="num">1</span>] <span class="op">=</span> ma_liste[<span class="var">j</span><span class="op">-</span><span class="num">1</span>], ma_liste[<span class="var">j</span>]
+    <span class="var">j</span> <span class="op">-=</span> <span class="num">1</span></pre>
+        </div>
+
+        <div class="tip-box info">
+          <span class="tip-icon">💡</span>
+          <div class="tip-content">
+            <strong>Astuce clé — L'échange en Python</strong>
+            Python permet d'échanger deux variables sans variable temporaire grâce au <em>tuple unpacking</em> : <code style="font-family:var(--font-mono);font-size:12px;background:var(--surface);border:1px solid var(--border);padding:1px 5px;border-radius:4px;color:var(--accent3);">a, b = b, a</code> — c'est ce que l'on utilise dans tous les algorithmes de tri !
+          </div>
+        </div>
+
+        <!-- MINI EXERCISE 0 -->
+        <div class="lesson-exercise" id="ex0">
+          <div class="ex-header">
+            <div class="ex-title">
+              <div class="ex-icon">✏️</div>
+              Exercice — Manipulation de liste
+            </div>
+            <span class="diff-badge easy">Échauffement</span>
+          </div>
+          <div class="ex-description">
+            Crée une liste <code>nombres = [5, 3, 8, 1, 9, 2]</code>, puis affiche sa longueur, son premier et son dernier élément. Ensuite, échange les éléments aux index 0 et 5 et affiche la liste modifiée.
+          </div>
+          <div class="editor-area">
+            <textarea id="code-ex0" spellcheck="false" placeholder="# Écris ton code ici...
+nombres = [5, 3, 8, 1, 9, 2]
+
+# 1. Afficher la longueur
+
+# 2. Afficher premier et dernier
+
+# 3. Échanger index 0 et 5
+
+# 4. Afficher la liste
+"></textarea>
+          </div>
+          <div class="output-box" id="out-ex0">
+            <div class="output-header"><span class="status-dot"></span> Résultat</div>
+            <pre></pre>
+          </div>
+          <div class="editor-footer">
+            <span class="hint-text">💡 Utilise len(), l'indexation et le tuple unpacking</span>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm" onclick="resetCode('ex0')">↺ Reset</button>
+              <button class="btn btn-green btn-sm" onclick="runCode('ex0')">▶ Exécuter</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ──── LEÇON 1 : TRI PAR INSERTION ──── -->
+    <div class="lesson-divider"><div class="divider-line"></div><span class="divider-label">Leçon 1</span><div class="divider-line"></div></div>
+
+    <div class="lesson-card">
+      <div class="lesson-card-header">
+        <div class="lesson-icon purple">↕️</div>
+        <div class="meta">
+          <h3>Tri par Insertion</h3>
+          <p>Comme trier des cartes dans sa main — on insère chaque carte à la bonne place</p>
+        </div>
+        <span class="complexity-badge on2">O(n²)</span>
+      </div>
+      <div class="lesson-body">
+
+        <p class="theory-text">
+          Le <strong>tri par insertion</strong> est le plus naturel des algorithmes de tri. Imagine que tu tiens des cartes à jouer : tu prends chaque nouvelle carte et tu la glisses à la bonne position parmi celles que tu tiens déjà.
+        </p>
+
+        <div class="tip-box info">
+          <span class="tip-icon">🎯</span>
+          <div class="tip-content">
+            <strong>Idée principale</strong>
+            On maintient une partie gauche de la liste <em>toujours triée</em>. Pour chaque nouvel élément, on le décale vers la gauche jusqu'à trouver sa place.
+          </div>
+        </div>
+
+        <div class="algo-visualizer">
+          <div class="viz-title">Trace d'exécution — liste [5, 2, 4, 6, 1, 3]</div>
+          <div class="viz-steps">
+            <div class="viz-step">
+              <span class="step-n">init</span>
+              <div class="arr-display">
+                <span class="arr-el sorted">5</span><span class="arr-el">2</span><span class="arr-el">4</span><span class="arr-el">6</span><span class="arr-el">1</span><span class="arr-el">3</span>
+              </div>
+              <span class="step-desc">Départ — [5] déjà "trié"</span>
+            </div>
+            <div class="viz-step">
+              <span class="step-n">i=1</span>
+              <div class="arr-display">
+                <span class="arr-el sorted">2</span><span class="arr-el sorted">5</span><span class="arr-el">4</span><span class="arr-el">6</span><span class="arr-el">1</span><span class="arr-el">3</span>
+              </div>
+              <span class="step-desc">2 &lt; 5 → on insère 2 avant 5</span>
+            </div>
+            <div class="viz-step">
+              <span class="step-n">i=2</span>
+              <div class="arr-display">
+                <span class="arr-el sorted">2</span><span class="arr-el sorted">4</span><span class="arr-el sorted">5</span><span class="arr-el">6</span><span class="arr-el">1</span><span class="arr-el">3</span>
+              </div>
+              <span class="step-desc">4 s'insère entre 2 et 5</span>
+            </div>
+            <div class="viz-step">
+              <span class="step-n">i=3</span>
+              <div class="arr-display">
+                <span class="arr-el sorted">2</span><span class="arr-el sorted">4</span><span class="arr-el sorted">5</span><span class="arr-el sorted">6</span><span class="arr-el">1</span><span class="arr-el">3</span>
+              </div>
+              <span class="step-desc">6 &gt; 5 → reste en place</span>
+            </div>
+            <div class="viz-step">
+              <span class="step-n">i=4</span>
+              <div class="arr-display">
+                <span class="arr-el sorted">1</span><span class="arr-el sorted">2</span><span class="arr-el sorted">4</span><span class="arr-el sorted">5</span><span class="arr-el sorted">6</span><span class="arr-el">3</span>
+              </div>
+              <span class="step-desc">1 remonte tout en tête</span>
+            </div>
+            <div class="viz-step">
+              <span class="step-n">fin</span>
+              <div class="arr-display">
+                <span class="arr-el sorted">1</span><span class="arr-el sorted">2</span><span class="arr-el sorted">3</span><span class="arr-el sorted">4</span><span class="arr-el sorted">5</span><span class="arr-el sorted">6</span>
+              </div>
+              <span class="step-desc">Liste triée ✓</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="theory-text">
+          Voici l'implémentation complète, étape par étape :
+        </p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span></span><span></span><span></span></div>
+            <span class="code-lang">python — tri_insertion.py</span>
+          </div>
+          <pre><span class="kw">def</span> <span class="fn">tri_insertion</span>(<span class="par">liste</span>):
+    <span class="str">"""
+    Tri par insertion — O(n²) en moyenne et au pire cas
+    O(n) dans le meilleur cas (liste déjà triée)
+    """</span>
+    <span class="cm"># On commence à l'index 1 (l'élément 0 est trivalement "trié")</span>
+    <span class="kw">for</span> <span class="var">i</span> <span class="kw">in</span> <span class="fn">range</span>(<span class="num">1</span>, <span class="fn">len</span>(<span class="par">liste</span>)):
+        
+        <span class="cm"># L'élément à insérer à la bonne position</span>
+        <span class="var">cle</span> <span class="op">=</span> <span class="par">liste</span>[<span class="var">i</span>]
+        
+        <span class="cm"># On recule dans la partie triée</span>
+        <span class="var">j</span> <span class="op">=</span> <span class="var">i</span> <span class="op">-</span> <span class="num">1</span>
+        
+        <span class="cm"># Tant qu'on n'est pas au début ET que l'élément précédent est plus grand</span>
+        <span class="kw">while</span> <span class="var">j</span> <span class="op">&gt;=</span> <span class="num">0</span> <span class="kw">and</span> <span class="par">liste</span>[<span class="var">j</span>] <span class="op">&gt;</span> <span class="var">cle</span>:
+            <span class="par">liste</span>[<span class="var">j</span> <span class="op">+</span> <span class="num">1</span>] <span class="op">=</span> <span class="par">liste</span>[<span class="var">j</span>]  <span class="cm"># Décaler l'élément vers la droite</span>
+            <span class="var">j</span> <span class="op">-=</span> <span class="num">1</span>
+        
+        <span class="cm"># On place la clé à sa position correcte</span>
+        <span class="par">liste</span>[<span class="var">j</span> <span class="op">+</span> <span class="num">1</span>] <span class="op">=</span> <span class="var">cle</span>
+    
+    <span class="kw">return</span> <span class="par">liste</span>
+
+<span class="cm"># Test</span>
+<span class="var">ma_liste</span> <span class="op">=</span> [<span class="num">64</span>, <span class="num">34</span>, <span class="num">25</span>, <span class="num">12</span>, <span class="num">22</span>, <span class="num">11</span>, <span class="num">90</span>]
+<span class="fn">print</span>(<span class="str">"Avant :"</span>, <span class="var">ma_liste</span>)
+<span class="fn">tri_insertion</span>(<span class="var">ma_liste</span>)
+<span class="fn">print</span>(<span class="str">"Après :"</span>, <span class="var">ma_liste</span>)</pre>
+        </div>
+
+        <div class="concept-grid">
+          <div class="concept-item">
+            <div class="label">Complexité temps</div>
+            <div class="value">O(n²)</div>
+            <div class="desc">Meilleur : O(n) si déjà trié</div>
+          </div>
+          <div class="concept-item">
+            <div class="label">Complexité espace</div>
+            <div class="value">O(1)</div>
+            <div class="desc">En place, pas de mémoire extra</div>
+          </div>
+          <div class="concept-item">
+            <div class="label">Stable ?</div>
+            <div class="value" style="color:var(--green2)">✓ Oui</div>
+            <div class="desc">Préserve l'ordre des égaux</div>
+          </div>
+          <div class="concept-item">
+            <div class="label">Ideal pour</div>
+            <div class="value" style="font-size:12px;color:var(--text2)">Petites listes</div>
+            <div class="desc">ou presque triées</div>
+          </div>
+        </div>
+
+        <div class="tip-box warn">
+          <span class="tip-icon">⚠️</span>
+          <div class="tip-content">
+            <strong>Piège classique !</strong>
+            La variable <code style="font-family:var(--font-mono);font-size:12px;background:var(--surface);border:1px solid var(--border);padding:1px 5px;border-radius:4px;color:var(--accent3);">cle = liste[i]</code> est indispensable. Si tu fais directement <code style="font-family:var(--font-mono);font-size:12px;background:var(--surface);border:1px solid var(--border);padding:1px 5px;border-radius:4px;color:var(--accent3);">liste[j+1] = liste[j]</code> sans sauvegarder la clé, tu perdras la valeur originale !
+          </div>
+        </div>
+
+        <!-- QUIZ ORDRE INSERTION -->
+        <div class="mini-quiz">
+          <div class="quiz-header">
+            <span class="badge">🧠 Quiz</span>
+            <h4>Quel est l'ordre de parcours ? Liste : [7, 3, 9, 1, 5]</h4>
+          </div>
+          <p style="font-size:13px;color:var(--text3);margin-bottom:16px;">Indique dans quel ordre les éléments sont examinés comme "clé" (i=1 à i=4). Saisis les valeurs dans l'ordre d'examen :</p>
+          <div class="order-input-row" id="quiz-insert-inputs">
+            <input type="number" class="order-input" placeholder="?" id="qi0" min="1" max="9">
+            <input type="number" class="order-input" placeholder="?" id="qi1" min="1" max="9">
+            <input type="number" class="order-input" placeholder="?" id="qi2" min="1" max="9">
+            <input type="number" class="order-input" placeholder="?" id="qi3" min="1" max="9">
+          </div>
+          <div id="quiz-insert-result" style="font-size:13px;color:var(--text3);min-height:20px;margin-bottom:12px;"></div>
+          <button class="btn btn-primary btn-sm" onclick="checkQuizInsertion()">Vérifier</button>
+          <button class="btn btn-ghost btn-sm" onclick="showAnswerInsertion()">Voir la réponse</button>
+        </div>
+
+        <!-- LESSON EXERCISE 1 -->
+        <div class="lesson-exercise" id="ex1">
+          <div class="ex-header">
+            <div class="ex-title">
+              <div class="ex-icon">🔨</div>
+              Exercice — Implémente le tri par insertion
+            </div>
+            <span class="diff-badge easy">Facile</span>
+          </div>
+          <div class="ex-description">
+            Complète la fonction <code>tri_insertion(liste)</code> qui trie la liste <strong>en place</strong> (sans créer de nouvelle liste). Teste avec <code>[64, 34, 25, 12, 22, 11, 90]</code>.
+          </div>
+          <div class="editor-area">
+            <textarea id="code-ex1" spellcheck="false">def tri_insertion(liste):
+    for i in range(1, len(liste)):
+        cle = liste[i]
+        j = i - 1
+        # TODO: Complète la boucle while
+        # Condition : j >= 0 ET liste[j] > cle
+        
+        # TODO: Place la clé à la bonne position
+        
+    return liste
+
+# Test
+ma_liste = [64, 34, 25, 12, 22, 11, 90]
+print("Avant :", ma_liste)
+tri_insertion(ma_liste)
+print("Après :", ma_liste)
+</textarea>
+          </div>
+          <div class="output-box" id="out-ex1">
+            <div class="output-header"><span class="status-dot"></span> Résultat</div>
+            <pre></pre>
+          </div>
+          <div class="editor-footer">
+            <span class="hint-text">💡 N'oublie pas de sauvegarder la clé avant la boucle while</span>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm" onclick="resetCode('ex1')">↺ Reset</button>
+              <button class="btn btn-green btn-sm" onclick="runCode('ex1')">▶ Exécuter</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ──── LEÇON 2 : TRI PAR SÉLECTION ──── -->
+    <div class="lesson-divider"><div class="divider-line"></div><span class="divider-label">Leçon 2</span><div class="divider-line"></div></div>
+
+    <div class="lesson-card">
+      <div class="lesson-card-header">
+        <div class="lesson-icon pink">🔍</div>
+        <div class="meta">
+          <h3>Tri par Sélection</h3>
+          <p>Cherche le minimum, place-le, recommence — simple et méthodique</p>
+        </div>
+        <span class="complexity-badge on2">O(n²)</span>
+      </div>
+      <div class="lesson-body">
+
+        <p class="theory-text">
+          Le <strong>tri par sélection</strong> est basé sur une idée simple : à chaque étape, on <em>sélectionne le plus petit élément</em> de la partie non triée et on le place à la bonne position.
+        </p>
+
+        <div class="algo-visualizer">
+          <div class="viz-title">Trace d'exécution — liste [64, 25, 12, 22, 11]</div>
+          <div class="viz-steps">
+            <div class="viz-step">
+              <span class="step-n">init</span>
+              <div class="arr-display">
+                <span class="arr-el">64</span><span class="arr-el">25</span><span class="arr-el">12</span><span class="arr-el">22</span><span class="arr-el">11</span>
+              </div>
+              <span class="step-desc">Aucun élément trié</span>
+            </div>
+            <div class="viz-step">
+              <span class="step-n">i=0</span>
+              <div class="arr-display">
+                <span class="arr-el sorted">11</span><span class="arr-el">25</span><span class="arr-el">12</span><span class="arr-el">22</span><span class="arr-el comparing">64</span>
+              </div>
+              <span class="step-desc">Min=11 (idx 4) ↔ 64 (idx 0)</span>
+            </div>
+            <div class="viz-step">
+              <span class="step-n">i=1</span>
+              <div class="arr-display">
+                <span class="arr-el sorted">11</span><span class="arr-el sorted">12</span><span class="arr-el comparing">25</span><span class="arr-el">22</span><span class="arr-el">64</span>
+              </div>
+              <span class="step-desc">Min=12 (idx 2) ↔ 25 (idx 1)</span>
+            </div>
+            <div class="viz-step">
+              <span class="step-n">i=2</span>
+              <div class="arr-display">
+                <span class="arr-el sorted">11</span><span class="arr-el sorted">12</span><span class="arr-el sorted">22</span><span class="arr-el comparing">25</span><span class="arr-el">64</span>
+              </div>
+              <span class="step-desc">Min=22 (idx 3) ↔ 25 (idx 2)</span>
+            </div>
+            <div class="viz-step">
+              <span class="step-n">fin</span>
+              <div class="arr-display">
+                <span class="arr-el sorted">11</span><span class="arr-el sorted">12</span><span class="arr-el sorted">22</span><span class="arr-el sorted">25</span><span class="arr-el sorted">64</span>
+              </div>
+              <span class="step-desc">Liste triée ✓</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span></span><span></span><span></span></div>
+            <span class="code-lang">python — tri_selection.py</span>
+          </div>
+          <pre><span class="kw">def</span> <span class="fn">tri_selection</span>(<span class="par">liste</span>):
+    <span class="str">"""
+    Tri par sélection — O(n²) dans tous les cas
+    Toujours n*(n-1)/2 comparaisons, peu importe l'entrée
+    """</span>
+    <span class="var">n</span> <span class="op">=</span> <span class="fn">len</span>(<span class="par">liste</span>)
+    
+    <span class="kw">for</span> <span class="var">i</span> <span class="kw">in</span> <span class="fn">range</span>(<span class="var">n</span>):
+        
+        <span class="cm"># Chercher l'index du minimum dans liste[i:]</span>
+        <span class="var">idx_min</span> <span class="op">=</span> <span class="var">i</span>  <span class="cm"># On suppose que le min est à l'index i</span>
+        
+        <span class="kw">for</span> <span class="var">j</span> <span class="kw">in</span> <span class="fn">range</span>(<span class="var">i</span> <span class="op">+</span> <span class="num">1</span>, <span class="var">n</span>):
+            <span class="kw">if</span> <span class="par">liste</span>[<span class="var">j</span>] <span class="op">&lt;</span> <span class="par">liste</span>[<span class="var">idx_min</span>]:
+                <span class="var">idx_min</span> <span class="op">=</span> <span class="var">j</span>  <span class="cm"># Nouveau minimum trouvé !</span>
+        
+        <span class="cm"># Échanger le minimum trouvé avec l'élément à la position i</span>
+        <span class="par">liste</span>[<span class="var">i</span>], <span class="par">liste</span>[<span class="var">idx_min</span>] <span class="op">=</span> <span class="par">liste</span>[<span class="var">idx_min</span>], <span class="par">liste</span>[<span class="var">i</span>]
+    
+    <span class="kw">return</span> <span class="par">liste</span>
+
+<span class="cm"># Test</span>
+<span class="var">ma_liste</span> <span class="op">=</span> [<span class="num">64</span>, <span class="num">25</span>, <span class="num">12</span>, <span class="num">22</span>, <span class="num">11</span>]
+<span class="fn">print</span>(<span class="fn">tri_selection</span>(<span class="var">ma_liste</span>))  <span class="cm"># → [11, 12, 22, 25, 64]</span></pre>
+        </div>
+
+        <div class="tip-box success">
+          <span class="tip-icon">✅</span>
+          <div class="tip-content">
+            <strong>Point fort du tri sélection</strong>
+            Il effectue exactement <strong>n-1 échanges</strong> — c'est le minimum possible pour un tri par échanges. Utile quand les échanges sont coûteux (ex: écrire sur disque).
+          </div>
+        </div>
+
+        <!-- QUIZ ORDRE SELECTION -->
+        <div class="mini-quiz">
+          <div class="quiz-header">
+            <span class="badge">🧠 Quiz</span>
+            <h4>Ordre des minimums sélectionnés — Liste : [3, 8, 2, 7, 1, 6]</h4>
+          </div>
+          <p style="font-size:13px;color:var(--text3);margin-bottom:16px;">Dans quel ordre les minimums successifs sont-ils placés ? (i=0 à i=4, saisis les valeurs)</p>
+          <div class="order-input-row" id="quiz-select-inputs">
+            <input type="number" class="order-input" placeholder="?" id="qs0" min="1" max="9">
+            <input type="number" class="order-input" placeholder="?" id="qs1" min="1" max="9">
+            <input type="number" class="order-input" placeholder="?" id="qs2" min="1" max="9">
+            <input type="number" class="order-input" placeholder="?" id="qs3" min="1" max="9">
+            <input type="number" class="order-input" placeholder="?" id="qs4" min="1" max="9">
+          </div>
+          <div id="quiz-select-result" style="font-size:13px;color:var(--text3);min-height:20px;margin-bottom:12px;"></div>
+          <button class="btn btn-primary btn-sm" onclick="checkQuizSelection()">Vérifier</button>
+          <button class="btn btn-ghost btn-sm" onclick="showAnswerSelection()">Voir la réponse</button>
+        </div>
+
+        <!-- LESSON EXERCISE 2 -->
+        <div class="lesson-exercise" id="ex2">
+          <div class="ex-header">
+            <div class="ex-title">
+              <div class="ex-icon">🔨</div>
+              Exercice — Tri par sélection avec affichage des étapes
+            </div>
+            <span class="diff-badge medium">Intermédiaire</span>
+          </div>
+          <div class="ex-description">
+            Implémente <code>tri_selection(liste)</code> et ajoute un <code>print()</code> après chaque échange pour afficher l'état de la liste. Le résultat doit montrer chaque étape du tri.
+          </div>
+          <div class="editor-area">
+            <textarea id="code-ex2" spellcheck="false">def tri_selection(liste):
+    n = len(liste)
+    for i in range(n):
+        idx_min = i
+        for j in range(i + 1, n):
+            # TODO: Compléter la condition de mise à jour de idx_min
+            pass
+        
+        # TODO: Effectuer l'échange
+        
+        # TODO: Afficher l'état après l'échange
+        print(f"Étape {i+1}:", liste)
+    
+    return liste
+
+# Test
+liste = [64, 25, 12, 22, 11]
+print("Avant :", liste)
+print("--- Tri en cours ---")
+tri_selection(liste)
+print("Après :", liste)
+</textarea>
+          </div>
+          <div class="output-box" id="out-ex2">
+            <div class="output-header"><span class="status-dot"></span> Résultat</div>
+            <pre></pre>
+          </div>
+          <div class="editor-footer">
+            <span class="hint-text">💡 Sauvegarde l'index du min, pas sa valeur !</span>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm" onclick="resetCode('ex2')">↺ Reset</button>
+              <button class="btn btn-green btn-sm" onclick="runCode('ex2')">▶ Exécuter</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ──── LEÇON 3 : TRI FUSION ──── -->
+    <div class="lesson-divider"><div class="divider-line"></div><span class="divider-label">Leçon 3</span><div class="divider-line"></div></div>
+
+    <div class="lesson-card">
+      <div class="lesson-card-header">
+        <div class="lesson-icon teal">🧩</div>
+        <div class="meta">
+          <h3>Tri Fusion (Merge Sort)</h3>
+          <p>Divise pour mieux régner — la récursion au service du tri</p>
+        </div>
+        <span class="complexity-badge on3">O(n log n)</span>
+      </div>
+      <div class="lesson-body">
+
+        <p class="theory-text">
+          Le <strong>tri fusion</strong> utilise le paradigme <em>Diviser pour Régner</em> (Divide and Conquer). L'idée : diviser la liste en deux moitiés, trier chaque moitié récursivement, puis <strong>fusionner</strong> les deux moitiés triées. C'est un algorithme bien plus efficace que les deux précédents pour les grandes listes.
+        </p>
+
+        <div class="tip-box info">
+          <span class="tip-icon">🌳</span>
+          <div class="tip-content">
+            <strong>Visualise un arbre</strong>
+            Le tri fusion crée un arbre de récursion. Chaque niveau divise par 2, donc la profondeur est log₂(n). À chaque niveau, on fait O(n) travail pour fusionner. Total : <strong>O(n × log n)</strong>.
+          </div>
+        </div>
+
+        <div class="algo-visualizer">
+          <div class="viz-title">Arbre de récursion — [38, 27, 43, 3, 9, 82]</div>
+          <div class="viz-steps">
+            <div class="viz-step">
+              <span class="step-n">Div.1</span>
+              <div class="arr-display">
+                <span class="arr-el active">38</span><span class="arr-el active">27</span><span class="arr-el active">43</span>
+                <span style="color:var(--text3);padding:0 4px">|</span>
+                <span class="arr-el">3</span><span class="arr-el">9</span><span class="arr-el">82</span>
+              </div>
+              <span class="step-desc">Divise en deux moitiés</span>
+            </div>
+            <div class="viz-step">
+              <span class="step-n">Div.2</span>
+              <div class="arr-display">
+                <span class="arr-el active">38</span>
+                <span style="color:var(--text3);padding:0 2px">|</span>
+                <span class="arr-el active">27</span><span class="arr-el active">43</span>
+                <span style="color:var(--text3);padding:0 4px">||</span>
+                <span class="arr-el">3</span>
+                <span style="color:var(--text3);padding:0 2px">|</span>
+                <span class="arr-el">9</span><span class="arr-el">82</span>
+              </div>
+              <span class="step-desc">Divise encore...</span>
+            </div>
+            <div class="viz-step">
+              <span class="step-n">Base</span>
+              <div class="arr-display">
+                <span class="arr-el sorted">38</span><span class="arr-el sorted">27</span><span class="arr-el sorted">43</span>
+                <span style="color:var(--text3);padding:0 4px">||</span>
+                <span class="arr-el sorted">3</span><span class="arr-el sorted">9</span><span class="arr-el sorted">82</span>
+              </div>
+              <span class="step-desc">Listes de taille 1 → triées</span>
+            </div>
+            <div class="viz-step">
+              <span class="step-n">Fus.1</span>
+              <div class="arr-display">
+                <span class="arr-el sorted">27</span><span class="arr-el sorted">38</span><span class="arr-el sorted">43</span>
+                <span style="color:var(--text3);padding:0 4px">||</span>
+                <span class="arr-el sorted">3</span><span class="arr-el sorted">9</span><span class="arr-el sorted">82</span>
+              </div>
+              <span class="step-desc">Fusion des sous-listes</span>
+            </div>
+            <div class="viz-step">
+              <span class="step-n">Fus.2</span>
+              <div class="arr-display">
+                <span class="arr-el sorted">3</span><span class="arr-el sorted">9</span><span class="arr-el sorted">27</span><span class="arr-el sorted">38</span><span class="arr-el sorted">43</span><span class="arr-el sorted">82</span>
+              </div>
+              <span class="step-desc">Fusion finale ✓</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="theory-text">
+          Le tri fusion a <strong>deux parties</strong> : la fonction principale qui divise récursivement, et la fonction de fusion (<code style="font-family:var(--font-mono);font-size:12px;background:var(--surface);border:1px solid var(--border);padding:1px 5px;border-radius:4px;color:var(--accent3);">fusionner</code>) qui combine deux listes triées.
+        </p>
+
+        <div class="code-block">
+          <div class="code-header">
+            <div class="code-dots"><span></span><span></span><span></span></div>
+            <span class="code-lang">python — tri_fusion.py</span>
+          </div>
+          <pre><span class="kw">def</span> <span class="fn">fusionner</span>(<span class="par">gauche</span>, <span class="par">droite</span>):
+    <span class="str">"""Fusionne deux listes triées en une seule liste triée"""</span>
+    <span class="var">resultat</span> <span class="op">=</span> []
+    <span class="var">i</span> <span class="op">=</span> <span class="var">j</span> <span class="op">=</span> <span class="num">0</span>
+    
+    <span class="cm"># Tant qu'il reste des éléments dans les deux listes</span>
+    <span class="kw">while</span> <span class="var">i</span> <span class="op">&lt;</span> <span class="fn">len</span>(<span class="par">gauche</span>) <span class="kw">and</span> <span class="var">j</span> <span class="op">&lt;</span> <span class="fn">len</span>(<span class="par">droite</span>):
+        <span class="kw">if</span> <span class="par">gauche</span>[<span class="var">i</span>] <span class="op">&lt;=</span> <span class="par">droite</span>[<span class="var">j</span>]:
+            <span class="var">resultat</span>.<span class="fn">append</span>(<span class="par">gauche</span>[<span class="var">i</span>])
+            <span class="var">i</span> <span class="op">+=</span> <span class="num">1</span>
+        <span class="kw">else</span>:
+            <span class="var">resultat</span>.<span class="fn">append</span>(<span class="par">droite</span>[<span class="var">j</span>])
+            <span class="var">j</span> <span class="op">+=</span> <span class="num">1</span>
+    
+    <span class="cm"># Ajouter les éléments restants (une seule liste aura des restes)</span>
+    <span class="var">resultat</span> <span class="op">+=</span> <span class="par">gauche</span>[<span class="var">i</span>:]
+    <span class="var">resultat</span> <span class="op">+=</span> <span class="par">droite</span>[<span class="var">j</span>:]
+    
+    <span class="kw">return</span> <span class="var">resultat</span>
+
+
+<span class="kw">def</span> <span class="fn">tri_fusion</span>(<span class="par">liste</span>):
+    <span class="str">"""
+    Tri fusion récursif — O(n log n) dans tous les cas
+    Utilise O(n) de mémoire supplémentaire
+    """</span>
+    <span class="cm"># Cas de base : liste de 0 ou 1 élément, déjà triée</span>
+    <span class="kw">if</span> <span class="fn">len</span>(<span class="par">liste</span>) <span class="op">&lt;=</span> <span class="num">1</span>:
+        <span class="kw">return</span> <span class="par">liste</span>
+    
+    <span class="cm"># Diviser en deux moitiés</span>
+    <span class="var">milieu</span> <span class="op">=</span> <span class="fn">len</span>(<span class="par">liste</span>) <span class="op">//</span> <span class="num">2</span>
+    <span class="var">gauche</span> <span class="op">=</span> <span class="fn">tri_fusion</span>(<span class="par">liste</span>[:<span class="var">milieu</span>])   <span class="cm"># Récursion gauche</span>
+    <span class="var">droite</span> <span class="op">=</span> <span class="fn">tri_fusion</span>(<span class="par">liste</span>[<span class="var">milieu</span>:])   <span class="cm"># Récursion droite</span>
+    
+    <span class="cm"># Fusionner les deux moitiés triées</span>
+    <span class="kw">return</span> <span class="fn">fusionner</span>(<span class="var">gauche</span>, <span class="var">droite</span>)
+
+
+<span class="cm"># Test</span>
+<span class="var">ma_liste</span> <span class="op">=</span> [<span class="num">38</span>, <span class="num">27</span>, <span class="num">43</span>, <span class="num">3</span>, <span class="num">9</span>, <span class="num">82</span>, <span class="num">10</span>]
+<span class="fn">print</span>(<span class="str">"Avant :"</span>, <span class="var">ma_liste</span>)
+<span class="var">ma_liste</span> <span class="op">=</span> <span class="fn">tri_fusion</span>(<span class="var">ma_liste</span>)
+<span class="fn">print</span>(<span class="str">"Après :"</span>, <span class="var">ma_liste</span>)</pre>
+        </div>
+
+        <div class="tip-box warn">
+          <span class="tip-icon">⚠️</span>
+          <div class="tip-content">
+            <strong>Différence importante !</strong>
+            Contrairement aux tris précédents, <code style="font-family:var(--font-mono);font-size:12px;background:var(--surface);border:1px solid var(--border);padding:1px 5px;border-radius:4px;color:var(--accent3);">tri_fusion</code> <strong>retourne une nouvelle liste</strong>. Il ne modifie pas la liste originale en place. Tu dois donc faire : <code style="font-family:var(--font-mono);font-size:12px;background:var(--surface);border:1px solid var(--border);padding:1px 5px;border-radius:4px;color:var(--accent3);">ma_liste = tri_fusion(ma_liste)</code>
+          </div>
+        </div>
+
+        <!-- TABLE COMPARAISON -->
+        <p class="theory-text" style="margin-top:24px;"><strong>Récapitulatif des complexités :</strong></p>
+        <table class="complexity-table">
+          <thead>
+            <tr>
+              <th>Algorithme</th>
+              <th>Meilleur cas</th>
+              <th>Cas moyen</th>
+              <th>Pire cas</th>
+              <th>Espace</th>
+              <th>Stable</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Tri Insertion</strong></td>
+              <td class="mono good">O(n)</td>
+              <td class="mono avg">O(n²)</td>
+              <td class="mono bad">O(n²)</td>
+              <td class="mono good">O(1)</td>
+              <td style="color:var(--green2)">✓</td>
+            </tr>
+            <tr>
+              <td><strong>Tri Sélection</strong></td>
+              <td class="mono avg">O(n²)</td>
+              <td class="mono avg">O(n²)</td>
+              <td class="mono bad">O(n²)</td>
+              <td class="mono good">O(1)</td>
+              <td style="color:var(--red)">✗</td>
+            </tr>
+            <tr>
+              <td><strong>Tri Fusion</strong></td>
+              <td class="mono good">O(n log n)</td>
+              <td class="mono good">O(n log n)</td>
+              <td class="mono good">O(n log n)</td>
+              <td class="mono avg">O(n)</td>
+              <td style="color:var(--green2)">✓</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- LESSON EXERCISE 3 -->
+        <div class="lesson-exercise" id="ex3">
+          <div class="ex-header">
+            <div class="ex-title">
+              <div class="ex-icon">🧩</div>
+              Exercice — Implémenter la fusion
+            </div>
+            <span class="diff-badge medium">Intermédiaire</span>
+          </div>
+          <div class="ex-description">
+            Implémente uniquement la fonction <code>fusionner(gauche, droite)</code> qui fusionne deux listes <strong>déjà triées</strong> en une seule liste triée. La fonction <code>tri_fusion</code> t'est fournie.
+          </div>
+          <div class="editor-area">
+            <textarea id="code-ex3" spellcheck="false">def fusionner(gauche, droite):
+    """Fusionne deux listes triées → une liste triée"""
+    resultat = []
+    i = j = 0
+    
+    while i < len(gauche) and j < len(droite):
+        # TODO: Comparer gauche[i] et droite[j]
+        # Ajouter le plus petit dans resultat
+        # Incrémenter le bon index
+        pass
+    
+    # TODO: Ajouter les éléments restants
+    
+    return resultat
+
+def tri_fusion(liste):
+    if len(liste) <= 1:
+        return liste
+    milieu = len(liste) // 2
+    gauche = tri_fusion(liste[:milieu])
+    droite = tri_fusion(liste[milieu:])
+    return fusionner(gauche, droite)
+
+# Tests
+print(fusionner([1, 3, 5], [2, 4, 6]))  # → [1, 2, 3, 4, 5, 6]
+print(tri_fusion([38, 27, 43, 3, 9, 82]))  # → [3, 9, 27, 38, 43, 82]
+</textarea>
+          </div>
+          <div class="output-box" id="out-ex3">
+            <div class="output-header"><span class="status-dot"></span> Résultat</div>
+            <pre></pre>
+          </div>
+          <div class="editor-footer">
+            <span class="hint-text">💡 Utilise .append() et += pour les restes de chaque liste</span>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm" onclick="resetCode('ex3')">↺ Reset</button>
+              <button class="btn btn-green btn-sm" onclick="runCode('ex3')">▶ Exécuter</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /panel-cours -->
+
+  <!-- ══════════════════════════════════════════
+       TAB: EXERCICES
+  ══════════════════════════════════════════ -->
+  <div class="tab-panel" id="panel-exercices">
+
+    <div class="php-notice">
+      <span class="notice-icon">⚡</span>
+      <div class="notice-content">
+        <h4>Configuration XAMPP + Python</h4>
+        <p>
+          Pour exécuter du Python via PHP/XAMPP, crée un fichier <code>run_python.php</code> dans ton dossier <code>htdocs</code> avec ce contenu :
+          <code style="display:block;margin-top:8px;padding:8px;background:var(--bg3);border-radius:6px;font-size:11px;">&lt;?php echo shell_exec("python " . escapeshellarg($_POST['script'])); ?&gt;</code>
+          Assure-toi que Python est dans le PATH système et que <code>allow_url_fopen = On</code> dans php.ini. En attendant, ce site simule l'exécution côté client avec Brython (Python dans le navigateur).
+        </p>
+      </div>
+    </div>
+
+    <!-- SCORE -->
+    <div id="score-display">
+      <div class="score-block">
+        <div class="score-label">Score total</div>
+        <div class="score-val" id="total-score">0 pts</div>
+      </div>
+      <div class="score-sep"></div>
+      <div class="score-block correct">
+        <div class="score-label">Réussis</div>
+        <div class="score-val" id="correct-count">0</div>
+      </div>
+      <div class="score-sep"></div>
+      <div class="score-block wrong">
+        <div class="score-label">Tentatives</div>
+        <div class="score-val" id="attempt-count">0</div>
+      </div>
+      <div class="score-sep" style="margin-left:auto"></div>
+      <div style="flex:1;min-width:200px">
+        <div style="display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:11px;color:var(--text3);margin-bottom:6px;">
+          <span>Progression</span>
+          <span id="progress-pct">0%</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+      </div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <span style="font-family:var(--font-mono);font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-right:4px;">Filtrer:</span>
+      <button class="filter-btn active" onclick="filterEx('all', this)">Tous</button>
+      <div class="filter-sep"></div>
+      <button class="filter-btn f-easy" onclick="filterEx('easy', this)">🟢 Facile</button>
+      <button class="filter-btn f-medium" onclick="filterEx('medium', this)">🟡 Moyen</button>
+      <button class="filter-btn f-hard" onclick="filterEx('hard', this)">🔴 Difficile</button>
+      <div class="filter-sep"></div>
+      <button class="filter-btn" onclick="filterEx('insertion', this)">Insertion</button>
+      <button class="filter-btn" onclick="filterEx('selection', this)">Sélection</button>
+      <button class="filter-btn" onclick="filterEx('fusion', this)">Fusion</button>
+    </div>
+
+    <!-- STATS HEADER -->
+    <div class="exercises-header">
+      <div class="stat-card easy">
+        <div class="stat-icon">🟢</div>
+        <div class="stat-info">
+          <div class="stat-label">Facile</div>
+          <div class="stat-val" style="color:var(--easy)">3 exos</div>
+        </div>
+      </div>
+      <div class="stat-card medium">
+        <div class="stat-icon">🟡</div>
+        <div class="stat-info">
+          <div class="stat-label">Moyen</div>
+          <div class="stat-val" style="color:var(--medium)">3 exos</div>
+        </div>
+      </div>
+      <div class="stat-card hard">
+        <div class="stat-icon">🔴</div>
+        <div class="stat-info">
+          <div class="stat-label">Difficile</div>
+          <div class="stat-val" style="color:var(--hard)">3 exos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXERCISES GRID -->
+    <div class="exercises-grid" id="exercises-grid">
+
+      <!-- EX 1: FACILE INSERTION -->
+      <div class="exercise-card" data-diff="easy" data-algo="insertion">
+        <div class="exercise-card-top">
+          <div class="ex-meta">
+            <span class="diff-badge easy">Facile</span>
+            <span class="algo-badge">insertion</span>
+          </div>
+          <h3>Tri par insertion — liste simple</h3>
+          <p>Trie cette liste en utilisant uniquement le tri par insertion. La liste doit être triée en place.</p>
+        </div>
+        <div class="exercise-card-body">
+          <div class="list-display">
+            <span class="el">5</span><span class="el">3</span><span class="el">8</span><span class="el">1</span><span class="el">9</span><span class="el">2</span>
+          </div>
+          <div class="editor-wrap">
+            <div class="ew-header">
+              <div class="ew-dots"><span></span><span></span><span></span></div>
+              <span>solution.py</span>
+            </div>
+            <textarea id="exo-1" spellcheck="false">def tri_insertion(liste):
+    # Ton code ici
+    pass
+
+liste = [5, 3, 8, 1, 9, 2]
+tri_insertion(liste)
+print(liste)
+</textarea>
+          </div>
+        </div>
+        <div class="ex-result-box" id="res-1"></div>
+        <div class="exercise-card-footer">
+          <span class="points-badge">+10 pts</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="resetExo(1)">↺ Reset</button>
+            <button class="btn btn-primary btn-sm" onclick="submitExo(1, [1,2,3,5,8,9], 'insertion')">▶ Soumettre</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 2: FACILE SELECTION -->
+      <div class="exercise-card" data-diff="easy" data-algo="selection">
+        <div class="exercise-card-top">
+          <div class="ex-meta">
+            <span class="diff-badge easy">Facile</span>
+            <span class="algo-badge">sélection</span>
+          </div>
+          <h3>Tri par sélection — entiers positifs</h3>
+          <p>Trie cette liste en utilisant le tri par sélection. Attention : l'échange se fait en une ligne en Python !</p>
+        </div>
+        <div class="exercise-card-body">
+          <div class="list-display">
+            <span class="el">29</span><span class="el">10</span><span class="el">14</span><span class="el">37</span><span class="el">13</span>
+          </div>
+          <div class="editor-wrap">
+            <div class="ew-header">
+              <div class="ew-dots"><span></span><span></span><span></span></div>
+              <span>solution.py</span>
+            </div>
+            <textarea id="exo-2" spellcheck="false">def tri_selection(liste):
+    # Ton code ici
+    pass
+
+liste = [29, 10, 14, 37, 13]
+tri_selection(liste)
+print(liste)
+</textarea>
+          </div>
+        </div>
+        <div class="ex-result-box" id="res-2"></div>
+        <div class="exercise-card-footer">
+          <span class="points-badge">+10 pts</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="resetExo(2)">↺ Reset</button>
+            <button class="btn btn-primary btn-sm" onclick="submitExo(2, [10,13,14,29,37], 'selection')">▶ Soumettre</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 3: FACILE FUSION -->
+      <div class="exercise-card" data-diff="easy" data-algo="fusion">
+        <div class="exercise-card-top">
+          <div class="ex-meta">
+            <span class="diff-badge easy">Facile</span>
+            <span class="algo-badge">fusion</span>
+          </div>
+          <h3>Fusionner deux listes triées</h3>
+          <p>Implémente uniquement la fonction <code style="font-family:var(--font-mono);font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px;">fusionner</code> pour combiner deux listes déjà triées.</p>
+        </div>
+        <div class="exercise-card-body">
+          <div class="list-display">
+            <span class="el" style="background:rgba(124,106,247,0.15);border-color:var(--accent)">1</span>
+            <span class="el" style="background:rgba(124,106,247,0.15);border-color:var(--accent)">4</span>
+            <span class="el" style="background:rgba(124,106,247,0.15);border-color:var(--accent)">7</span>
+            <span style="color:var(--text3);padding:0 4px;font-size:18px">+</span>
+            <span class="el" style="background:rgba(240,98,146,0.15);border-color:var(--pink)">2</span>
+            <span class="el" style="background:rgba(240,98,146,0.15);border-color:var(--pink)">5</span>
+            <span class="el" style="background:rgba(240,98,146,0.15);border-color:var(--pink)">8</span>
+          </div>
+          <div class="editor-wrap">
+            <div class="ew-header">
+              <div class="ew-dots"><span></span><span></span><span></span></div>
+              <span>solution.py</span>
+            </div>
+            <textarea id="exo-3" spellcheck="false">def fusionner(gauche, droite):
+    # Ton code ici
+    pass
+
+print(fusionner([1, 4, 7], [2, 5, 8]))
+# Attendu: [1, 2, 4, 5, 7, 8]
+</textarea>
+          </div>
+        </div>
+        <div class="ex-result-box" id="res-3"></div>
+        <div class="exercise-card-footer">
+          <span class="points-badge">+10 pts</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="resetExo(3)">↺ Reset</button>
+            <button class="btn btn-primary btn-sm" onclick="submitExo(3, [1,2,4,5,7,8], 'fusion')">▶ Soumettre</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 4: MOYEN INSERTION -->
+      <div class="exercise-card" data-diff="medium" data-algo="insertion">
+        <div class="exercise-card-top">
+          <div class="ex-meta">
+            <span class="diff-badge medium">Moyen</span>
+            <span class="algo-badge">insertion</span>
+          </div>
+          <h3>Tri insertion + comptage d'inversions</h3>
+          <p>Trie la liste par insertion et compte le nombre d'échanges effectués. Affiche la liste triée puis le nombre d'échanges.</p>
+        </div>
+        <div class="exercise-card-body">
+          <div class="list-display">
+            <span class="el">8</span><span class="el">6</span><span class="el">4</span><span class="el">2</span><span class="el">7</span><span class="el">1</span><span class="el">3</span>
+          </div>
+          <div class="editor-wrap">
+            <div class="ew-header">
+              <div class="ew-dots"><span></span><span></span><span></span></div>
+              <span>solution.py</span>
+            </div>
+            <textarea id="exo-4" spellcheck="false">def tri_insertion_comptage(liste):
+    # Retourne (liste_triée, nb_échanges)
+    pass
+
+liste = [8, 6, 4, 2, 7, 1, 3]
+triee, nb = tri_insertion_comptage(liste)
+print("Trié :", triee)
+print("Échanges :", nb)
+</textarea>
+          </div>
+        </div>
+        <div class="ex-result-box" id="res-4"></div>
+        <div class="exercise-card-footer">
+          <span class="points-badge">+20 pts</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="resetExo(4)">↺ Reset</button>
+            <button class="btn btn-primary btn-sm" onclick="submitExo(4, [1,2,3,4,6,7,8], 'insertion')">▶ Soumettre</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 5: MOYEN SELECTION -->
+      <div class="exercise-card" data-diff="medium" data-algo="selection">
+        <div class="exercise-card-top">
+          <div class="ex-meta">
+            <span class="diff-badge medium">Moyen</span>
+            <span class="algo-badge">sélection</span>
+          </div>
+          <h3>Tri sélection — ordre décroissant</h3>
+          <p>Adapte le tri par sélection pour trier dans l'ordre <strong>décroissant</strong> (du plus grand au plus petit).</p>
+        </div>
+        <div class="exercise-card-body">
+          <div class="list-display">
+            <span class="el">15</span><span class="el">3</span><span class="el">42</span><span class="el">8</span><span class="el">23</span><span class="el">16</span>
+          </div>
+          <div class="editor-wrap">
+            <div class="ew-header">
+              <div class="ew-dots"><span></span><span></span><span></span></div>
+              <span>solution.py</span>
+            </div>
+            <textarea id="exo-5" spellcheck="false">def tri_selection_desc(liste):
+    # Trie en ordre décroissant
+    pass
+
+liste = [15, 3, 42, 8, 23, 16]
+tri_selection_desc(liste)
+print(liste)
+# Attendu: [42, 23, 16, 15, 8, 3]
+</textarea>
+          </div>
+        </div>
+        <div class="ex-result-box" id="res-5"></div>
+        <div class="exercise-card-footer">
+          <span class="points-badge">+20 pts</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="resetExo(5)">↺ Reset</button>
+            <button class="btn btn-primary btn-sm" onclick="submitExo(5, [42,23,16,15,8,3], 'selection')">▶ Soumettre</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 6: MOYEN FUSION -->
+      <div class="exercise-card" data-diff="medium" data-algo="fusion">
+        <div class="exercise-card-top">
+          <div class="ex-meta">
+            <span class="diff-badge medium">Moyen</span>
+            <span class="algo-badge">fusion</span>
+          </div>
+          <h3>Tri fusion complet</h3>
+          <p>Implémente le tri fusion complet (division + fusion). Utilise la récursion.</p>
+        </div>
+        <div class="exercise-card-body">
+          <div class="list-display">
+            <span class="el">38</span><span class="el">27</span><span class="el">43</span><span class="el">3</span><span class="el">9</span><span class="el">82</span>
+          </div>
+          <div class="editor-wrap">
+            <div class="ew-header">
+              <div class="ew-dots"><span></span><span></span><span></span></div>
+              <span>solution.py</span>
+            </div>
+            <textarea id="exo-6" spellcheck="false">def fusionner(gauche, droite):
+    # Implémente la fusion
+    pass
+
+def tri_fusion(liste):
+    # Implémente la récursion
+    pass
+
+liste = [38, 27, 43, 3, 9, 82]
+resultat = tri_fusion(liste)
+print(resultat)
+</textarea>
+          </div>
+        </div>
+        <div class="ex-result-box" id="res-6"></div>
+        <div class="exercise-card-footer">
+          <span class="points-badge">+20 pts</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="resetExo(6)">↺ Reset</button>
+            <button class="btn btn-primary btn-sm" onclick="submitExo(6, [3,9,27,38,43,82], 'fusion')">▶ Soumettre</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 7: DIFFICILE INSERTION -->
+      <div class="exercise-card" data-diff="hard" data-algo="insertion">
+        <div class="exercise-card-top">
+          <div class="ex-meta">
+            <span class="diff-badge hard">Difficile</span>
+            <span class="algo-badge">insertion</span>
+          </div>
+          <h3>Tri par insertion — chaînes de caractères</h3>
+          <p>Adapte le tri par insertion pour trier une liste de mots par ordre alphabétique. Python compare les strings avec &lt; et &gt; nativement.</p>
+        </div>
+        <div class="exercise-card-body">
+          <div class="list-display" style="flex-wrap:wrap;gap:4px">
+            <span class="el" style="width:auto;padding:0 8px;font-size:11px">banane</span>
+            <span class="el" style="width:auto;padding:0 8px;font-size:11px">ananas</span>
+            <span class="el" style="width:auto;padding:0 8px;font-size:11px">cerise</span>
+            <span class="el" style="width:auto;padding:0 8px;font-size:11px">abricot</span>
+            <span class="el" style="width:auto;padding:0 8px;font-size:11px">mangue</span>
+          </div>
+          <div class="editor-wrap">
+            <div class="ew-header">
+              <div class="ew-dots"><span></span><span></span><span></span></div>
+              <span>solution.py</span>
+            </div>
+            <textarea id="exo-7" spellcheck="false">def tri_insertion_str(liste):
+    # Fonctionne exactement comme le tri insertion
+    # Python compare les strings alphabétiquement avec < et >
+    pass
+
+fruits = ["banane", "ananas", "cerise", "abricot", "mangue"]
+tri_insertion_str(fruits)
+print(fruits)
+</textarea>
+          </div>
+        </div>
+        <div class="ex-result-box" id="res-7"></div>
+        <div class="exercise-card-footer">
+          <span class="points-badge">+30 pts</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="resetExo(7)">↺ Reset</button>
+            <button class="btn btn-primary btn-sm" onclick="submitExo(7, ['abricot','ananas','banane','cerise','mangue'], 'insertion')">▶ Soumettre</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 8: DIFFICILE SELECTION -->
+      <div class="exercise-card" data-diff="hard" data-algo="selection">
+        <div class="exercise-card-top">
+          <div class="ex-meta">
+            <span class="diff-badge hard">Difficile</span>
+            <span class="algo-badge">sélection</span>
+          </div>
+          <h3>Tri sélection — liste de tuples par clé</h3>
+          <p>Trie une liste de tuples <code style="font-family:var(--font-mono);font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px;">(nom, score)</code> par score décroissant avec le tri par sélection.</p>
+        </div>
+        <div class="exercise-card-body">
+          <div class="list-display" style="flex-wrap:wrap;gap:4px">
+            <span class="el" style="width:auto;padding:0 6px;font-size:10px">Alice:92</span>
+            <span class="el" style="width:auto;padding:0 6px;font-size:10px">Bob:75</span>
+            <span class="el" style="width:auto;padding:0 6px;font-size:10px">Clara:88</span>
+            <span class="el" style="width:auto;padding:0 6px;font-size:10px">Dave:95</span>
+            <span class="el" style="width:auto;padding:0 6px;font-size:10px">Eve:61</span>
+          </div>
+          <div class="editor-wrap">
+            <div class="ew-header">
+              <div class="ew-dots"><span></span><span></span><span></span></div>
+              <span>solution.py</span>
+            </div>
+            <textarea id="exo-8" spellcheck="false">def tri_selection_scores(liste):
+    # Trie par score décroissant (liste[i][1] = score)
+    pass
+
+joueurs = [("Alice", 92), ("Bob", 75), ("Clara", 88), ("Dave", 95), ("Eve", 61)]
+tri_selection_scores(joueurs)
+for nom, score in joueurs:
+    print(f"{nom}: {score}")
+</textarea>
+          </div>
+        </div>
+        <div class="ex-result-box" id="res-8"></div>
+        <div class="exercise-card-footer">
+          <span class="points-badge">+30 pts</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="resetExo(8)">↺ Reset</button>
+            <button class="btn btn-primary btn-sm" onclick="submitExo(8, [95,92,88,75,61], 'selection')">▶ Soumettre</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- EX 9: DIFFICILE FUSION -->
+      <div class="exercise-card" data-diff="hard" data-algo="fusion">
+        <div class="exercise-card-top">
+          <div class="ex-meta">
+            <span class="diff-badge hard">Difficile</span>
+            <span class="algo-badge">fusion</span>
+          </div>
+          <h3>Tri fusion — compter les inversions</h3>
+          <p>Adapte le tri fusion pour qu'il retourne un tuple <code style="font-family:var(--font-mono);font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px;">(liste_triée, nb_inversions)</code>. Une inversion est une paire (i,j) où i&lt;j mais liste[i]&gt;liste[j].</p>
+        </div>
+        <div class="exercise-card-body">
+          <div class="list-display">
+            <span class="el">6</span><span class="el">5</span><span class="el">4</span><span class="el">3</span><span class="el">2</span><span class="el">1</span>
+          </div>
+          <div class="editor-wrap">
+            <div class="ew-header">
+              <div class="ew-dots"><span></span><span></span><span></span></div>
+              <span>solution.py</span>
+            </div>
+            <textarea id="exo-9" spellcheck="false">def fusionner_compter(gauche, droite):
+    # Retourne (liste_fusionnée, nb_inversions)
+    pass
+
+def tri_fusion_inversions(liste):
+    # Retourne (liste_triée, nb_inversions)
+    pass
+
+liste = [6, 5, 4, 3, 2, 1]
+triee, nb = tri_fusion_inversions(liste)
+print("Triée:", triee)
+print("Inversions:", nb)  # Attendu: 15
+</textarea>
+          </div>
+        </div>
+        <div class="ex-result-box" id="res-9"></div>
+        <div class="exercise-card-footer">
+          <span class="points-badge">+30 pts</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-sm" onclick="resetExo(9)">↺ Reset</button>
+            <button class="btn btn-primary btn-sm" onclick="submitExo(9, [1,2,3,4,5,6], 'fusion')">▶ Soumettre</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /exercises-grid -->
+
+  </div><!-- /panel-exercices -->
+
+  <footer>
+    <span>PyTri</span> — Algorithmes de tri en Python · Fait avec ❤️ pour apprendre
+  </footer>
+
+</div><!-- /wrapper -->
+
+<!-- ══════════════════════════════════════════════
+     BRYTHON — Python dans le navigateur
+══════════════════════════════════════════════ -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.12.3/brython.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/brython/3.12.3/brython_stdlib.js"></script>
+
+<script>
+// ═══════════════════════════════════════════════
+//  INIT BRYTHON
+// ═══════════════════════════════════════════════
+window.addEventListener('load', () => {
+  try { brython({ debug: 0 }); } catch(e) {}
+});
+
+// ═══════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  const btns = document.querySelectorAll('.tab-btn');
+  btns.forEach(b => { if (b.textContent.includes(name === 'cours' ? 'Cours' : 'Exercices')) b.classList.add('active'); });
+}
+
+// ═══════════════════════════════════════════════
+//  PYTHON RUNNER (Brython + fallback simulation)
+// ═══════════════════════════════════════════════
+function runPythonCode(code) {
+  return new Promise((resolve) => {
+    // Brython execution
+    const output = [];
+    const origLog = console.log;
+    
+    try {
+      // We use a custom Brython script element approach
+      const scriptId = 'pyrun_' + Date.now();
+      const outputVar = 'pyout_' + scriptId;
+      window[outputVar] = [];
+      
+      const wrappedCode = `
+import sys
+from browser import window
+_out = []
+class _Capture:
+    def write(self, s):
+        _out.append(s)
+    def flush(self): pass
+sys.stdout = _Capture()
+sys.stderr = _Capture()
+try:
+${code.split('\n').map(l => '    ' + l).join('\n')}
+except Exception as e:
+    print(f"Erreur : {type(e).__name__}: {e}")
+window['${outputVar}'] = _out
+`;
+      
+      const script = document.createElement('script');
+      script.type = 'text/python';
+      script.id = scriptId;
+      script.textContent = wrappedCode;
+      document.body.appendChild(script);
+      
+      setTimeout(() => {
+        const result = window[outputVar] || [];
+        document.body.removeChild(script);
+        delete window[outputVar];
+        resolve({ ok: true, output: result.join('') });
+      }, 600);
+      
+    } catch(e) {
+      resolve({ ok: false, output: 'Erreur: ' + e.message });
+    }
+  });
+}
+
+// ─────────────────────────────────────────────
+//  Simulated Python (JS fallback for reliability)
+// ─────────────────────────────────────────────
+function simulatePython(code) {
+  const lines = [];
+  const fakeEnv = {
+    print: (...args) => lines.push(args.map(a => Array.isArray(a) ? '[' + a.join(', ') + ']' : String(a)).join(' ')),
+    len: a => a.length,
+    range: function(a, b, c) {
+      if (b === undefined) { b = a; a = 0; }
+      if (c === undefined) c = 1;
+      const r = [];
+      if (c > 0) for (let i = a; i < b; i += c) r.push(i);
+      else for (let i = a; i > b; i += c) r.push(i);
+      return r;
+    }
+  };
+  
+  try {
+    // Replace Python syntax with JS equivalents
+    let jsCode = code
+      .replace(/def (\w+)\(([^)]*)\):/g, 'function $1($2) {')
+      .replace(/^(\s+)pass$/gm, '$1// pass')
+      .replace(/print\(/g, 'fakeEnv.print(')
+      .replace(/len\(/g, 'fakeEnv.len(')
+      .replace(/range\(/g, 'fakeEnv.range(')
+      .replace(/#.*$/gm, '')
+      .replace(/(\s+)(if|for|while|else|elif)(.+):/g, (m, sp, kw, cond) => {
+        cond = cond.replace(/ and /g, ' && ').replace(/ or /g, ' || ').replace(/ not /g, ' !');
+        return `${sp}${kw} (${cond.trim()}) {`;
+      })
+      .replace(/elif/g, '} else if')
+      .replace(/else:/g, '} else {')
+      .replace(/\+=/g, '+=').replace(/-=/g, '-=')
+      .replace(/True/g, 'true').replace(/False/g, 'false').replace(/None/g, 'null')
+      .replace(/f"([^"]*)"/g, (m, s) => '`' + s.replace(/\{/g, '${') + '`');
+    
+    // This is too complex to reliably simulate, so we use a different approach
+    return { ok: false, output: 'Simulation non disponible pour ce code complexe. Utilise un fichier Python local.' };
+  } catch(e) {
+    return { ok: false, output: String(e) };
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  LESSON EXERCISES
+// ═══════════════════════════════════════════════
+const defaultCodes = {
+  ex0: `# Écris ton code ici...
+nombres = [5, 3, 8, 1, 9, 2]
+
+# 1. Afficher la longueur
+
+# 2. Afficher premier et dernier
+
+# 3. Échanger index 0 et 5
+
+# 4. Afficher la liste
+`,
+  ex1: `def tri_insertion(liste):
+    for i in range(1, len(liste)):
+        cle = liste[i]
+        j = i - 1
+        # TODO: Complète la boucle while
+        # Condition : j >= 0 ET liste[j] > cle
+        
+        # TODO: Place la clé à la bonne position
+        
+    return liste
+
+# Test
+ma_liste = [64, 34, 25, 12, 22, 11, 90]
+print("Avant :", ma_liste)
+tri_insertion(ma_liste)
+print("Après :", ma_liste)
+`,
+  ex2: `def tri_selection(liste):
+    n = len(liste)
+    for i in range(n):
+        idx_min = i
+        for j in range(i + 1, n):
+            # TODO: Compléter la condition de mise à jour de idx_min
+            pass
+        
+        # TODO: Effectuer l'échange
+        
+        # TODO: Afficher l'état après l'échange
+        print(f"Étape {i+1}:", liste)
+    
+    return liste
+
+# Test
+liste = [64, 25, 12, 22, 11]
+print("Avant :", liste)
+print("--- Tri en cours ---")
+tri_selection(liste)
+print("Après :", liste)
+`,
+  ex3: `def fusionner(gauche, droite):
+    """Fusionne deux listes triées → une liste triée"""
+    resultat = []
+    i = j = 0
+    
+    while i < len(gauche) and j < len(droite):
+        # TODO: Comparer gauche[i] et droite[j]
+        # Ajouter le plus petit dans resultat
+        # Incrémenter le bon index
+        pass
+    
+    # TODO: Ajouter les éléments restants
+    
+    return resultat
+
+def tri_fusion(liste):
+    if len(liste) <= 1:
+        return liste
+    milieu = len(liste) // 2
+    gauche = tri_fusion(liste[:milieu])
+    droite = tri_fusion(liste[milieu:])
+    return fusionner(gauche, droite)
+
+# Tests
+print(fusionner([1, 3, 5], [2, 4, 6]))  # → [1, 2, 3, 4, 5, 6]
+print(tri_fusion([38, 27, 43, 3, 9, 82]))  # → [3, 9, 27, 38, 43, 82]
+`
+};
+
+function resetCode(exId) {
+  document.getElementById('code-' + exId).value = defaultCodes[exId];
+  const out = document.getElementById('out-' + exId);
+  out.classList.remove('visible', 'success', 'error');
+}
+
+async function runCode(exId) {
+  const code = document.getElementById('code-' + exId).value;
+  const outBox = document.getElementById('out-' + exId);
+  const dotEl = outBox.querySelector('.status-dot');
+  const preEl = outBox.querySelector('pre');
+  
+  outBox.classList.add('visible');
+  outBox.classList.remove('success', 'error');
+  dotEl.className = 'status-dot';
+  preEl.textContent = '⏳ Exécution en cours...';
+  
+  // Try Brython execution via script injection
+  try {
+    const result = await executePythonBrython(code);
+    if (result.error) {
+      outBox.classList.add('error');
+      dotEl.classList.add('err');
+      preEl.textContent = result.error;
+    } else {
+      outBox.classList.add('success');
+      dotEl.classList.add('ok');
+      preEl.textContent = result.output || '(aucune sortie)';
+    }
+  } catch(e) {
+    outBox.classList.add('error');
+    dotEl.classList.add('err');
+    preEl.textContent = 'Erreur: ' + e.message;
+  }
+}
+
+// ─────────────────────────────────────────────
+//  Real Brython execution
+// ─────────────────────────────────────────────
+function executePythonBrython(code) {
+  return new Promise((resolve) => {
+    const uid = 'br_' + Math.random().toString(36).substr(2,9);
+    window['__pyout_' + uid] = null;
+    
+    const wrappedCode = [
+      'import sys',
+      'from browser import window',
+      '_lines = []',
+      'class _Cap:',
+      '    def write(self, s): _lines.append(str(s))',
+      '    def flush(self): pass',
+      'sys.stdout = _Cap()',
+      'sys.stderr = _Cap()',
+      'try:',
+      ...code.split('\n').map(l => '    ' + l),
+      'except Exception as e:',
+      '    _lines.append(f"❌ {type(e).__name__}: {e}")',
+      `window['__pyout_${uid}'] = {'ok': True, 'out': ''.join(_lines)}`
+    ].join('\n');
+    
+    const el = document.createElement('script');
+    el.type = 'text/python';
+    el.textContent = wrappedCode;
+    document.head.appendChild(el);
+    
+    let attempts = 0;
+    const check = setInterval(() => {
+      attempts++;
+      const r = window['__pyout_' + uid];
+      if (r !== null || attempts > 30) {
+        clearInterval(check);
+        document.head.removeChild(el);
+        delete window['__pyout_' + uid];
+        if (r) {
+          resolve({ output: r.out || '(aucune sortie)', error: null });
+        } else {
+          resolve({ output: '', error: 'Timeout ou erreur Brython. Installe Brython ou utilise Python local.' });
+        }
+      }
+    }, 200);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  QUIZ
+// ═══════════════════════════════════════════════
+function checkQuizInsertion() {
+  const expected = [3, 9, 1, 5]; // clés examinées pour [7,3,9,1,5]
+  const ids = ['qi0','qi1','qi2','qi3'];
+  let all = true;
+  ids.forEach((id, i) => {
+    const el = document.getElementById(id);
+    const val = parseInt(el.value);
+    el.classList.remove('correct','wrong');
+    if (val === expected[i]) el.classList.add('correct');
+    else { el.classList.add('wrong'); all = false; }
+  });
+  document.getElementById('quiz-insert-result').innerHTML = all
+    ? '<span style="color:var(--green2)">✓ Parfait ! Les clés examinées sont 3, 9, 1, 5 (éléments à partir de l\'index 1)</span>'
+    : '<span style="color:var(--amber)">✗ Pas tout à fait. Les clés sont les éléments aux index 1, 2, 3, 4</span>';
+}
+
+function showAnswerInsertion() {
+  const answers = [3, 9, 1, 5];
+  ['qi0','qi1','qi2','qi3'].forEach((id, i) => {
+    document.getElementById(id).value = answers[i];
+    document.getElementById(id).classList.add('correct');
+  });
+  document.getElementById('quiz-insert-result').innerHTML = '<span style="color:var(--teal2)">Réponse : 3 → 9 → 1 → 5 (on commence à i=1)</span>';
+}
+
+function checkQuizSelection() {
+  const expected = [1, 2, 3, 6, 7]; // minimums successifs de [3,8,2,7,1,6]
+  const ids = ['qs0','qs1','qs2','qs3','qs4'];
+  let all = true;
+  ids.forEach((id, i) => {
+    const el = document.getElementById(id);
+    const val = parseInt(el.value);
+    el.classList.remove('correct','wrong');
+    if (val === expected[i]) el.classList.add('correct');
+    else { el.classList.add('wrong'); all = false; }
+  });
+  document.getElementById('quiz-select-result').innerHTML = all
+    ? '<span style="color:var(--green2)">✓ Bravo ! Les minimums successifs sont : 1, 2, 3, 6, 7</span>'
+    : '<span style="color:var(--amber)">✗ Pas tout à fait. Cherche le minimum restant à chaque étape.</span>';
+}
+
+function showAnswerSelection() {
+  const answers = [1, 2, 3, 6, 7];
+  ['qs0','qs1','qs2','qs3','qs4'].forEach((id, i) => {
+    document.getElementById(id).value = answers[i];
+    document.getElementById(id).classList.add('correct');
+  });
+  document.getElementById('quiz-select-result').innerHTML = '<span style="color:var(--teal2)">Réponse : 1 → 2 → 3 → 6 → 7</span>';
+}
+
+// ═══════════════════════════════════════════════
+//  EXERCISES SCORING
+// ═══════════════════════════════════════════════
+let score = 0, correct = 0, attempts = 0;
+
+const exoDefaults = {
+  1: `def tri_insertion(liste):\n    # Ton code ici\n    pass\n\nliste = [5, 3, 8, 1, 9, 2]\ntri_insertion(liste)\nprint(liste)`,
+  2: `def tri_selection(liste):\n    # Ton code ici\n    pass\n\nliste = [29, 10, 14, 37, 13]\ntri_selection(liste)\nprint(liste)`,
+  3: `def fusionner(gauche, droite):\n    # Ton code ici\n    pass\n\nprint(fusionner([1, 4, 7], [2, 5, 8]))\n# Attendu: [1, 2, 4, 5, 7, 8]`,
+  4: `def tri_insertion_comptage(liste):\n    # Retourne (liste_triée, nb_échanges)\n    pass\n\nliste = [8, 6, 4, 2, 7, 1, 3]\ntriee, nb = tri_insertion_comptage(liste)\nprint("Trié :", triee)\nprint("Échanges :", nb)`,
+  5: `def tri_selection_desc(liste):\n    # Trie en ordre décroissant\n    pass\n\nliste = [15, 3, 42, 8, 23, 16]\ntri_selection_desc(liste)\nprint(liste)\n# Attendu: [42, 23, 16, 15, 8, 3]`,
+  6: `def fusionner(gauche, droite):\n    # Implémente la fusion\n    pass\n\ndef tri_fusion(liste):\n    # Implémente la récursion\n    pass\n\nliste = [38, 27, 43, 3, 9, 82]\nresultat = tri_fusion(liste)\nprint(resultat)`,
+  7: `def tri_insertion_str(liste):\n    # Fonctionne exactement comme le tri insertion\n    # Python compare les strings alphabétiquement avec < et >\n    pass\n\nfruits = ["banane", "ananas", "cerise", "abricot", "mangue"]\ntri_insertion_str(fruits)\nprint(fruits)`,
+  8: `def tri_selection_scores(liste):\n    # Trie par score décroissant (liste[i][1] = score)\n    pass\n\njoueurs = [("Alice", 92), ("Bob", 75), ("Clara", 88), ("Dave", 95), ("Eve", 61)]\ntri_selection_scores(joueurs)\nfor nom, score in joueurs:\n    print(f"{nom}: {score}")`,
+  9: `def fusionner_compter(gauche, droite):\n    # Retourne (liste_fusionnée, nb_inversions)\n    pass\n\ndef tri_fusion_inversions(liste):\n    # Retourne (liste_triée, nb_inversions)\n    pass\n\nliste = [6, 5, 4, 3, 2, 1]\ntriee, nb = tri_fusion_inversions(liste)\nprint("Triée:", triee)\nprint("Inversions:", nb)  # Attendu: 15`
+};
+
+function resetExo(n) {
+  document.getElementById('exo-' + n).value = exoDefaults[n];
+  const r = document.getElementById('res-' + n);
+  r.className = 'ex-result-box';
+  r.innerHTML = '';
+}
+
+const pointsMap = {1:10,2:10,3:10,4:20,5:20,6:20,7:30,8:30,9:30};
+const solved = new Set();
+
+async function submitExo(n, expectedArr, algo) {
+  const code = document.getElementById('exo-' + n).value;
+  const resBox = document.getElementById('res-' + n);
+  
+  resBox.className = 'ex-result-box show';
+  resBox.innerHTML = '<div class="result-title">⏳ Exécution...</div>';
+  
+  attempts++;
+  document.getElementById('attempt-count').textContent = attempts;
+  
+  try {
+    const result = await executePythonBrython(code);
+    const output = result.output || '';
+    
+    // Parse the output to check correctness
+    let outputNums;
+    try {
+      // Extract numbers from output
+      const matches = output.match(/[\d.-]+/g);
+      if (matches) outputNums = matches.map(Number);
+    } catch(e) {}
+    
+    // Check if output contains expected values
+    const expectedStr = JSON.stringify(expectedArr);
+    const outputClean = output.replace(/\s+/g,' ').trim();
+    
+    let isCorrect = false;
+    
+    // For numeric arrays
+    if (n <= 6 || n === 9) {
+      const expectedNumStr = expectedArr.join(', ');
+      const expectedBracket = '[' + expectedArr.join(', ') + ']';
+      isCorrect = outputClean.includes(expectedNumStr) || outputClean.includes(expectedBracket);
+    }
+    // For string arrays (fruits)
+    else if (n === 7) {
+      isCorrect = output.includes('abricot') && output.includes('ananas') && output.includes('banane');
+    }
+    // For tuples (scores)
+    else if (n === 8) {
+      isCorrect = output.includes('Dave') && output.split('\n')[0].includes('Dave');
+    }
+    
+    if (result.error || output.includes('❌')) {
+      resBox.className = 'ex-result-box show err';
+      resBox.innerHTML = `<div class="result-title">❌ Erreur d'exécution</div><pre>${output}</pre>`;
+    } else if (isCorrect) {
+      if (!solved.has(n)) {
+        solved.add(n);
+        correct++;
+        score += pointsMap[n];
+        document.getElementById('correct-count').textContent = correct;
+        document.getElementById('total-score').textContent = score + ' pts';
+        const pct = Math.round((solved.size / 9) * 100);
+        document.getElementById('progress-pct').textContent = pct + '%';
+        document.getElementById('progress-fill').style.width = pct + '%';
+      }
+      resBox.className = 'ex-result-box show ok';
+      resBox.innerHTML = `<div class="result-title">✅ Correct ! Bravo !</div><pre>Sortie :\n${output}</pre>`;
+    } else {
+      resBox.className = 'ex-result-box show partial';
+      resBox.innerHTML = `<div class="result-title">⚠️ Pas tout à fait...</div><pre>Ta sortie :\n${output}\nAttendu : ${JSON.stringify(expectedArr)}</pre>`;
+    }
+    
+  } catch(e) {
+    resBox.className = 'ex-result-box show err';
+    resBox.innerHTML = `<div class="result-title">❌ Erreur</div><pre>${e.message}</pre>`;
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  FILTER
+// ═══════════════════════════════════════════════
+function filterEx(filter, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  
+  document.querySelectorAll('.exercise-card').forEach(card => {
+    if (filter === 'all') {
+      card.style.display = '';
+    } else if (['easy','medium','hard'].includes(filter)) {
+      card.style.display = card.dataset.diff === filter ? '' : 'none';
+    } else {
+      card.style.display = card.dataset.algo === filter ? '' : 'none';
+    }
+  });
+}
+</script>
+
+<!-- Initialize Brython -->
+<script type="text/python">
+# Brython init — test
+from browser import window
+window['__brython_ready'] = True
+</script>
+
+</body>
+</html>
