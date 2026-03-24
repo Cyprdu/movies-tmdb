@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚽ Live Scores</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f1117;
+      color: #eee;
+      min-height: 100vh;
+      padding: 30px 20px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 1.8rem;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      font-size: 0.85rem;
+      margin-bottom: 30px;
+    }
+
+    .config {
+      display: flex;
+      gap: 10px;
+      max-width: 700px;
+      margin: 0 auto 30px auto;
+    }
+
+    .config input {
+      flex: 1;
+      padding: 10px 14px;
+      background: #1e2130;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #eee;
+      font-size: 0.9rem;
+    }
+
+    .config input:focus {
+      outline: none;
+      border-color: #4ade80;
+    }
+
+    .config button {
+      padding: 10px 18px;
+      background: #4ade80;
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+
+    .config button:hover { background: #22c55e; }
+
+    .url-form {
+      max-width: 700px;
+      margin: 0 auto 30px auto;
+      display: flex;
+      gap: 10px;
+    }
+
+    .url-form input {
+      flex: 1;
+      padding: 12px 16px;
+      background: #1e2130;
+      border: 1px solid #333;
+      border-radius: 10px;
+      color: #eee;
+      font-size: 0.95rem;
+    }
+
+    .url-form input:focus {
+      outline: none;
+      border-color: #60a5fa;
+    }
+
+    .url-form button {
+      padding: 12px 20px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.95rem;
+      white-space: nowrap;
+    }
+
+    .url-form button:hover { background: #2563eb; }
+
+    .cards {
+      max-width: 700px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .card {
+      background: #1e2130;
+      border-radius: 14px;
+      padding: 18px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid #2a2d3e;
+      transition: border-color 0.3s;
+    }
+
+    .card.live {
+      border-color: #4ade80;
+      box-shadow: 0 0 12px rgba(74, 222, 128, 0.15);
+    }
+
+    .card.finished { border-color: #374151; opacity: 0.7; }
+    .card.loading { border-color: #f59e0b; }
+    .card.error { border-color: #ef4444; }
+
+    .teams {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex: 1;
+    }
+
+    .team {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: #ddd;
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .score-box {
+      background: #0f1117;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #fff;
+      min-width: 80px;
+      text-align: center;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-weight: bold;
+      margin-left: 14px;
+      white-space: nowrap;
+    }
+
+    .badge.live { background: #166534; color: #4ade80; }
+    .badge.finished { background: #1f2937; color: #9ca3af; }
+    .badge.loading { background: #78350f; color: #f59e0b; }
+    .badge.error { background: #7f1d1d; color: #f87171; }
+
+    .status-text {
+      font-size: 0.8rem;
+      color: #6b7280;
+      margin-top: 4px;
+      text-align: center;
+    }
+
+    .empty {
+      text-align: center;
+      color: #4b5563;
+      margin-top: 60px;
+      font-size: 1rem;
+    }
+
+    .server-status {
+      text-align: center;
+      font-size: 0.8rem;
+      margin-bottom: 20px;
+    }
+
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .dot.green { background: #4ade80; }
+    .dot.red { background: #ef4444; }
+    .dot.grey { background: #6b7280; }
+  </style>
+</head>
+<body>
+
+  <h1>⚽ Live Scores</h1>
+  <p class="subtitle">Données en temps réel depuis le VPS</p>
+
+  <!-- Config IP du VPS -->
+  <div class="config">
+    <input type="text" id="vpsIp" placeholder="IP du VPS  ex: 34.163.108.61" value="34.163.108.61" />
+    <button onclick="checkHealth()">Connecter</button>
+  </div>
+
+  <div class="server-status">
+    <span class="dot grey" id="statusDot"></span>
+    <span id="statusText">Non connecté</span>
+  </div>
+
+  <!-- Ajouter une URL -->
+  <div class="url-form">
+    <input type="text" id="urlInput"
+      placeholder="https://www.livescore.com/fr/football/france/ligue-1/lyon-vs-monaco/..." />
+    <button onclick="fetchScore()">Chercher le score</button>
+  </div>
+
+  <!-- Cartes des matchs -->
+  <div class="cards" id="cards">
+    <p class="empty">Entre une URL de match pour commencer</p>
+  </div>
+
+  <script>
+    // ── Config ──
+    function getBase() {
+      const ip = document.getElementById("vpsIp").value.trim();
+      return `http://${ip}:5000`;
+    }
+
+    // ── Health check ──
+    async function checkHealth() {
+      const dot = document.getElementById("statusDot");
+      const txt = document.getElementById("statusText");
+      dot.className = "dot grey";
+      txt.textContent = "Vérification...";
+      try {
+        const res = await fetch(getBase() + "/health");
+        const data = await res.json();
+        dot.className = "dot green";
+        txt.textContent = `Connecté — ${data.matches_tracked} match(s) suivi(s)`;
+      } catch {
+        dot.className = "dot red";
+        txt.textContent = "Impossible de joindre le VPS";
+      }
+    }
+
+    // ── État local des matchs ──
+    const matchData = {};  // url → data
+
+    // ── Fetch un score ──
+    async function fetchScore() {
+      const url = document.getElementById("urlInput").value.trim();
+      if (!url) return;
+
+      // Ajoute une carte "chargement" si pas encore présente
+      if (!matchData[url]) {
+        matchData[url] = { url, home: "...", away: "...", score: null, status: "Chargement", live: false, finished: false };
+        renderCards();
+      }
+
+      try {
+        const res = await fetch(getBase() + "/score", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url })
+        });
+        const data = await res.json();
+        matchData[url] = data;
+        renderCards();
+        checkHealth();
+      } catch (e) {
+        matchData[url] = { ...matchData[url], error: "VPS injoignable", status: "Erreur" };
+        renderCards();
+      }
+
+      document.getElementById("urlInput").value = "";
+    }
+
+    // ── Rendu des cartes ──
+    function renderCards() {
+      const container = document.getElementById("cards");
+      const entries = Object.values(matchData);
+
+      if (entries.length === 0) {
+        container.innerHTML = '<p class="empty">Entre une URL de match pour commencer</p>';
+        return;
+      }
+
+      container.innerHTML = entries.map(m => {
+        let state = "loading";
+        let badgeLabel = "Chargement...";
+
+        if (m.error) {
+          state = "error";
+          badgeLabel = "Erreur";
+        } else if (m.finished) {
+          state = "finished";
+          badgeLabel = "Terminé";
+        } else if (m.live) {
+          state = "live";
+          badgeLabel = m.status || "Live";
+        } else if (m.status) {
+          state = "loading";
+          badgeLabel = m.status;
+        }
+
+        const score = m.score || (m.error ? "—" : "...");
+
+        return `
+          <div class="card ${state}">
+            <div class="teams">
+              <div class="team">${m.home || "?"}</div>
+              <div>
+                <div class="score-box">${score}</div>
+                <div class="status-text">${m.last_update || ""}</div>
+              </div>
+              <div class="team">${m.away || "?"}</div>
+            </div>
+            <span class="badge ${state}">${badgeLabel}</span>
+          </div>
+        `;
+      }).join("");
+    }
+
+    // ── Rafraîchissement auto des matchs live ──
+    setInterval(async () => {
+      const liveUrls = Object.values(matchData)
+        .filter(m => m.live && !m.finished)
+        .map(m => m.url);
+
+      for (const url of liveUrls) {
+        try {
+          const res = await fetch(getBase() + "/score", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url })
+          });
+          const data = await res.json();
+          matchData[url] = data;
+        } catch {}
+      }
+
+      if (liveUrls.length > 0) renderCards();
+    }, 10000);
+
+    // ── Enter pour soumettre ──
+    document.getElementById("urlInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") fetchScore();
+    });
+
+    // ── Check au démarrage ──
+    checkHealth();
+  </script>
+
+</body>
+</html>
