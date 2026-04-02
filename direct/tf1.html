@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -243,74 +242,72 @@
             return track.language ? track.language.toUpperCase() : 'Audio';
         }
 
-
-
-async function init() {
-    if (!checkSecurity()) return;
-    movieTitle.textContent = MOVIE_CONFIG.channel_name;
-    shaka.polyfill.installAll();
-    if (!shaka.Player.isBrowserSupported()) {
-        console.error('Navigateur non supporté par Shaka Player');
-        return;
-    }
-    player = new shaka.Player(video);
-    player.configure({
-        streaming: {
-            alwaysStreamText: true,
-            rebufferingGoal: 2,
-            bufferingGoal: 10,
-            bufferBehind: 30
-        },
-        textDisplayFactory: () => new shaka.text.UITextDisplayer(video, subtitleContainer),
-        abr: { enabled: true },
-        manifest: {
-            hls: {
-                ignoreTextStreamFailures: true
+        async function init() {
+            if (!checkSecurity()) return;
+            movieTitle.textContent = MOVIE_CONFIG.channel_name;
+            shaka.polyfill.installAll();
+            if (!shaka.Player.isBrowserSupported()) {
+                console.error('Navigateur non supporté par Shaka Player');
+                return;
             }
-        }
-    });
-    player.addEventListener('error', (event) => {
-        console.error('Erreur Shaka:', event.detail);
-    });
-    try {
-        let finalUrl = MOVIE_CONFIG.m3u8_url;
-        try {
-            const resp = await fetch(MOVIE_CONFIG.m3u8_url, {
-                method: 'HEAD',
-                redirect: 'follow'
+            player = new shaka.Player(video);
+            player.configure({
+                streaming: {
+                    alwaysStreamText: true,
+                    rebufferingGoal: 2,
+                    bufferingGoal: 10,
+                    bufferBehind: 30
+                },
+                textDisplayFactory: () => new shaka.text.UITextDisplayer(video, subtitleContainer),
+                abr: { enabled: true },
+                manifest: {
+                    hls: {
+                        ignoreTextStreamFailures: true
+                    }
+                }
             });
-            if (resp.ok && resp.url && resp.url !== MOVIE_CONFIG.m3u8_url) {
-                finalUrl = resp.url;
-                console.log('URL résolue:', finalUrl);
+            player.addEventListener('error', (event) => {
+                console.error('Erreur Shaka:', event.detail);
+            });
+            try {
+                let finalUrl = MOVIE_CONFIG.m3u8_url;
+                try {
+                    const resp = await fetch(MOVIE_CONFIG.m3u8_url, {
+                        method: 'HEAD',
+                        redirect: 'follow'
+                    });
+                    if (resp.ok && resp.url && resp.url !== MOVIE_CONFIG.m3u8_url) {
+                        finalUrl = resp.url;
+                        console.log('URL résolue:', finalUrl);
+                    }
+                } catch (fetchErr) {
+                    console.warn('Résolution URL échouée, tentative avec URL d\'origine:', fetchErr);
+                }
+                await player.load(finalUrl);
+                playerLoaded = true;
+                loadState();
+                showUI();
+                const seekRange = player.seekRange();
+                if (seekRange && seekRange.end > 0) {
+                    video.currentTime = seekRange.end;
+                }
+                video.play().catch(e => console.warn('Autoplay bloqué:', e));
+                setTimeout(() => {
+                    const savedSub = localStorage.getItem(getStorageKey('lang_sub'));
+                    const savedAudio = localStorage.getItem(getStorageKey('lang_audio'));
+                    const savedSubsVisible = localStorage.getItem(getStorageKey('subs_visible'));
+                    if (savedAudio) player.selectAudioLanguage(savedAudio);
+                    else player.selectAudioLanguage('fr');
+                    if (savedSub) player.selectTextLanguage(savedSub);
+                    else player.selectTextLanguage('fr');
+                    if (savedSubsVisible === 'false') player.setTextTrackVisibility(false);
+                    else player.setTextTrackVisibility(true);
+                }, 500);
+            } catch (e) {
+                console.error('Erreur de chargement du flux M3U8:', e);
+                playerLoaded = false;
             }
-        } catch (fetchErr) {
-            console.warn('Résolution URL échouée, tentative avec URL d\'origine:', fetchErr);
         }
-        await player.load(finalUrl);
-        playerLoaded = true;
-        loadState();
-        showUI();
-        const seekRange = player.seekRange();
-        if (seekRange && seekRange.end > 0) {
-            video.currentTime = seekRange.end;
-        }
-        video.play().catch(e => console.warn('Autoplay bloqué:', e));
-        setTimeout(() => {
-            const savedSub = localStorage.getItem(getStorageKey('lang_sub'));
-            const savedAudio = localStorage.getItem(getStorageKey('lang_audio'));
-            const savedSubsVisible = localStorage.getItem(getStorageKey('subs_visible'));
-            if (savedAudio) player.selectAudioLanguage(savedAudio);
-            else player.selectAudioLanguage('fr');
-            if (savedSub) player.selectTextLanguage(savedSub);
-            else player.selectTextLanguage('fr');
-            if (savedSubsVisible === 'false') player.setTextTrackVisibility(false);
-            else player.setTextTrackVisibility(true);
-        }, 500);
-    } catch (e) {
-        console.error('Erreur de chargement du flux M3U8:', e);
-        playerLoaded = false;
-    }
-}
 
         window.addEventListener('keydown', (e) => {
             if (!playerLoaded) return;
@@ -487,18 +484,15 @@ async function init() {
 
             if (id === 'menu-subs') {
                 menu.innerHTML = '<div class="menu-header">Sous-titres & Audio</div>';
-
                 const subsSection = document.createElement('div');
                 subsSection.className = 'menu-section-title';
                 subsSection.innerText = 'Sous-titres';
                 menu.appendChild(subsSection);
-
                 const offBtn = document.createElement('button');
                 offBtn.innerText = "Désactivé";
                 if (!player.isTextTrackVisible()) offBtn.className = 'active';
                 offBtn.onclick = () => { player.setTextTrackVisibility(false); saveState(); closeAllMenus(); };
                 menu.appendChild(offBtn);
-
                 const textTracks = player.getTextTracks();
                 if (textTracks && textTracks.length > 0) {
                     textTracks.forEach(track => {
@@ -511,16 +505,13 @@ async function init() {
                         menu.appendChild(btn);
                     });
                 }
-
                 const hr = document.createElement('div');
                 hr.className = 'menu-separator';
                 menu.appendChild(hr);
-
                 const audioSection = document.createElement('div');
                 audioSection.className = 'menu-section-title';
                 audioSection.innerText = 'Audio';
                 menu.appendChild(audioSection);
-
                 const audioTracks = player.getVariantTracks();
                 const audioLangs = [...new Set(audioTracks.map(t => t.language))];
                 audioLangs.forEach(lang => {
@@ -536,23 +527,19 @@ async function init() {
 
             } else if (id === 'menu-settings') {
                 menu.innerHTML = '<div class="menu-header">Qualité de la vidéo</div>';
-
-                // Option Auto en premier
                 const autoBtn = document.createElement('button');
                 autoBtn.innerHTML = `Automatique<span class="menu-subtext">Qualité adaptée à votre connexion</span>`;
                 const abrEnabled = player.getConfiguration().abr.enabled;
                 if (abrEnabled) autoBtn.className = 'active';
                 autoBtn.onclick = () => { player.configure({ abr: { enabled: true } }); closeAllMenus(); };
                 menu.appendChild(autoBtn);
-
                 const tracks = player.getVariantTracks().sort((a, b) => b.height - a.height);
                 const seen = new Set();
                 tracks.forEach(t => {
                     if (t.height && !seen.has(t.height)) {
                         seen.add(t.height);
                         const btn = document.createElement('button');
-                        let label = "Bonne";
-                        let desc = "Consomme environ 0,38 Go par heure";
+                        let label, desc;
                         if (t.height >= 1080) { label = "Optimale (1080p)"; desc = "Consomme environ 1,17 Go par heure"; }
                         else if (t.height >= 720) { label = "Très bonne (720p)"; desc = "Consomme environ 0,86 Go par heure"; }
                         else if (t.height >= 480) { label = `Bonne (${t.height}p)`; desc = "Consomme environ 0,38 Go par heure"; }
