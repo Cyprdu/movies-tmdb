@@ -1,5 +1,4 @@
 
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -46,21 +45,14 @@
         .center-btn svg path[fill="#fff"],.center-btn svg rect[fill="#fff"]{fill:currentColor}
         .skip-btn{width:50px;height:50px}
         .bottom-bar{padding:0 40px 35px 40px;background:linear-gradient(to top,rgb(0 0 0 / .9) 0%,transparent 100%);display:flex;flex-direction:column;gap:10px;pointer-events:auto;z-index:100}
-        
-        /* Modifs Badge Live & Décalage */
-        .time-display{font-size:14px;color:#ccc;font-weight:500;margin-left:2px; display:flex; align-items:center; gap:10px;}
-        .live-badge {background-color: #E50914; color: #fff; padding: 2px 8px; border-radius: 4px; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s ease;}
-        .live-badge::before {content: ''; display: inline-block; width: 6px; height: 6px; background-color: #fff; border-radius: 50%; margin-right: 6px; animation: pulse 1.5s infinite;}
-        
-        /* État "Pas en direct" (grisé) */
-        .live-badge.not-live {background-color: rgb(255 255 255 / .2); color: #aaa; cursor: pointer;}
-        .live-badge.not-live::before {animation: none; background-color: #aaa;}
-        .live-badge.not-live:hover {background-color: rgb(255 255 255 / .3); color: #fff; transform: scale(1.05);}
-        
-        .live-offset {font-variant-numeric: tabular-nums; font-family: monospace; font-size: 13px;}
-        
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-
+        .time-display{font-size:14px;color:#ccc;font-weight:500;margin-left:2px;display:flex;align-items:center;gap:10px;}
+        .live-badge{background-color:#E50914;color:#fff;padding:2px 8px;border-radius:4px;font-weight:700;font-size:13px;letter-spacing:0.5px;display:inline-flex;align-items:center;justify-content:center;transition:all 0.2s ease;}
+        .live-badge::before{content:'';display:inline-block;width:6px;height:6px;background-color:#fff;border-radius:50%;margin-right:6px;animation:pulse 1.5s infinite;}
+        .live-badge.not-live{background-color:rgb(255 255 255 / .2);color:#aaa;cursor:pointer;}
+        .live-badge.not-live::before{animation:none;background-color:#aaa;}
+        .live-badge.not-live:hover{background-color:rgb(255 255 255 / .3);color:#fff;transform:scale(1.05);}
+        .live-offset{font-variant-numeric:tabular-nums;font-family:monospace;font-size:13px;}
+        @keyframes pulse{0%{opacity:1;}50%{opacity:0.3;}100%{opacity:1;}}
         .seek-container{width:100%;height:4px;background:rgb(255 255 255 / .25);cursor:pointer;position:relative;border-radius:2px;transition:height 0.15s}
         .seek-container:hover{height:6px}
         .seek-fill{height:100%;background:#fff;width:0%;border-radius:2px;position:relative}
@@ -83,12 +75,12 @@
         <h1>Lecture impossible</h1>
         <p>Votre navigateur ou environnement n'est pas sécurisé pour la lecture de ce contenu.</p>
     </div>
-    
+
     <div id="player-container">
         <video id="video"></video>
         <div id="subtitle-container"></div>
         <div id="click-layer"></div>
-        
+
         <div id="ui-layer">
             <div class="top-bar">
                 <div class="top-left"></div>
@@ -151,11 +143,8 @@
 
     <script>
         const MOVIE_CONFIG = {
-            "channel_name": "France 4",
-            "mpd_url": "https://raw.githubusercontent.com/schumijo/iptv/main/playlists/francetv/france4.m3u8",
-            "drm_key": {
-              "09d1564bfead47c38fdf5684ae475a2e":"7ad46ae1aa9dc334cd45f072820a3e71"
-            }
+            "channel_name": "France 2",
+            "m3u8_url": "https://raw.githubusercontent.com/schumijo/iptv/main/playlists/francetv/france4.m3u8"
         };
 
         const body = document.getElementById('main-body');
@@ -171,7 +160,6 @@
         const subtitleContainer = document.getElementById('subtitle-container');
         const securityWarning = document.getElementById('security-warning');
         const movieTitle = document.getElementById('movie-title');
-        
         const liveBadgeBtn = document.getElementById('live-badge-btn');
         const liveOffsetText = document.getElementById('live-offset-text');
 
@@ -185,11 +173,10 @@
             muted: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="25" fill="none" viewBox="0 0 24 25"><path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 20V4L8.115 7.934A.5.5 0 0 1 7.867 8H3.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h4.367a.5.5 0 0 1 .248.066L15 20zm5-17L4 21"/><path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.11 7.014L4.08 23.922"/></svg>',
             low: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 20V4L8.115 7.934A.5.5 0 0 1 7.867 8H3.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h4.367a.5.5 0 0 1 .248.066L15 20z"/></svg>',
             medium: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 20V4L8.115 7.934A.5.5 0 0 1 7.867 8H3.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h4.367a.5.5 0 0 1 .248.066L15 20z"/><path fill="#fff" d="M17.5 12a2 2 0 0 1-2 2v-4a2 2 0 0 1 2 2z"/></svg>',
-            high: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 20V4L8.115 7.934A.5.5 0 0 1 7.867 8H3.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h4.367a.5.5 0 0 1 .248.066L15 20z"/><path fill="#fff" d="M17.5 12a2 2 0 0 1-2 2v-4a2 2 0 0 1 2 2z"/><path fill="#fff" fill-rule="evenodd" d="M18.536 7.08a.75.75 0 0 1 1.053.125A7.72 7.72 0 0 1 21.25 12a7.72 7.72 0 0 1-1.661 4.795.75.75 0 1 1-1.178-.929A6.22 6.22 0 0 0 19.75 12c0-1.46-.5-2.802-1.339-3.866a.75.75 0 0 1 .125-1.053z" clip-rule="evenodd"/><path fill="#fff" fill-rule="evenodd" d="M20.524 4.438a.75.75 0 0 1 1.055.103 11.705 11.705 0 0 1 2.671 7.46c0 2.83-1.002 5.43-2.67 7.458a.75.75 0 1 1-1.16-.953A10.205 10.205 0 0 0 22.75 12a10.2 10.2 0 0 0-2.33-6.506.75.75 0 0 1 .104-1.056z" clip-rule="evenodd"/></svg>',
+            high: '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 20V4L8.115 7.934A.5.5 0 0 1 7.867 8H3.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h4.367a.5.5 0 0 1 .248.066L15 20z"/><path fill="#fff" d="M17.5 12a2 2 0 0 1-2 2v-4a2 2 0 0 1 2 2z"/><path fill="#fff" fill-rule="evenodd" d="M18.536 7.08a.75.75 0 0 1 1.053.125A7.72 7.72 0 0 1 21.25 12a7.72 7.72 0 0 1-1.661 4.795.75.75 0 1 1-1.178-.929A6.22 6.22 0 0 0 19.75 12c0-1.46-.5-2.802-1.339-3.866a.75.75 0 0 1 .125-1.053z" clip-rule="evenodd"/></svg>',
             max: '<svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" fill="none" viewBox="0 0 25 24"><path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 20V4L8.115 7.934A.5.5 0 0 1 7.867 8H3.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h4.367a.5.5 0 0 1 .248.066L15 20z"/><path fill="#fff" d="M17.5 12a2 2 0 0 1-2 2v-4a2 2 0 0 1 2 2z"/><path fill="#fff" fill-rule="evenodd" d="M18.536 7.08a.75.75 0 0 1 1.053.125A7.72 7.72 0 0 1 21.25 12a7.72 7.72 0 0 1-1.661 4.795.75.75 0 1 1-1.178-.929A6.22 6.22 0 0 0 19.75 12c0-1.46-.5-2.802-1.339-3.866a.75.75 0 0 1 .125-1.053z" clip-rule="evenodd"/><path fill="#fff" fill-rule="evenodd" d="M20.524 4.438a.75.75 0 0 1 1.055.103 11.705 11.705 0 0 1 2.671 7.46c0 2.83-1.002 5.43-2.67 7.458a.75.75 0 1 1-1.16-.953A10.205 10.205 0 0 0 22.75 12a10.2 10.2 0 0 0-2.33-6.506.75.75 0 0 1 .104-1.056z" clip-rule="evenodd"/></svg>'
         };
 
-        // Formater le temps de décalage au format -X:XX:XX
         function formatOffset(seconds) {
             if (seconds >= 0) return "";
             const absSec = Math.abs(Math.floor(seconds));
@@ -261,40 +248,69 @@
             movieTitle.textContent = MOVIE_CONFIG.channel_name;
 
             shaka.polyfill.installAll();
-            if (shaka.Player.isBrowserSupported()) {
-                player = new shaka.Player(video);
-                player.configure({
-                    streaming: { alwaysStreamText: true },
-                    textDisplayFactory: () => new shaka.text.UITextDisplayer(video, subtitleContainer),
-                    drm: { clearKeys: MOVIE_CONFIG.drm_key },
-                    abr: { enabled: true }
-                });
+            if (!shaka.Player.isBrowserSupported()) {
+                console.error('Navigateur non supporté par Shaka Player');
+                return;
+            }
 
-                try {
-                    await player.load(MOVIE_CONFIG.mpd_url);
-                    playerLoaded = true;
-                    loadState();
-                    showUI();
+            player = new shaka.Player(video);
 
-                    setTimeout(() => {
-                        const savedSub = localStorage.getItem(getStorageKey('lang_sub'));
-                        const savedAudio = localStorage.getItem(getStorageKey('lang_audio'));
-                        const savedSubsVisible = localStorage.getItem(getStorageKey('subs_visible'));
-
-                        if (savedAudio) player.selectAudioLanguage(savedAudio);
-                        else player.selectAudioLanguage('fr');
-
-                        if (savedSub) player.selectTextLanguage(savedSub);
-                        else player.selectTextLanguage('fr');
-
-                        if (savedSubsVisible === 'false') player.setTextTrackVisibility(false);
-                        else player.setTextTrackVisibility(true);
-                    }, 500);
-
-                } catch (e) {
-                    console.error('Erreur de chargement:', e);
-                    playerLoaded = false;
+            // Configuration pour HLS/M3U8 sans DRM
+            player.configure({
+                streaming: {
+                    alwaysStreamText: true,
+                    // Rejoindre le live edge automatiquement
+                    rebufferingGoal: 2,
+                    bufferingGoal: 10,
+                    bufferBehind: 30
+                },
+                textDisplayFactory: () => new shaka.text.UITextDisplayer(video, subtitleContainer),
+                abr: { enabled: true },
+                manifest: {
+                    hls: {
+                        // Ignorer les erreurs de parsing sur certains tags HLS non standard
+                        ignoreTextStreamFailures: true
+                    }
                 }
+            });
+
+            // Gestion des erreurs
+            player.addEventListener('error', (event) => {
+                console.error('Erreur Shaka:', event.detail);
+            });
+
+            try {
+                await player.load(MOVIE_CONFIG.m3u8_url);
+                playerLoaded = true;
+                loadState();
+                showUI();
+
+                // Aller au live edge dès le chargement
+                const seekRange = player.seekRange();
+                if (seekRange && seekRange.end > 0) {
+                    video.currentTime = seekRange.end;
+                }
+
+                video.play().catch(e => console.warn('Autoplay bloqué:', e));
+
+                setTimeout(() => {
+                    const savedSub = localStorage.getItem(getStorageKey('lang_sub'));
+                    const savedAudio = localStorage.getItem(getStorageKey('lang_audio'));
+                    const savedSubsVisible = localStorage.getItem(getStorageKey('subs_visible'));
+
+                    if (savedAudio) player.selectAudioLanguage(savedAudio);
+                    else player.selectAudioLanguage('fr');
+
+                    if (savedSub) player.selectTextLanguage(savedSub);
+                    else player.selectTextLanguage('fr');
+
+                    if (savedSubsVisible === 'false') player.setTextTrackVisibility(false);
+                    else player.setTextTrackVisibility(true);
+                }, 500);
+
+            } catch (e) {
+                console.error('Erreur de chargement du flux M3U8:', e);
+                playerLoaded = false;
             }
         }
 
@@ -404,7 +420,6 @@
             saveState();
         });
 
-        // Clique sur le badge pour revenir au direct
         liveBadgeBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             if (!playerLoaded || !player) return;
@@ -416,22 +431,16 @@
             }
         });
 
-        // Mise à jour continue de la barre et du statut direct
         video.ontimeupdate = () => {
             if (!playerLoaded || !player) return;
             const seekRange = player.seekRange();
             if (seekRange) {
                 const liveEdge = seekRange.end;
                 const current = video.currentTime;
-                
-                // Barre de progression
                 const duration = liveEdge - seekRange.start;
                 const currentPos = current - seekRange.start;
                 seekFill.style.width = duration > 0 ? (currentPos / duration) * 100 + "%" : "100%";
-
-                // Gestion du badge "Direct"
                 const offset = current - liveEdge;
-                // On donne 15 secondes de marge (buffer) pour toujours considérer qu'on est au direct
                 if (offset > -15) {
                     liveBadgeBtn.classList.remove('not-live');
                     liveOffsetText.innerText = "";
@@ -480,7 +489,7 @@
 
             if (id === 'menu-subs') {
                 menu.innerHTML = '<div class="menu-header">Sous-titres & Audio</div>';
-                
+
                 const subsSection = document.createElement('div');
                 subsSection.className = 'menu-section-title';
                 subsSection.innerText = 'Sous-titres';
@@ -489,11 +498,7 @@
                 const offBtn = document.createElement('button');
                 offBtn.innerText = "Désactivé";
                 if (!player.isTextTrackVisible()) offBtn.className = 'active';
-                offBtn.onclick = () => {
-                    player.setTextTrackVisibility(false);
-                    saveState();
-                    closeAllMenus();
-                };
+                offBtn.onclick = () => { player.setTextTrackVisibility(false); saveState(); closeAllMenus(); };
                 menu.appendChild(offBtn);
 
                 const textTracks = player.getTextTracks();
@@ -503,15 +508,8 @@
                         const langName = track.language === 'fr' ? 'Français' : track.language === 'en' ? 'English' : track.language.toUpperCase();
                         btn.innerText = langName;
                         const currentTrack = player.isTextTrackVisible() ? player.getTextLanguages()[0] : null;
-                        if (player.isTextTrackVisible() && currentTrack === track.language) {
-                            btn.className = 'active';
-                        }
-                        btn.onclick = () => {
-                            player.selectTextLanguage(track.language);
-                            player.setTextTrackVisibility(true);
-                            saveState();
-                            closeAllMenus();
-                        };
+                        if (player.isTextTrackVisible() && currentTrack === track.language) btn.className = 'active';
+                        btn.onclick = () => { player.selectTextLanguage(track.language); player.setTextTrackVisibility(true); saveState(); closeAllMenus(); };
                         menu.appendChild(btn);
                     });
                 }
@@ -527,32 +525,28 @@
 
                 const audioTracks = player.getVariantTracks();
                 const audioLangs = [...new Set(audioTracks.map(t => t.language))];
-                
                 audioLangs.forEach(lang => {
                     const btn = document.createElement('button');
-                    let langName;
-                    
-                    if (audioLangs.length === 1) {
-                        langName = 'Piste Originale';
-                    } else {
-                        const track = audioTracks.find(t => t.language === lang);
-                        langName = getAudioTrackDisplayName(track);
-                    }
-
+                    const track = audioTracks.find(t => t.language === lang);
+                    const langName = audioLangs.length === 1 ? 'Piste Originale' : getAudioTrackDisplayName(track);
                     btn.innerText = langName;
                     const current = audioTracks.find(t => t.active);
                     if (current && current.language === lang) btn.className = 'active';
-                    
-                    btn.onclick = () => {
-                        player.selectAudioLanguage(lang);
-                        saveState();
-                        closeAllMenus();
-                    };
+                    btn.onclick = () => { player.selectAudioLanguage(lang); saveState(); closeAllMenus(); };
                     menu.appendChild(btn);
                 });
 
             } else if (id === 'menu-settings') {
                 menu.innerHTML = '<div class="menu-header">Qualité de la vidéo</div>';
+
+                // Option Auto en premier
+                const autoBtn = document.createElement('button');
+                autoBtn.innerHTML = `Automatique<span class="menu-subtext">Qualité adaptée à votre connexion</span>`;
+                const abrEnabled = player.getConfiguration().abr.enabled;
+                if (abrEnabled) autoBtn.className = 'active';
+                autoBtn.onclick = () => { player.configure({ abr: { enabled: true } }); closeAllMenus(); };
+                menu.appendChild(autoBtn);
+
                 const tracks = player.getVariantTracks().sort((a, b) => b.height - a.height);
                 const seen = new Set();
                 tracks.forEach(t => {
@@ -561,20 +555,13 @@
                         const btn = document.createElement('button');
                         let label = "Bonne";
                         let desc = "Consomme environ 0,38 Go par heure";
-                        if (t.height >= 790) {
-                            label = "Optimale";
-                            desc = "Consomme environ 1,17 Go par heure";
-                        } else if (t.height === 720) {
-                            label = "Très bonne";
-                            desc = "Consomme environ 0,86 Go par heure";
-                        }
+                        if (t.height >= 1080) { label = "Optimale (1080p)"; desc = "Consomme environ 1,17 Go par heure"; }
+                        else if (t.height >= 720) { label = "Très bonne (720p)"; desc = "Consomme environ 0,86 Go par heure"; }
+                        else if (t.height >= 480) { label = `Bonne (${t.height}p)`; desc = "Consomme environ 0,38 Go par heure"; }
+                        else { label = `Économique (${t.height}p)`; desc = "Consomme moins de données"; }
                         btn.innerHTML = `${label}<span class="menu-subtext">${desc}</span>`;
-                        if (t.active) btn.className = 'active';
-                        btn.onclick = () => {
-                            player.configure({ abr: { enabled: false } });
-                            player.selectVariantTrack(t, true);
-                            closeAllMenus();
-                        };
+                        if (t.active && !abrEnabled) btn.className = 'active';
+                        btn.onclick = () => { player.configure({ abr: { enabled: false } }); player.selectVariantTrack(t, true); closeAllMenus(); };
                         menu.appendChild(btn);
                     }
                 });
@@ -582,23 +569,20 @@
         }
 
         document.addEventListener('DOMContentLoaded', init);
-        
+
         document.getElementById('center-play-btn').addEventListener('click', (e) => { e.stopPropagation(); togglePlay(); });
         document.getElementById('skip-back').addEventListener('click', (e) => { e.stopPropagation(); skip(-10); });
         document.getElementById('skip-forward').addEventListener('click', (e) => { e.stopPropagation(); skip(10); });
-        
         document.getElementById('subs-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleMenu('menu-subs'); });
         document.getElementById('settings-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleMenu('menu-settings'); });
-        
         document.getElementById('pip-btn').addEventListener('click', (e) => {
             e.stopPropagation();
             if (!playerLoaded) return;
             if (document.pictureInPictureElement) document.exitPictureInPicture();
             else video.requestPictureInPicture();
         });
-        
         document.getElementById('fullscreen-btn').addEventListener('click', (e) => { e.stopPropagation(); toggleFullscreen(); });
-        
+
         updateVolumeIcon();
     </script>
 </body>
