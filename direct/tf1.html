@@ -243,76 +243,74 @@
             return track.language ? track.language.toUpperCase() : 'Audio';
         }
 
-        async function init() {
-            if (!checkSecurity()) return;
-            movieTitle.textContent = MOVIE_CONFIG.channel_name;
 
-            shaka.polyfill.installAll();
-            if (!shaka.Player.isBrowserSupported()) {
-                console.error('Navigateur non supporté par Shaka Player');
-                return;
-            }
 
-            player = new shaka.Player(video);
-
-            // Configuration pour HLS/M3U8 sans DRM
-            player.configure({
-                streaming: {
-                    alwaysStreamText: true,
-                    // Rejoindre le live edge automatiquement
-                    rebufferingGoal: 2,
-                    bufferingGoal: 10,
-                    bufferBehind: 30
-                },
-                textDisplayFactory: () => new shaka.text.UITextDisplayer(video, subtitleContainer),
-                abr: { enabled: true },
-                manifest: {
-                    hls: {
-                        // Ignorer les erreurs de parsing sur certains tags HLS non standard
-                        ignoreTextStreamFailures: true
-                    }
-                }
-            });
-
-            // Gestion des erreurs
-            player.addEventListener('error', (event) => {
-                console.error('Erreur Shaka:', event.detail);
-            });
-
-            try {
-                await player.load(MOVIE_CONFIG.m3u8_url);
-                playerLoaded = true;
-                loadState();
-                showUI();
-
-                // Aller au live edge dès le chargement
-                const seekRange = player.seekRange();
-                if (seekRange && seekRange.end > 0) {
-                    video.currentTime = seekRange.end;
-                }
-
-                video.play().catch(e => console.warn('Autoplay bloqué:', e));
-
-                setTimeout(() => {
-                    const savedSub = localStorage.getItem(getStorageKey('lang_sub'));
-                    const savedAudio = localStorage.getItem(getStorageKey('lang_audio'));
-                    const savedSubsVisible = localStorage.getItem(getStorageKey('subs_visible'));
-
-                    if (savedAudio) player.selectAudioLanguage(savedAudio);
-                    else player.selectAudioLanguage('fr');
-
-                    if (savedSub) player.selectTextLanguage(savedSub);
-                    else player.selectTextLanguage('fr');
-
-                    if (savedSubsVisible === 'false') player.setTextTrackVisibility(false);
-                    else player.setTextTrackVisibility(true);
-                }, 500);
-
-            } catch (e) {
-                console.error('Erreur de chargement du flux M3U8:', e);
-                playerLoaded = false;
+async function init() {
+    if (!checkSecurity()) return;
+    movieTitle.textContent = MOVIE_CONFIG.channel_name;
+    shaka.polyfill.installAll();
+    if (!shaka.Player.isBrowserSupported()) {
+        console.error('Navigateur non supporté par Shaka Player');
+        return;
+    }
+    player = new shaka.Player(video);
+    player.configure({
+        streaming: {
+            alwaysStreamText: true,
+            rebufferingGoal: 2,
+            bufferingGoal: 10,
+            bufferBehind: 30
+        },
+        textDisplayFactory: () => new shaka.text.UITextDisplayer(video, subtitleContainer),
+        abr: { enabled: true },
+        manifest: {
+            hls: {
+                ignoreTextStreamFailures: true
             }
         }
+    });
+    player.addEventListener('error', (event) => {
+        console.error('Erreur Shaka:', event.detail);
+    });
+    try {
+        let finalUrl = MOVIE_CONFIG.m3u8_url;
+        try {
+            const resp = await fetch(MOVIE_CONFIG.m3u8_url, {
+                method: 'HEAD',
+                redirect: 'follow'
+            });
+            if (resp.ok && resp.url && resp.url !== MOVIE_CONFIG.m3u8_url) {
+                finalUrl = resp.url;
+                console.log('URL résolue:', finalUrl);
+            }
+        } catch (fetchErr) {
+            console.warn('Résolution URL échouée, tentative avec URL d\'origine:', fetchErr);
+        }
+        await player.load(finalUrl);
+        playerLoaded = true;
+        loadState();
+        showUI();
+        const seekRange = player.seekRange();
+        if (seekRange && seekRange.end > 0) {
+            video.currentTime = seekRange.end;
+        }
+        video.play().catch(e => console.warn('Autoplay bloqué:', e));
+        setTimeout(() => {
+            const savedSub = localStorage.getItem(getStorageKey('lang_sub'));
+            const savedAudio = localStorage.getItem(getStorageKey('lang_audio'));
+            const savedSubsVisible = localStorage.getItem(getStorageKey('subs_visible'));
+            if (savedAudio) player.selectAudioLanguage(savedAudio);
+            else player.selectAudioLanguage('fr');
+            if (savedSub) player.selectTextLanguage(savedSub);
+            else player.selectTextLanguage('fr');
+            if (savedSubsVisible === 'false') player.setTextTrackVisibility(false);
+            else player.setTextTrackVisibility(true);
+        }, 500);
+    } catch (e) {
+        console.error('Erreur de chargement du flux M3U8:', e);
+        playerLoaded = false;
+    }
+}
 
         window.addEventListener('keydown', (e) => {
             if (!playerLoaded) return;
