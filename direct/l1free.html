@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecteur de flux DASH sécurisé</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.6/shaka-player.compiled.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 40px;
+            margin: 0;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        #video-container {
+            width: 80%;
+            max-width: 900px;
+            background-color: black;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        video {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Lecteur Vidéo (OQEE)</h1>
+    
+    <div id="video-container">
+        <video id="videoPlayer" controls autoplay></video>
+    </div>
+
+    <script>
+        const manifestUri = 'https://api-proxad.oqee.net/playlist/v1/live/1776/1/live.mpd';
+
+        async function initApp() {
+            // Installer les polyfills nécessaires pour assurer la compatibilité du navigateur
+            shaka.polyfill.installAll();
+
+            // Vérifier si le navigateur supporte la lecture de ce type de contenu
+            if (shaka.Player.isBrowserSupported()) {
+                initPlayer();
+            } else {
+                console.error('Votre navigateur ne supporte pas Shaka Player.');
+                alert('Votre navigateur ne supporte pas la lecture de ce flux.');
+            }
+        }
+
+        async function initPlayer() {
+            const video = document.getElementById('videoPlayer');
+            const player = new shaka.Player(video);
+
+            // Écouteur d'erreurs global
+            player.addEventListener('error', onErrorEvent);
+
+            // Configuration des clés DRM (ClearKey) fournies
+            player.configure({
+                drm: {
+                    clearKeys: {
+                        "32115d8098f2e58086bdbd81cbfcd0df": "967183d459f167d640d8cc5034ce4065",
+                        "16775bdb8f33d9cd02e8fb00e5875485": "29edf116d26eb471c4d217b6f7bedab4",
+                        "e5d70354edf3f8ca2cc9854308ce660e": "e482c9cbbb49d4c74a00e87592c771b5"
+                    }
+                }
+            });
+
+            try {
+                // Chargement du flux vidéo
+                await player.load(manifestUri);
+                console.log('Le flux a été chargé et décrypté avec succès !');
+            } catch (e) {
+                onError(e);
+            }
+        }
+
+        function onErrorEvent(event) {
+            onError(event.detail);
+        }
+
+        function onError(error) {
+            console.error('Erreur du lecteur:', error.code, error);
+        }
+
+        // Lancer l'initialisation quand la page est chargée
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
