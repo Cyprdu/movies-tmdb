@@ -1,0 +1,77 @@
+# Page HTML – Lecture MPD DRM en plein écran sans contrôles
+
+```html
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Player Fullscreen DRM</title>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.7.11/shaka-player.compiled.js"></script>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: black;
+    }
+
+    video {
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      background: black;
+    }
+  </style>
+</head>
+<body>
+
+<video id="video" autoplay muted playsinline></video>
+
+<script>
+  async function initPlayer() {
+    const video = document.getElementById('video');
+
+    const player = new shaka.Player(video);
+
+    player.configure({
+      drm: {
+        clearKeys: {
+          'd99effb979a4482a82dbab8576bca393': 'b85774149e9c4dd88767bd42fec27e79'
+        }
+      }
+    });
+
+    try {
+      await player.load('https://dice-live-eu.cdnfastly.endeavorstreaming.net/1778353830_s3TenFQW5Jly7tst_87d1b4da3505d4a7a746e0fbbb1057e420d65917/id=a5a55d34-e252-4484-872a-8c1472741378/data=dWlkPTRiaG9nUHw3NGM1Y2YxNS04ZDMzLTQxZWEtYmJiYS03OTVjZTYwNzQ4OGYmaXA9MmEwMTplMGE6ZWExOjI3MjA6YjU0OTo1ODE1Ojg1NWE6NTZhOCZleHA9MTc3ODM1Mzg1OSZlaWQ9Mjk2MzczJmNpZD1kY2UubGlndWV1biZvaWQ9MzQ2JnR5cGU9TElWRQ/dash/live/2019645~/dash/live/2019645/296373-321072/manifest-d.mpd');
+
+      // Passage automatique en plein écran
+      if (video.requestFullscreen) {
+        video.requestFullscreen();
+      }
+
+      console.log('Vidéo chargée');
+    } catch (error) {
+      console.error('Erreur chargement vidéo:', error);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', initPlayer);
+</script>
+
+</body>
+</html>
+```
+
+## Fonctionnalités
+
+* Lecture DASH `.mpd`
+* Support DRM ClearKey
+* Plein écran automatique
+* Aucun contrôle visible
+* Lecture automatique
+* Vidéo en plein écran total
