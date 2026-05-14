@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SportStream — Catalogue</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface2: #1a1a26;
+      --border: rgba(255,255,255,0.07);
+      --accent: #e8ff00;
+      --accent2: #00d4ff;
+      --live: #ff3b3b;
+      --text: #f0f0f5;
+      --muted: #7070a0;
+      --card-radius: 10px;
+      --scrollbar-w: 4px;
+    }
+    * { margin:0; padding:0; box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; min-height:100vh; overflow-x:hidden; }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width:var(--scrollbar-w); height:var(--scrollbar-w); }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.15); border-radius:2px; }
+    
+    /* NAV */
+    nav { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:0 40px; height:64px; background:linear-gradient(to bottom,rgba(10,10,15,0.98) 0%,rgba(10,10,15,0.7) 100%); backdrop-filter:blur(12px); border-bottom:1px solid var(--border); }
+    .nav-logo { display:flex; align-items:center; gap:10px; text-decoration:none; }
+    .nav-logo-mark { width:32px; height:32px; background:var(--accent); clip-path:polygon(0 0,100% 0,100% 70%,70% 100%,0 100%); display:flex; align-items:center; justify-content:center; }
+    .nav-logo-mark svg { width:18px; height:18px; fill:#000; }
+    .nav-logo-text { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:2px; color:var(--text); }
+    .nav-logo-text span { color:var(--accent); }
+    .nav-links { display:flex; align-items:center; gap:6px; }
+    .nav-link { padding:7px 14px; border-radius:6px; font-size:13px; font-weight:600; color:var(--muted); cursor:pointer; transition:all .2s; text-decoration:none; white-space:nowrap; }
+    .nav-link:hover, .nav-link.active { color:var(--text); background:var(--surface2); }
+    .nav-link.active { color:var(--accent); }
+    .nav-right { display:flex; align-items:center; gap:12px; }
+    .nav-search { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px 14px; font-size:13px; color:var(--text); outline:none; width:200px; transition:all .2s; }
+    .nav-search:focus { border-color:rgba(232,255,0,0.3); width:240px; }
+    .nav-search::placeholder { color:var(--muted); }
+    .nav-fav-btn { padding:8px 16px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; font-size:13px; font-weight:600; color:var(--text); cursor:pointer; display:flex; align-items:center; gap:6px; transition:all .2s; }
+    .nav-fav-btn:hover { border-color:var(--accent); color:var(--accent); }
+    
+    /* HERO */
+    .hero { position:relative; margin-top:64px; height:calc(100vh - 64px); max-height:680px; overflow:hidden; }
+    .hero-slides { position:absolute; inset:0; }
+    .hero-slide { position:absolute; inset:0; opacity:0; transition:opacity 1s ease; }
+    .hero-slide.active { opacity:1; }
+    .hero-slide img { width:100%; height:100%; object-fit:cover; filter:brightness(0.5); }
+    .hero-gradient { position:absolute; inset:0; background:linear-gradient(to right,rgba(10,10,15,0.95) 0%,rgba(10,10,15,0.4) 50%,rgba(10,10,15,0.1) 100%),linear-gradient(to top,rgba(10,10,15,1) 0%,transparent 40%); }
+    .hero-content { position:absolute; bottom:80px; left:60px; max-width:560px; }
+    .hero-comp-badge { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.08); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.12); border-radius:100px; padding:5px 14px 5px 8px; margin-bottom:16px; }
+    .hero-comp-logo { width:22px; height:22px; object-fit:contain; border-radius:50%; }
+    .hero-comp-name { font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:rgba(255,255,255,0.7); }
+    .hero-title { font-family:'Bebas Neue',sans-serif; font-size:clamp(36px,5vw,62px); line-height:1; letter-spacing:1px; margin-bottom:8px; }
+    .hero-desc { font-size:13px; color:rgba(255,255,255,0.55); margin-bottom:20px; font-weight:400; line-height:1.5; max-width:400px; }
+    .hero-meta { display:flex; align-items:center; gap:16px; margin-bottom:24px; }
+    .hero-datetime { font-size:12px; color:var(--muted); font-weight:500; }
+    .hero-actions { display:flex; gap:10px; align-items:center; }
+    .btn-primary { display:inline-flex; align-items:center; gap:8px; padding:13px 24px; background:var(--accent); color:#000; font-size:14px; font-weight:800; border:none; border-radius:8px; cursor:pointer; transition:all .2s; text-transform:uppercase; letter-spacing:.5px; }
+    .btn-primary:hover { background:#fff; transform:translateY(-1px); }
+    .btn-secondary { display:inline-flex; align-items:center; gap:8px; padding:13px 24px; background:rgba(255,255,255,0.1); color:var(--text); font-size:14px; font-weight:700; border:none; border-radius:8px; cursor:pointer; transition:all .2s; backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,0.1); }
+    .btn-secondary:hover { background:rgba(255,255,255,0.18); }
+    .btn-primary svg, .btn-secondary svg { width:16px; height:16px; flex-shrink:0; }
+    .hero-dots { position:absolute; bottom:30px; left:60px; display:flex; gap:8px; }
+    .hero-dot { width:24px; height:3px; border-radius:2px; background:rgba(255,255,255,0.2); cursor:pointer; transition:all .3s; }
+    .hero-dot.active { background:var(--accent); width:40px; }
+    
+    /* LIVE TICKER */
+    .live-ticker { background:var(--live); padding:0; overflow:hidden; height:36px; display:flex; align-items:center; }
+    .ticker-label { flex-shrink:0; padding:0 20px; font-size:11px; font-weight:800; letter-spacing:2px; text-transform:uppercase; border-right:1px solid rgba(255,255,255,0.2); height:100%; display:flex; align-items:center; gap:6px; }
+    .ticker-dot { width:6px; height:6px; background:#fff; border-radius:50%; animation:pulse2 1.5s infinite; }
+    @keyframes pulse2 { 0%,100% {opacity:1;} 50% {opacity:.3;} }
+    .ticker-track { overflow:hidden; flex:1; position:relative; }
+    .ticker-inner { display:flex; gap:60px; animation:ticker-scroll 30s linear infinite; white-space:nowrap; }
+    .ticker-item { font-size:12px; font-weight:600; display:flex; align-items:center; gap:8px; flex-shrink:0; }
+    .ticker-score { background:rgba(0,0,0,0.2); padding:2px 8px; border-radius:4px; font-weight:800; font-variant-numeric:tabular-nums; }
+    @keyframes ticker-scroll { 0% {transform:translateX(0);} 100% {transform:translateX(-50%);} }
+    
+    /* MAIN */
+    main { padding:48px 0 80px; }
+    
+    /* SECTION */
+    .section { margin-bottom:48px; }
+    .section-header { display:flex; align-items:center; justify-content:space-between; padding:0 40px; margin-bottom:20px; }
+    .section-title { font-family:'Bebas Neue',sans-serif; font-size:22px; letter-spacing:1.5px; display:flex; align-items:center; gap:10px; }
+    .section-title img { width: 24px; height: 24px; object-fit: contain; border-radius: 4px; }
+    .section-title-line { width:3px; height:22px; background:var(--accent); border-radius:2px; }
+    .section-count { font-size:12px; font-weight:600; color:var(--muted); background:var(--surface2); padding:3px 10px; border-radius:100px; font-family:'Inter',sans-serif; letter-spacing:normal; }
+    .section-see-all { font-size:12px; font-weight:600; color:var(--accent); cursor:pointer; text-decoration:none; display:flex; align-items:center; gap:4px; transition:opacity .2s; }
+    .section-see-all:hover { opacity:.7; }
+    
+    /* COMPETITION RAIL */
+    .comp-rail { overflow-x:auto; padding:0 40px; scrollbar-width:none; }
+    .comp-rail::-webkit-scrollbar { display:none; }
+    .comp-rail-inner { display:flex; gap:10px; width:max-content; }
+    .comp-chip { display:flex; align-items:center; gap:8px; padding:8px 16px; background:var(--surface); border:1px solid var(--border); border-radius:8px; cursor:pointer; transition:all .2s; flex-shrink:0; white-space:nowrap; }
+    .comp-chip:hover, .comp-chip.active { background:var(--surface2); border-color:rgba(232,255,0,0.25); }
+    .comp-chip.active .comp-chip-name { color:var(--accent); }
+    .comp-chip img { width:22px; height:22px; object-fit:contain; border-radius:3px; }
+    .comp-chip-name { font-size:12px; font-weight:600; color:var(--text); }
+    
+    /* MATCH RAIL */
+    .match-rail { overflow-x:auto; padding:0 40px; scrollbar-width:none; scroll-behavior:smooth; }
+    .match-rail::-webkit-scrollbar { display:none; }
+    .match-rail-inner { display:flex; gap:14px; width:max-content; padding-bottom:10px; }
+    
+    /* MATCH CARD */
+    .match-card { position:relative; width:280px; background:var(--surface); border:1px solid var(--border); border-radius:var(--card-radius); overflow:hidden; cursor:pointer; transition:all .25s; flex-shrink:0; }
+    .match-card:hover { transform:translateY(-4px); border-color:rgba(255,255,255,0.15); box-shadow:0 12px 40px rgba(0,0,0,0.5); }
+    .match-card-thumb { position:relative; height:158px; overflow:hidden; background:#111; }
+    .match-card-thumb img { width:100%; height:100%; object-fit:cover; transition:transform .4s; }
+    .match-card:hover .match-card-thumb img { transform:scale(1.05); }
+    .match-card-overlay { position:absolute; inset:0; background:linear-gradient(to top,rgba(10,10,15,0.9) 0%,transparent 60%); }
+    .match-card-badge { position:absolute; top:10px; left:10px; display:flex; gap:5px; }
+    .badge { padding:3px 8px; border-radius:4px; font-size:10px; font-weight:800; letter-spacing:.5px; text-transform:uppercase; }
+    .badge-live { background:var(--live); color:#fff; display:flex; align-items:center; gap:4px; }
+    .badge-live::before { content:''; width:5px; height:5px; background:#fff; border-radius:50%; animation:pulse2 1.5s infinite; }
+    .badge-soon { background:rgba(232,255,0,0.15); color:var(--accent); border:1px solid rgba(232,255,0,0.3); }
+    .match-card-fav { position:absolute; top:10px; right:10px; width:28px; height:28px; background:rgba(0,0,0,0.4); border:none; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:all .2s; backdrop-filter:blur(4px); }
+    .match-card-fav:hover { background:rgba(232,255,0,0.15); transform:scale(1.1); }
+    .match-card-fav svg { width:14px; height:14px; fill:none; stroke:rgba(255,255,255,0.6); stroke-width:2; }
+    .match-card-fav.active svg { fill:var(--accent); stroke:var(--accent); }
+    .match-card-info { padding:12px 14px; }
+    .match-card-comp { font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:4px; }
+    .match-card-name { font-size:13px; font-weight:700; line-height:1.3; margin-bottom:8px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .match-card-datetime { font-size:11px; color:var(--muted); font-weight:500; }
+    .match-card-play { position:absolute; bottom:0; left:0; right:0; height:0; background:linear-gradient(to top,rgba(232,255,0,0.08),transparent); transition:height .3s; overflow:hidden; display:flex; align-items:flex-end; justify-content:center; padding-bottom:12px; }
+    .match-card:hover .match-card-play { height:60px; }
+    .play-hint { font-size:11px; font-weight:700; color:var(--accent); letter-spacing:1px; text-transform:uppercase; opacity:0; transition:opacity .2s .1s; }
+    .match-card:hover .play-hint { opacity:1; }
+    
+    /* GRID SECTION */
+    .match-grid { padding:0 40px; display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; }
+    
+    /* MODAL */
+    .modal-overlay { position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.7); backdrop-filter:blur(8px); padding:20px; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:var(--surface); border:1px solid rgba(255,255,255,0.08); border-radius:16px; width:100%; max-width:600px; overflow:hidden; animation:modal-in .3s cubic-bezier(.34,1.56,.64,1); }
+    @keyframes modal-in { from {opacity:0; transform:scale(.92) translateY(20px);} to {opacity:1; transform:scale(1) translateY(0);} }
+    .modal-hero { position:relative; height:280px; overflow:hidden; }
+    .modal-hero img { width:100%; height:100%; object-fit:cover; }
+    .modal-hero-gradient { position:absolute; inset:0; background:linear-gradient(to top,var(--surface) 0%,transparent 50%); }
+    .modal-hero-top { position:absolute; top:0; left:0; right:0; padding:16px; display:flex; justify-content:space-between; align-items:flex-start; }
+    .modal-close { width:36px; height:36px; background:rgba(0,0,0,0.5); border:none; border-radius:50%; color:white; cursor:pointer; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); transition:all .2s; }
+    .modal-close:hover { background:rgba(255,255,255,0.15); }
+    .modal-fav-btn { width:36px; height:36px; background:rgba(0,0,0,0.5); border:none; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px); transition:all .2s; }
+    .modal-fav-btn:hover { background:rgba(232,255,0,0.15); }
+    .modal-fav-btn svg { width:16px; height:16px; fill:none; stroke:white; stroke-width:2; }
+    .modal-fav-btn.active svg { fill:var(--accent); stroke:var(--accent); }
+    .modal-body { padding:20px 24px 24px; }
+    .modal-comp-badge { display:inline-flex; align-items:center; gap:6px; margin-bottom:12px; }
+    .modal-comp-logo { width:18px; height:18px; object-fit:contain; }
+    .modal-comp-text { font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+    .modal-title { font-size:20px; font-weight:800; margin-bottom:8px; line-height:1.2; }
+    .modal-desc { font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:16px; }
+    .modal-meta { display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+    .modal-meta-item { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); font-weight:500; }
+    .modal-meta-item svg { width:14px; height:14px; opacity:.6; }
+    .modal-actions { display:flex; gap:10px; align-items:center; }
+    .modal-play-btn { flex:1; display:flex; align-items:center; justify-content:center; gap:10px; padding:14px; background:var(--accent); color:#000; font-size:14px; font-weight:800; border:none; border-radius:10px; cursor:pointer; transition:all .2s; text-transform:uppercase; letter-spacing:.5px; }
+    .modal-play-btn:hover { background:#fff; transform:translateY(-1px); }
+    .modal-play-btn:disabled { background:var(--surface2); color:var(--muted); cursor:not-allowed; transform:none; }
+    .modal-play-btn svg { width:18px; height:18px; flex-shrink:0; }
+    .modal-reminder-btn { padding:14px 20px; background:var(--surface2); border:1px solid var(--border); border-radius:10px; font-size:13px; font-weight:700; color:var(--text); cursor:pointer; transition:all .2s; white-space:nowrap; }
+    .modal-reminder-btn:hover { border-color:rgba(232,255,0,0.3); color:var(--accent); }
+    .modal-countdown { font-size:11px; color:var(--muted); margin-top:8px; text-align:center; font-weight:500; }
+    
+    /* FILTER BAR */
+    .filter-bar { padding:0 40px 16px; display:flex; gap:8px; overflow-x:auto; scrollbar-width:none; }
+    .filter-bar::-webkit-scrollbar { display:none; }
+    .filter-chip { padding:6px 14px; background:var(--surface); border:1px solid var(--border); border-radius:100px; font-size:12px; font-weight:600; color:var(--muted); cursor:pointer; transition:all .2s; white-space:nowrap; flex-shrink:0; }
+    .filter-chip:hover, .filter-chip.active { background:var(--surface2); color:var(--text); border-color:rgba(255,255,255,0.15); }
+    .filter-chip.active { color:var(--accent); border-color:rgba(232,255,0,0.3); }
+    
+    /* TOAST */
+    .toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:12px 20px; font-size:13px; font-weight:600; z-index:9999; transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s; opacity:0; white-space:nowrap; }
+    .toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+    .toast.success { border-color:rgba(232,255,0,0.3); color:var(--accent); }
+    .toast.info { color:var(--text); }
+    
+    /* EMPTY STATE */
+    .empty-state { text-align:center; padding:60px 40px; color:var(--muted); }
+    .empty-state svg { width:48px; height:48px; margin-bottom:16px; opacity:.3; }
+    .empty-state p { font-size:14px; font-weight:500; }
+    
+    /* RESPONSIVE */
+    @media(max-width:768px){
+      nav { padding:0 16px; }
+      .nav-links, .nav-search { display:none; }
+      .hero-content { left:20px; bottom:60px; }
+      .section-header, .filter-bar, .comp-rail, .match-rail, .match-grid { padding-left:16px; padding-right:16px; }
+      .hero-dots { left:20px; }
+      .modal-hero { height:220px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="nav-logo-mark">
+      <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+    </div>
+    <span class="nav-logo-text">SPORT<span>STREAM</span></span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link active" href="#">Accueil</a>
+    <a class="nav-link" href="#" onclick="showFavorites();return false">Mes favoris</a>
+    <a class="nav-link" href="#">En direct</a>
+  </div>
+  <div class="nav-right">
+    <input class="nav-search" type="text" placeholder="Rechercher un match..." id="searchInput" oninput="handleSearch(this.value)">
+    <button class="nav-fav-btn" onclick="showFavorites()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Favoris
+    </button>
+  </div>
+</nav>
+
+<div class="hero" id="heroSection">
+  <div class="hero-slides" id="heroSlides"></div>
+  <div class="hero-gradient"></div>
+  <div class="hero-content" id="heroContent"></div>
+  <div class="hero-dots" id="heroDots"></div>
+</div>
+
+<div class="live-ticker" id="liveTicker" style="display:none">
+  <div class="ticker-label">
+    <div class="ticker-dot"></div>
+    En Direct
+  </div>
+  <div class="ticker-track">
+    <div class="ticker-inner" id="tickerInner"></div>
+  </div>
+</div>
+
+<main>
+  <div class="section" id="compSection">
+    <div class="section-header">
+      <div class="section-title"><div class="section-title-line"></div>Compétitions</div>
+    </div>
+    <div class="comp-rail"><div class="comp-rail-inner" id="compRail"></div></div>
+  </div>
+
+  <div class="section" id="liveSection" style="display:none">
+    <div class="section-header">
+      <div class="section-title"><div class="section-title-line"></div>🔴 En Direct <span class="section-count" id="liveCount">0</span></div>
+    </div>
+    <div class="match-rail"><div class="match-rail-inner" id="liveRail"></div></div>
+  </div>
+
+  <div class="section" id="favSection" style="display:none">
+    <div class="section-header">
+      <div class="section-title"><div class="section-title-line"></div>⭐ Mes Favoris</div>
+      <span class="section-see-all" onclick="clearFavorites()">Tout effacer</span>
+    </div>
+    <div class="match-rail"><div class="match-rail-inner" id="favRail"></div></div>
+  </div>
+
+  <!-- Dynamic Categories will be injected here -->
+  <div id="dynamicCategories"></div>
+
+  <div class="section">
+    <div class="section-header">
+      <div class="section-title"><div class="section-title-line"></div>Tous les Matchs</div>
+    </div>
+    <div class="filter-bar" id="filterBar"></div>
+    <div class="match-grid" id="allMatchesGrid"></div>
+  </div>
+</main>
+
+<div class="modal-overlay" id="matchModal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-hero">
+      <img id="modalImg" src="" alt="">
+      <div class="modal-hero-gradient"></div>
+      <div class="modal-hero-top">
+        <div></div>
+        <div style="display:flex;gap:8px">
+          <button class="modal-fav-btn" id="modalFavBtn" onclick="toggleModalFav()">
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </button>
+          <button class="modal-close" onclick="closeModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-comp-badge">
+        <img class="modal-comp-logo" id="modalCompLogo" src="" alt="">
+        <span class="modal-comp-text" id="modalCompText"></span>
+      </div>
+      <div class="modal-title" id="modalTitle"></div>
+      <div class="modal-desc" id="modalDesc"></div>
+      <div class="modal-meta" id="modalMeta"></div>
+      <div class="modal-actions">
+        <button class="modal-play-btn" id="modalPlayBtn" onclick="launchPlayer()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <span id="modalPlayText">Regarder</span>
+        </button>
+        <button class="modal-reminder-btn" id="modalReminderBtn" style="display:none" onclick="setReminder()">
+          <span>🔔</span> Rappel
+        </button>
+      </div>
+      <div class="modal-countdown" id="modalCountdown"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────
+const CHAMPIONSHIPS = [
+  {"id":"fifa-wc","nom":"Coupe du Monde FIFA","logo":"https://upload.wikimedia.org/wikipedia/fr/thumb/5/5a/2026_FIFA_World_Cup.svg/1920px-2026_FIFA_World_Cup.svg.png"},
+  {"id":"uefa-euro","nom":"UEFA Euro","logo":"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCfpqxCoByNTwGSqSWtD0qqzqLzDYzZCDONQ&s"},
+  {"id":"uefa-ucl","nom":"UEFA Champions League","logo":"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2SEOeAXKHYlD2DoyK5OzQM44Du_1u3W2bTQ&s"},
+  {"id":"uefa-uel","nom":"UEFA Europa League","logo":"https://upload.wikimedia.org/wikipedia/fr/d/d9/Uel_logotype_fc_light.svg"},
+  {"id":"uefa-unl","nom":"UEFA Nations League","logo":"https://upload.wikimedia.org/wikipedia/fr/thumb/8/80/UEFA_Nations_League.svg/1920px-UEFA_Nations_League.svg.png"},
+  {"id":"eng-pl","nom":"Premier League","logo":"https://upload.wikimedia.org/wikipedia/fr/thumb/f/f2/Premier_League_Logo.svg/3840px-Premier_League_Logo.svg.png"},
+  {"id":"esp-ll","nom":"LaLiga","logo":"https://upload.wikimedia.org/wikipedia/commons/0/0f/LaLiga_logo_2023.svg"},
+  {"id":"ger-bl","nom":"Bundesliga","logo":"https://upload.wikimedia.org/wikipedia/fr/thumb/0/0a/Bundesliga-logo.svg/1280px-Bundesliga-logo.svg.png"},
+  {"id":"ita-sa","nom":"Serie A","logo":"https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/Serie_A.svg/250px-Serie_A.svg.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail"},
+  {"id":"fra-l1","nom":"Ligue 1","logo":"https://www.lfp.fr/_next/image?url=https%3A%2F%2Fwww.lfp.fr%2Fassets%2FLFP_REVEAL_WEB_LFP_MOBILE_1280x1600_993ede15db.jpg&w=3840&q=75"},
+  {"id":"uefa-uecl","nom":"UEFA Conference League","logo":"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRjPYqi-wfypVaGb6itEQ-0Y1fOZ1BTAqDk7Q&s"},
+  {"id":"eng-fac","nom":"FA Cup","logo":"https://upload.wikimedia.org/wikipedia/fr/7/75/FA-CUP-2020-logo.png"},
+  {"id":"fra-cdf","nom":"Coupe de France","logo":"https://www.lequipe.fr/_medias/img-photo-jpg/le-nouveau-logo-de-la-coupe-de-france/1500000001039739/0:0,604:403-828-552-75/75285.jpg"},
+  {"id":"esp-cdr","nom":"Copa del Rey","logo":"https://upload.wikimedia.org/wikipedia/fr/thumb/e/e4/Copa_del_Rey_%28logo%29.svg/1280px-Copa_del_Rey_%28logo%29.svg.png"},
+];
+
+const now = new Date();
+
+const MATCHES = [
+  {  "id": 2289925660759994,  "id_equipe1": "RMA",  "id_equipe2": "OVI",  "id_championnat": "esp-ll",  "nom_match": "Real Madrid vs Real Oviedo",  "visuel_url": "https://thumb.canalplus.pro/http/unsafe/3648x2052/filters:quality(80)/canalplus-cdn.canal-plus.io/p1/unit/31377894/canal-ouah_50009/STD169/1307977_351_S16_PrimeraDivision2025-2026-D36-RealMadrid-RealOviedo-13-05-26-HvpY",  "logo_equipe1": "https://upload.wikimedia.org/wikipedia/fr/thumb/c/c7/Logo_Real_Madrid.svg/240px-Logo_Real_Madrid.svg.png",  "logo_equipe2": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/25/Real_Oviedo_logo.svg/240px-Real_Oviedo_logo.svg.png",  "date": "2026-05-14",  "heure": "21:30",  "description": "Liga - 36e journée",  "stream_type": "m3u8",  "stream_url": "",  "chiffre": false,  "hero": true},
+  {    "id": 5698147696999912,    "id_equipe1": "PSG",    "id_equipe2": "ARS",    "id_championnat": "uefa-ucl",    "nom_match": "Paris Saint-Germain vs Arsenal FC",    "visuel_url": "https://thumb.canalplus.pro/http/unsafe/1440x810/filters:quality(80)/canalplus-cdn.canal-plus.io/p1/unit/41190255/canal-ouah_50001/STD169/myCANAL_16x9_sport_1920x1080-2025-05-05T153155.517--OAu",    "logo_equipe1": "https://upload.wikimedia.org/wikipedia/fr/thumb/4/4a/Paris_Saint-Germain_Football_Club.svg/240px-Paris_Saint-Germain_Football_Club.svg.png",    "logo_equipe2": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/53/Arsenal_FC.svg/240px-Arsenal_FC.svg.png",    "date": "2026-05-30",    "heure": "18:00",    "description": "UEFA Champions League : Paris SG / Arsenal - FINAL",    "stream_type": "mpd",    "stream_url": "https://origin-m6web.live.6cloud.fr/out/v1/6play/6play-m6/cmaf_cenc00/dash-short-hd.mpd",    "chiffre": true,    "drm_keys": {      "433ffba670963e70857859a9dff4be04": "51ede3a821229fe81e71282c8eff80e3"    },    "hero": false  },
+  {    "id": 4800776558304023,    "id_equipe1": "STRAS",    "id_equipe2": "ASM",    "id_championnat": "fra-l1",    "nom_match": "RC Strasbourg Alsace vs AS Monaco",    "visuel_url": "https://img.dge-prod.dicelaboratory.com/original/2026/04/15130034-aphw5cnb7ow7vych.jpg",    "logo_equipe1": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/df/RC_Strasbourg_Alsace.svg/240px-RC_Strasbourg_Alsace.svg.png",    "logo_equipe2": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/ba/AS_Monaco_FC.svg/240px-AS_Monaco_FC.svg.png",    "date": "2026-05-17",    "heure": "21:05",    "description": "Ligue 1 McDonald's - 34e journée",    "stream_type": "m3u8",    "stream_url": "",    "chiffre": false,    "hero": false  },
+  {    "id": 7162948503726159,    "id_equipe1": "OM",    "id_equipe2": "SRFC",    "id_championnat": "fra-l1",    "nom_match": "Olympique de Marseille vs Stade Rennais FC",    "visuel_url": "https://img.dge-prod.dicelaboratory.com/original/2026/04/15112114-2nuio8sfphmym3hz.jpg",    "logo_equipe1": "https://upload.wikimedia.org/wikipedia/fr/thumb/4/43/Logo_Olympique_de_Marseille.svg/240px-Logo_Olympique_de_Marseille.svg.png",    "logo_equipe2": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e9/Logo_Stade_Rennais_FC.svg/240px-Logo_Stade_Rennais_FC.svg.png",    "date": "2026-05-17",    "heure": "21:00",    "description": "Ligue 1 McDonald's",    "stream_type": "mpd",    "stream_url": "",    "chiffre": false,    "hero": false  },
+  {    "id": 9284716350182746,    "id_equipe1": "OGCN",    "id_equipe2": "Metz",    "id_championnat": "fra-l1",    "nom_match": "OGC Nice vs FC Metz",    "visuel_url": "https://img.dge-prod.dicelaboratory.com/original/2025/09/23142926-fhw3zssckr8bxmuo.png",    "logo_equipe1": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b1/OGC_Nice_logo.svg/240px-OGC_Nice_logo.svg.png",    "logo_equipe2": "https://upload.wikimedia.org/wikipedia/fr/thumb/4/4c/FC_Metz_logo_2021.svg/240px-FC_Metz_logo_2021.svg.png",    "date": "2026-05-17",    "heure": "21:00",    "description": "Ligue 1 McDonald's",    "stream_type": "mpd",    "stream_url": "",    "chiffre": false,    "hero": false  },
+  {    "id": 3748291562048715,    "id_equipe1": "Lorient",    "id_equipe2": "HAC",    "id_championnat": "fra-l1",    "nom_match": "FC Lorient vs Le Havre AC",    "visuel_url": "https://img.dge-prod.dicelaboratory.com/original/2025/09/23142824-7tcahd3thsij2etn.png",    "logo_equipe1": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/1d/Logo_FC_Lorient_2010.svg/240px-Logo_FC_Lorient_2010.svg.png",    "logo_equipe2": "https://upload.wikimedia.org/wikipedia/fr/thumb/9/9b/Logo_Le_Havre_AC.svg/240px-Logo_Le_Havre_AC.svg.png",    "date": "2026-05-17",    "heure": "21:00",    "description": "Ligue 1 McDonald's",    "stream_type": "mpd",    "stream_url": "",    "chiffre": false,    "hero": false  },
+  {    "id": 6519283746152048,    "id_equipe1": "PFC",    "id_equipe2": "PSG",    "id_championnat": "fra-l1",    "nom_match": "Paris FC vs Paris Saint-Germain",    "visuel_url": "https://img.dge-prod.dicelaboratory.com/original/2025/09/23142940-mmnuneqjgy5iu3gw.png",    "logo_equipe1": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d4/Logo_Paris_FC_2011.svg/240px-Logo_Paris_FC_2011.svg.png",    "logo_equipe2": "https://upload.wikimedia.org/wikipedia/fr/thumb/4/4a/Paris_Saint-Germain_Football_Club.svg/240px-Paris_Saint-Germain_Football_Club.svg.png",    "date": "2026-05-17",    "heure": "21:00",    "description": "Ligue 1 McDonald's",    "stream_type": "mpd",    "stream_url": "",    "chiffre": false,    "hero": false  },
+  {    "id": 8401726359482716,    "id_equipe1": "LOSC",    "id_equipe2": "AJA",    "id_championnat": "fra-l1",    "nom_match": "Lille OSC vs AJ Auxerre",    "visuel_url": "https://img.dge-prod.dicelaboratory.com/original/2025/09/23142811-1edik6vsh1brcxpr.png",    "logo_equipe1": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/70/Logo_Lille_OSC_2018.svg/240px-Logo_Lille_OSC_2018.svg.png",    "logo_equipe2": "https://upload.wikimedia.org/wikipedia/fr/thumb/6/62/Logo_AJ_Auxerre.svg/240px-Logo_AJ_Auxerre.svg.png",    "date": "2026-05-17",    "heure": "21:00",    "description": "Ligue 1 McDonald's",    "stream_type": "mpd",    "stream_url": "",    "chiffre": false,    "hero": false  },
+  {    "id": 5918273648501927,    "id_equipe1": "FCN",    "id_equipe2": "TFC",    "id_championnat": "fra-l1",    "nom_match": "FC Nantes vs Toulouse FC",    "visuel_url": "https://img.dge-prod.dicelaboratory.com/original/2025/09/23142905-uaz4ottsmzjykmc4.png",    "logo_equipe1": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f7/FC_Nantes_2019_logo.svg/240px-FC_Nantes_2019_logo.svg.png",    "logo_equipe2": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/58/Toulouse_FC_logo_2021.svg/240px-Toulouse_FC_logo_2021.svg.png",    "date": "2026-05-17",    "heure": "21:00",    "description": "Ligue 1 McDonald's",    "stream_type": "mpd",    "stream_url": "",    "chiffre": false,    "hero": false  },
+  {    "id": 2746159384028175,    "id_equipe1": "SB29",    "id_equipe2": "ANG",    "id_championnat": "fra-l1",    "nom_match": "Stade Brestois 29 vs Angers SCO",    "visuel_url": "https://img.dge-prod.dicelaboratory.com/original/2025/09/23142755-jsuq5sfrtqesaxuq.png",    "logo_equipe1": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/10/Logo_Stade_Brestois_29.svg/240px-Logo_Stade_Brestois_29.svg.png",    "logo_equipe2": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d2/Logo_Angers_SCO.svg/240px-Logo_Angers_SCO.svg.png",    "date": "2026-05-17",    "heure": "21:00",    "description": "Ligue 1 McDonald's",    "stream_type": "mpd",    "stream_url": "",    "chiffre": false,    "hero": false  },
+  {    "id": 2263275695856734,    "id_equipe1": "OL",    "id_equipe2": "RCL",    "id_championnat": "fra-l1",    "nom_match": "Olympique Lyonnais vs RC Lens",    "visuel_url": "https://www.ferveurlyonnaise.fr/wp-content/uploads/2025/05/OL-RC-Lens.png",    "logo_equipe1": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e2/Olympique_lyonnais_%28logo%29.svg/240px-Olympique_lyonnais_%28logo%29.svg.png",    "logo_equipe2": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/70/Logo_RC_Lens_2014.svg/240px-Logo_RC_Lens_2014.svg.png",    "date": "2026-05-17",    "heure": "21:05",    "description": "Ligue 1 McDonald's - 34e journée",    "stream_type": "m3u8",    "stream_url": "",    "chiffre": false,    "hero": false  },
+  {  "id": 7176411481967745,  "id_equipe1": "FRA",  "id_equipe2": "CIV",  "id_championnat": "fifa-wc",  "nom_match": "France vs Côte d'Ivoire",  "visuel_url": "https://www.lequipe.fr/_medias/img-photo-jpg/-/1500000001932167/143:1,1084:628-1200-800-75/5107f.jpg",  "logo_equipe1": "https://flagcdn.com/w320/fr.png",  "logo_equipe2": "https://flagcdn.com/w320/ci.png",  "date": "2026-06-04",  "heure": "21:10",  "description": "Match Amical",  "stream_type": "m3u8",  "stream_url": "",  "chiffre": false},
+  {  "id": 6705313612724029,  "id_equipe1": "FRE",  "id_equipe2": "AVL",  "id_championnat": "uefa-uel",  "nom_match": "SC Fribourg vs Aston Villa",  "visuel_url": "https://thumb.canalplus.pro/http/unsafe/3648x2052/filters:quality(80)/canalplus-cdn.canal-plus.io/p1/unit/31416149/canal-ouah_50001/STD169/finaleEL-X9KC",  "logo_equipe1": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f1/SC_Freiburg_logo.svg/240px-SC_Freiburg_logo.svg.png",  "logo_equipe2": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e9/Aston_Villa_FC_logo_2024.svg/240px-Aston_Villa_FC_logo_2024.svg.png",  "date": "2026-05-20",  "heure": "21:00",  "description": " UEFA Europa League - FINAL",  "stream_type": "m3u8",  "stream_url": "",  "chiffre": false}
+];
+
+// ─── STATE ─────────────────────────────────────────────────────────
+let favorites = JSON.parse(localStorage.getItem('sportstream_favs') || '[]');
+let currentMatch = null;
+let heroIndex = 0;
+let heroInterval = null;
+let activeFilter = 'all';
+
+// ─── UTILS & HELPERS ───────────────────────────────────────────────
+function getMatchDateObj(m) {
+  return new Date(`${m.date}T${m.heure}:00`);
+}
+
+function getMatchStatus(m) {
+  const matchDT = getMatchDateObj(m);
+  const diff = (now - matchDT) / 60000; // minutes
+  if (diff >= 0 && diff < 120) return 'live';
+  if (diff >= -20 && diff < 0) return 'soon';
+  if (diff >= 120) return 'past';
+  return 'upcoming';
+}
+
+function isPlayable(m) {
+  const s = getMatchStatus(m);
+  return (s === 'live' || s === 'soon') && m.stream_url;
+}
+
+function getChampionship(id) {
+  return CHAMPIONSHIPS.find(c => c.id === id) || {nom:id,logo:''};
+}
+
+function formatDate(d,h) {
+  const dt = new Date(`${d}T${h}:00`);
+  return dt.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'}) + ' à ' + h;
+}
+
+function formatCountdown(m) {
+  const matchDT = getMatchDateObj(m);
+  const diff = matchDT - now;
+  if (diff <= 0) return '';
+  const days = Math.floor(diff / 86400000);
+  const hrs = Math.floor((diff % 86400000) / 3600000);
+  const mins = Math.floor((diff % 3600000) / 60000);
+  if (days > 0) return `Dans ${days}j ${hrs}h`;
+  if (hrs > 0) return `Dans ${hrs}h ${mins}min`;
+  return `Dans ${mins} minutes`;
+}
+
+function isFav(id) { return favorites.includes(id); }
+
+function toggleFav(id) {
+  if (isFav(id)) {
+    favorites = favorites.filter(f => f !== id);
+    showToast('Retiré des favoris', 'info');
+  } else {
+    favorites.push(id);
+    showToast('⭐ Ajouté aux favoris', 'success');
+  }
+  localStorage.setItem('sportstream_favs', JSON.stringify(favorites));
+  renderFavorites();
+  renderAllMatches();
+}
+
+function showToast(msg, type='info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ─── MATCH CARD ────────────────────────────────────────────────────
+function createMatchCard(m) {
+  const status = getMatchStatus(m);
+  const champ = getChampionship(m.id_championnat);
+  const fav = isFav(m.id);
+  const playable = isPlayable(m);
+
+  const card = document.createElement('div');
+  card.className = 'match-card';
+  card.onclick = () => openModal(m);
+
+  let badges = '';
+  if (status === 'live') badges += `<span class="badge badge-live">Direct</span>`;
+  if (status === 'soon') badges += `<span class="badge badge-soon">Bientôt</span>`;
+
+  card.innerHTML = `
+    <div class="match-card-thumb">
+      <img src="${m.visuel_url}" alt="${m.nom_match}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=600&q=60'">
+      <div class="match-card-overlay"></div>
+      <div class="match-card-badge">${badges}</div>
+      <button class="match-card-fav ${fav?'active':''}" onclick="event.stopPropagation();toggleFav(${m.id})" title="${fav?'Retirer des favoris':'Ajouter aux favoris'}">
+        <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </button>
+    </div>
+    <div class="match-card-info">
+      <div class="match-card-comp">${champ.nom}</div>
+      <div class="match-card-name">${m.nom_match}</div>
+      <div class="match-card-datetime">${status==='live'?'🔴 EN DIRECT':formatDate(m.date,m.heure)}</div>
+    </div>
+    ${playable?`<div class="match-card-play"><span class="play-hint">▶ Regarder</span></div>`:''}
+  `;
+  return card;
+}
+
+// ─── MODAL ─────────────────────────────────────────────────────────
+function openModal(m) {
+  currentMatch = m;
+  const status = getMatchStatus(m);
+  const champ = getChampionship(m.id_championnat);
+  const fav = isFav(m.id);
+
+  document.getElementById('modalImg').src = m.visuel_url;
+  document.getElementById('modalCompLogo').src = champ.logo;
+  document.getElementById('modalCompText').textContent = champ.nom;
+  document.getElementById('modalTitle').textContent = m.nom_match;
+  document.getElementById('modalDesc').textContent = m.description;
+
+  document.getElementById('modalMeta').innerHTML = `
+    <div class="modal-meta-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      ${formatDate(m.date, m.heure)}
+    </div>
+    <div class="modal-meta-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Qualité HD
+    </div>
+  `;
+
+  const playBtn = document.getElementById('modalPlayBtn');
+  const playText = document.getElementById('modalPlayText');
+  const reminderBtn = document.getElementById('modalReminderBtn');
+
+  if (status === 'live') {
+    playBtn.disabled = false;
+    playText.textContent = '▶ Regarder en direct';
+    reminderBtn.style.display = 'none';
+  } else if (status === 'soon') {
+    playBtn.disabled = false;
+    playText.textContent = '▶ Pré-match disponible';
+    reminderBtn.style.display = 'block';
+  } else if (status === 'upcoming') {
+    playBtn.disabled = true;
+    playText.textContent = 'Match à venir';
+    reminderBtn.style.display = 'block';
+  } else {
+    playBtn.disabled = true;
+    playText.textContent = 'Match terminé';
+    reminderBtn.style.display = 'none';
+  }
+
+  document.getElementById('modalCountdown').textContent = formatCountdown(m);
+  
+  const favBtn = document.getElementById('modalFavBtn');
+  favBtn.className = `modal-fav-btn ${fav?'active':''}`;
+
+  document.getElementById('matchModal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('matchModal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function toggleModalFav() {
+  if (!currentMatch) return;
+  toggleFav(currentMatch.id);
+  const fav = isFav(currentMatch.id);
+  document.getElementById('modalFavBtn').className = `modal-fav-btn ${fav?'active':''}`;
+}
+
+function setReminder() {
+  showToast('🔔 Rappel configuré pour ce match', 'success');
+  document.getElementById('modalReminderBtn').textContent = '✓ Rappel actif';
+}
+
+function launchPlayer() {
+  if (!currentMatch) return;
+  const m = currentMatch;
+  closeModal();
+
+  const payload = {
+    url: m.stream_url,
+    type: m.stream_type,
+    drm: m.chiffre ? m.drm_keys : null,
+    title: m.nom_match
+  };
+
+  const jsonStr = JSON.stringify(payload);
+  const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+  const obfuscatedToken = base64.split('').reverse().join(''); 
+  window.open(`lecteur.html?token=${obfuscatedToken}`, '_blank');
+}
+
+// ─── HERO ──────────────────────────────────────────────────────────
+function buildHero() {
+  const heroMatches = MATCHES.filter(m => m.hero || getMatchStatus(m) === 'live');
+  if (!heroMatches.length) {
+    heroMatches.push(...MATCHES.slice(0, 3));
+  }
+
+  const slidesEl = document.getElementById('heroSlides');
+  const contentEl = document.getElementById('heroContent');
+  const dotsEl = document.getElementById('heroDots');
+
+  slidesEl.innerHTML = '';
+  dotsEl.innerHTML = '';
+
+  heroMatches.forEach((m, i) => {
+    const slide = document.createElement('div');
+    slide.className = `hero-slide ${i === 0 ? 'active' : ''}`;
+    slide.innerHTML = `<img src="${m.visuel_url}" alt="${m.nom_match}" onerror="this.src='https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=1440&q=80'">`;
+    slidesEl.appendChild(slide);
+
+    const dot = document.createElement('div');
+    dot.className = `hero-dot ${i === 0 ? 'active' : ''}`;
+    dot.onclick = () => goToSlide(i, heroMatches);
+    dotsEl.appendChild(dot);
+  });
+
+  function renderHeroContent(m) {
+    const status = getMatchStatus(m);
+    const champ = getChampionship(m.id_championnat);
+    const playable = isPlayable(m);
+
+    contentEl.innerHTML = `
+      <div class="hero-comp-badge">
+        <img class="hero-comp-logo" src="${champ.logo}" alt="${champ.nom}" onerror="this.style.display='none'">
+        <span class="hero-comp-name">${champ.nom}</span>
+      </div>
+      <div class="hero-title">${m.nom_match.split(' vs ').join('<br><small style="font-size:.5em;opacity:.6;letter-spacing:3px">VS</small><br>')}</div>
+      <div class="hero-desc">${m.description}</div>
+      <div class="hero-meta">
+        <div class="hero-datetime">${status==='live'?'🔴 EN DIRECT MAINTENANT':formatDate(m.date,m.heure)}</div>
+      </div>
+      <div class="hero-actions">
+        ${playable ? `<button class="btn-primary" onclick="openModal(window.__heroMatches[${heroMatches.indexOf(m)}])"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>Regarder</button>` : ''}
+        <button class="btn-secondary" onclick="openModal(window.__heroMatches[${heroMatches.indexOf(m)}])"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Infos match</button>
+      </div>
+    `;
+  }
+
+  window.__heroMatches = heroMatches;
+
+  function goToSlide(idx, matches) {
+    const slides = document.querySelectorAll('.hero-slide');
+    const dots = document.querySelectorAll('.hero-dot');
+    slides.forEach((s,i) => s.classList.toggle('active', i === idx));
+    dots.forEach((d,i) => d.classList.toggle('active', i === idx));
+    heroIndex = idx;
+    renderHeroContent(matches[idx]);
+  }
+
+  renderHeroContent(heroMatches[0]);
+
+  clearInterval(heroInterval);
+  heroInterval = setInterval(() => {
+    const next = (heroIndex + 1) % heroMatches.length;
+    goToSlide(next, heroMatches);
+  }, 6000);
+}
+
+// ─── TICKER ────────────────────────────────────────────────────────
+function buildTicker() {
+  const live = MATCHES.filter(m => getMatchStatus(m) === 'live');
+  if (!live.length) return;
+  document.getElementById('liveTicker').style.display = 'flex';
+  const inner = document.getElementById('tickerInner');
+  const items = [...live, ...live].map(m =>
+    `<span class="ticker-item">${m.nom_match} <span class="ticker-score">EN DIRECT</span></span>`
+  ).join('');
+  inner.innerHTML = items;
+}
+
+// ─── DYNAMIC CATEGORIES (RAILS) ────────────────────────────────────
+function buildDynamicCategories() {
+  const container = document.getElementById('dynamicCategories');
+  container.innerHTML = '';
+
+  // Tri global des matchs par ordre d'arrivée (le plus proche en premier)
+  const sortedMatches = [...MATCHES].sort((a, b) => getMatchDateObj(a) - getMatchDateObj(b));
+  
+  // Ne garder que les matchs non passés pour les rails
+  const validMatches = sortedMatches.filter(m => getMatchStatus(m) !== 'past');
+
+  const createSection = (title, matches, logoHtml = '') => {
+    if (matches.length === 0) return;
+    const section = document.createElement('div');
+    section.className = 'section';
+    section.innerHTML = `
+      <div class="section-header">
+        <div class="section-title">
+          <div class="section-title-line"></div>
+          ${logoHtml} ${title}
+          <span class="section-count">${matches.length}</span>
+        </div>
+      </div>
+      <div class="match-rail">
+        <div class="match-rail-inner" id="rail-${Math.random().toString(36).substring(2, 9)}"></div>
+      </div>
+    `;
+    container.appendChild(section);
+    
+    const railInner = section.querySelector('.match-rail-inner');
+    matches.forEach(m => railInner.appendChild(createMatchCard(m)));
+  };
+
+  // 1. Équipe de France (Regroupe les matchs contenant 'France')
+  const franceMatches = validMatches.filter(m => m.nom_match.toLowerCase().includes('france') || m.id_equipe1 === 'FRA' || m.id_equipe2 === 'FRA');
+  createSection('Équipe de France', franceMatches, '<img src="https://flagcdn.com/w320/fr.png" alt="France">');
+
+  // 2. Compétitions Européennes (Regroupe LDC, Europa League, Conference League...)
+  const euroCompIds = ['uefa-ucl', 'uefa-uel', 'uefa-uecl'];
+  const europeMatches = validMatches.filter(m => euroCompIds.includes(m.id_championnat));
+  createSection('🏆 Compétitions Européennes', europeMatches);
+
+  // 3. International (Coupe du Monde, Euro, Nations League, Amicaux hors France si voulu, ici on garde tout l'international)
+  const intCompIds = ['fifa-wc', 'uefa-euro', 'uefa-unl'];
+  const intMatches = validMatches.filter(m => 
+    (intCompIds.includes(m.id_championnat) || m.description.toLowerCase().includes('amical')) 
+    && !franceMatches.includes(m) // Optionnel: pour éviter les doublons avec le rail Equipe de France
+  );
+  createSection('🌍 International', intMatches);
+
+  // 4. Catégories par championnat (ex: tout proposer si y'a beaucoup de Ligue 1)
+  const groupedByComp = {};
+  validMatches.forEach(m => {
+    // Si on veut exclure ceux déjà dans "Europe" ou "International" pour ne pas spammer:
+    // if (euroCompIds.includes(m.id_championnat) || intCompIds.includes(m.id_championnat)) return;
+    
+    if (!groupedByComp[m.id_championnat]) groupedByComp[m.id_championnat] = [];
+    groupedByComp[m.id_championnat].push(m);
+  });
+
+  CHAMPIONSHIPS.forEach(c => {
+    if (groupedByComp[c.id] && groupedByComp[c.id].length > 0) {
+      // Éviter de recréer les catégories déjà gérées dans les groupes custom, ou alors les laisser actives (au choix).
+      // On va les laisser actives car le prompt demande "s'il y a plusieurs matchs de LDC, ça active une catégorie LDC avec le logo".
+      const logoHtml = c.logo ? `<img src="${c.logo}" alt="${c.nom}">` : '';
+      createSection(c.nom, groupedByComp[c.id], logoHtml);
+    }
+  });
+}
+
+function renderLive() {
+  const live = [...MATCHES].sort((a,b) => getMatchDateObj(a) - getMatchDateObj(b)).filter(m => getMatchStatus(m) === 'live');
+  const section = document.getElementById('liveSection');
+  const rail = document.getElementById('liveRail');
+  if (!live.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  document.getElementById('liveCount').textContent = live.length;
+  rail.innerHTML = '';
+  live.forEach(m => rail.appendChild(createMatchCard(m)));
+}
+
+function renderFavorites() {
+  const favMatches = [...MATCHES].sort((a,b) => getMatchDateObj(a) - getMatchDateObj(b)).filter(m => isFav(m.id));
+  const section = document.getElementById('favSection');
+  const rail = document.getElementById('favRail');
+  if (!favMatches.length) { section.style.display = 'none'; return; }
+  section.style.display = '';
+  rail.innerHTML = '';
+  favMatches.forEach(m => rail.appendChild(createMatchCard(m)));
+}
+
+function clearFavorites() {
+  favorites = [];
+  localStorage.removeItem('sportstream_favs');
+  renderFavorites();
+  renderAllMatches();
+  showToast('Favoris effacés', 'info');
+}
+
+function showFavorites() {
+  document.getElementById('favSection').scrollIntoView({behavior:'smooth'});
+}
+
+// ─── COMPETITIONS FILTER RAIL (POUR LA GRILLE GLOBALE) ─────────────
+function buildCompRail() {
+  const rail = document.getElementById('compRail');
+  const usedIds = [...new Set(MATCHES.map(m => m.id_championnat))];
+  const comps = CHAMPIONSHIPS.filter(c => usedIds.includes(c.id));
+
+  const allChip = document.createElement('div');
+  allChip.className = 'comp-chip active';
+  allChip.dataset.id = 'all';
+  allChip.innerHTML = `<span class="comp-chip-name">Tout afficher</span>`;
+  allChip.onclick = () => setCompFilter('all');
+  rail.appendChild(allChip);
+
+  comps.forEach(c => {
+    const chip = document.createElement('div');
+    chip.className = 'comp-chip';
+    chip.dataset.id = c.id;
+    chip.innerHTML = `<img src="${c.logo}" alt="${c.nom}" onerror="this.style.display='none'"><span class="comp-chip-name">${c.nom}</span>`;
+    chip.onclick = () => setCompFilter(c.id);
+    rail.appendChild(chip);
+  });
+}
+
+function setCompFilter(id) {
+  document.querySelectorAll('.comp-chip').forEach(c => c.classList.toggle('active', c.dataset.id === id));
+  activeFilter = id;
+  renderAllMatches();
+  document.getElementById('allMatchesGrid').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+// ─── ALL MATCHES GRID ──────────────────────────────────────────────
+function buildFilterBar() {
+  const bar = document.getElementById('filterBar');
+  const filters = [
+    {id:'all', label:'Tous'},
+    {id:'live', label:'🔴 En direct'},
+    {id:'upcoming', label:'À venir'},
+    {id:'soon', label:'Bientôt'}
+  ];
+  filters.forEach(f => {
+    const chip = document.createElement('div');
+    chip.className = `filter-chip ${f.id === 'all' ? 'active' : ''}`;
+    chip.dataset.status = f.id;
+    chip.textContent = f.label;
+    chip.onclick = () => {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      renderAllMatches(f.id);
+    };
+    bar.appendChild(chip);
+  });
+}
+
+function renderAllMatches(statusFilter) {
+  const grid = document.getElementById('allMatchesGrid');
+  grid.innerHTML = '';
+
+  let filtered = [...MATCHES].sort((a,b) => getMatchDateObj(a) - getMatchDateObj(b)).filter(m => {
+    if (activeFilter !== 'all' && m.id_championnat !== activeFilter) return false;
+    return true;
+  });
+
+  if (statusFilter && statusFilter !== 'all') {
+    filtered = filtered.filter(m => getMatchStatus(m) === statusFilter);
+  }
+
+  filtered = filtered.filter(m => getMatchStatus(m) !== 'past');
+
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      <p>Aucun match disponible pour ce filtre</p>
+    </div>`;
+    return;
+  }
+
+  filtered.forEach(m => {
+    const card = createMatchCard(m);
+    card.style.width = '100%';
+    grid.appendChild(card);
+  });
+}
+
+// ─── SEARCH ────────────────────────────────────────────────────────
+function handleSearch(q) {
+  if (!q.trim()) { renderAllMatches(); return; }
+  const grid = document.getElementById('allMatchesGrid');
+  grid.innerHTML = '';
+  
+  const results = [...MATCHES].sort((a,b) => getMatchDateObj(a) - getMatchDateObj(b)).filter(m =>
+    m.nom_match.toLowerCase().includes(q.toLowerCase()) ||
+    m.id_championnat.toLowerCase().includes(q.toLowerCase()) ||
+    m.description.toLowerCase().includes(q.toLowerCase())
+  );
+
+  if (!results.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <p>Aucun résultat pour "${q}"</p>
+    </div>`;
+    return;
+  }
+  
+  results.forEach(m => {
+    const card = createMatchCard(m);
+    card.style.width = '100%';
+    grid.appendChild(card);
+  });
+  grid.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// ─── KEYBOARD ──────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeModal();
+  }
+});
+
+// ─── INIT ──────────────────────────────────────────────────────────
+function init() {
+  buildHero();
+  buildTicker();
+  buildCompRail();
+  buildFilterBar();
+  renderLive();
+  renderFavorites();
+  buildDynamicCategories(); // Appel des nouvelles catégories dynamiques triées
+  renderAllMatches();
+
+  // Refresh every minute
+  setInterval(() => {
+    renderLive();
+    renderFavorites();
+    buildDynamicCategories();
+    renderAllMatches();
+    buildTicker();
+  }, 60000);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
