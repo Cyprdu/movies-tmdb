@@ -323,125 +323,31 @@ main{padding:48px 0 80px}
 <script>
 // ─── DATA ──────────────────────────────────────────────────────────
 const CHAMPIONSHIPS = [
-  {"id":"fifa-wc","nom":"Coupe du Monde FIFA","logo":"https://upload.wikimedia.org/wikipedia/commons/1/10/FIFA_World_Cup_2026_Logo.svg"},
-  {"id":"uefa-euro","nom":"UEFA Euro","logo":"https://upload.wikimedia.org/wikipedia/fr/5/52/Logo_UEFA_Euro_2024.svg"},
-  {"id":"uefa-ucl","nom":"UEFA Champions League","logo":"https://upload.wikimedia.org/wikipedia/fr/b/bf/UEFA_Champions_League_logo_2.svg"},
-  {"id":"uefa-uel","nom":"UEFA Europa League","logo":"https://upload.wikimedia.org/wikipedia/fr/f/f3/Logo_UEFA_Europa_League_2021.svg"},
-  {"id":"uefa-unl","nom":"UEFA Nations League","logo":"https://upload.wikimedia.org/wikipedia/fr/9/90/UEFA_Nations_League_2021_Logo.svg"},
-  {"id":"eng-pl","nom":"Premier League","logo":"https://upload.wikimedia.org/wikipedia/fr/f/f2/Premier_League_Logo.svg"},
+  {"id":"fifa-wc","nom":"Coupe du Monde FIFA","logo":"https://upload.wikimedia.org/wikipedia/fr/thumb/5/5a/2026_FIFA_World_Cup.svg/1920px-2026_FIFA_World_Cup.svg.png"},
+  {"id":"uefa-euro","nom":"UEFA Euro","logo":"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCfpqxCoByNTwGSqSWtD0qqzqLzDYzZCDONQ&s"},
+  {"id":"uefa-ucl","nom":"UEFA Champions League","logo":"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR2SEOeAXKHYlD2DoyK5OzQM44Du_1u3W2bTQ&s"},
+  {"id":"uefa-uel","nom":"UEFA Europa League","logo":"https://upload.wikimedia.org/wikipedia/fr/d/d9/Uel_logotype_fc_light.svg"},
+  {"id":"uefa-unl","nom":"UEFA Nations League","logo":"https://upload.wikimedia.org/wikipedia/fr/thumb/8/80/UEFA_Nations_League.svg/1920px-UEFA_Nations_League.svg.png"},
+  {"id":"eng-pl","nom":"Premier League","logo":"https://upload.wikimedia.org/wikipedia/fr/thumb/f/f2/Premier_League_Logo.svg/3840px-Premier_League_Logo.svg.png"},
   {"id":"esp-ll","nom":"LaLiga","logo":"https://upload.wikimedia.org/wikipedia/commons/0/0f/LaLiga_logo_2023.svg"},
-  {"id":"ger-bl","nom":"Bundesliga","logo":"https://upload.wikimedia.org/wikipedia/fr/0/0a/Logo_Bundesliga_2017.svg"},
-  {"id":"ita-sa","nom":"Serie A","logo":"https://upload.wikimedia.org/wikipedia/commons/e/e1/Serie_A_logo_%282022%29.svg"},
-  {"id":"fra-l1","nom":"Ligue 1","logo":"https://upload.wikimedia.org/wikipedia/commons/5/5e/Ligue1_McDonalds_logo.svg"},
-  {"id":"uefa-uecl","nom":"UEFA Conference League","logo":"https://upload.wikimedia.org/wikipedia/fr/a/a2/Logo_UEFA_Europa_Conference_League_2021.svg"},
-  {"id":"eng-fac","nom":"FA Cup","logo":"https://upload.wikimedia.org/wikipedia/en/c/c1/Emirates_FA_Cup_logo.svg"},
-  {"id":"fra-cdf","nom":"Coupe de France","logo":"https://upload.wikimedia.org/wikipedia/fr/2/23/Logo_Coupe_de_France_de_football_2022.svg"},
-  {"id":"esp-cdr","nom":"Copa del Rey","logo":"https://upload.wikimedia.org/wikipedia/commons/b/b8/Copa_del_Rey_logo.svg"},
+  {"id":"ger-bl","nom":"Bundesliga","logo":"https://upload.wikimedia.org/wikipedia/fr/thumb/0/0a/Bundesliga-logo.svg/1280px-Bundesliga-logo.svg.png"},
+  {"id":"ita-sa","nom":"Serie A","logo":"https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/Serie_A.svg/250px-Serie_A.svg.png?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=thumbnail"},
+  {"id":"fra-l1","nom":"Ligue 1","logo":"https://www.lfp.fr/_next/image?url=https%3A%2F%2Fwww.lfp.fr%2Fassets%2FLFP_REVEAL_WEB_LFP_MOBILE_1280x1600_993ede15db.jpg&w=3840&q=75"},
+  {"id":"uefa-uecl","nom":"UEFA Conference League","logo":"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRjPYqi-wfypVaGb6itEQ-0Y1fOZ1BTAqDk7Q&s"},
+  {"id":"eng-fac","nom":"FA Cup","logo":"https://upload.wikimedia.org/wikipedia/fr/7/75/FA-CUP-2020-logo.png"},
+  {"id":"fra-cdf","nom":"Coupe de France","logo":"https://www.lequipe.fr/_medias/img-photo-jpg/le-nouveau-logo-de-la-coupe-de-france/1500000001039739/0:0,604:403-828-552-75/75285.jpg"},
+  {"id":"esp-cdr","nom":"Copa del Rey","logo":"https://upload.wikimedia.org/wikipedia/fr/thumb/e/e4/Copa_del_Rey_%28logo%29.svg/1280px-Copa_del_Rey_%28logo%29.svg.png"},
 ];
 
 const now = new Date();
 
 const MATCHES = [
-  {
-    id:1,
-    id_equipe1:"PSG",id_equipe2:"ARS",
-    id_championnat:"uefa-ucl",
-    nom_match:"Paris Saint-Germain vs Arsenal FC",
-    visuel_url:"https://thumb.canalplus.pro/http/unsafe/1440x810/filters:quality(80)/canalplus-cdn.canal-plus.io/p1/unit/41190255/canal-ouah_50001/STD169/myCANAL_16x9_sport_1920x1080-2025-05-05T153155.517--OAu",
-    date:"2026-05-14",heure:"17:00",
-    description:"Ligue des champions de l'UEFA — FINALE",
-    stream_type:"mpd",
-    stream_url:"https://origin-m6web.live.6cloud.fr/out/v1/6play/6play-m6/cmaf_cenc00/dash-short-hd.mpd",
-    chiffre:true,
-    drm_keys:{"433ffba670963e70857859a9dff4be04":"51ede3a821229fe81e71282c8eff80e3"},
-    hero:true
-  },
-  {
-    id:2,
-    id_equipe1:"MCI",id_equipe2:"LIV",
-    id_championnat:"eng-pl",
-    nom_match:"Manchester City vs Liverpool",
-    visuel_url:"https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1440&q=80",
-    date:"2026-05-14",heure:"17:30",
-    description:"Premier League — Journée 38 • Match au sommet",
-    stream_type:"m3u8",
-    stream_url:"https://live-hls-abr-cdn.livepush.io/live/bigbuckbunnyclip/index.m3u8",
-    chiffre:false,
-    hero:true
-  },
-  {
-    id:3,
-    id_equipe1:"RMA",id_equipe2:"BAR",
-    id_championnat:"esp-ll",
-    nom_match:"Real Madrid vs FC Barcelona",
-    visuel_url:"https://images.unsplash.com/photo-1459865264687-595d652de67e?w=1440&q=80",
-    date:"2026-05-16",heure:"21:00",
-    description:"LaLiga — El Clásico • Journée 38",
-    stream_type:"mpd",
-    stream_url:"https://origin-m6web.live.6cloud.fr/out/v1/6play/6play-m6/cmaf_cenc00/dash-short-hd.mpd",
-    chiffre:false
-  },
-  {
-    id:4,
-    id_equipe1:"JUV",id_equipe2:"INT",
-    id_championnat:"ita-sa",
-    nom_match:"Juventus vs Inter Milan",
-    visuel_url:"https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=1440&q=80",
-    date:"2026-05-18",heure:"20:45",
-    description:"Serie A — Derby d'Italie",
-    stream_type:"m3u8",
-    stream_url:"https://live-hls-abr-cdn.livepush.io/live/bigbuckbunnyclip/index.m3u8",
-    chiffre:false
-  },
-  {
-    id:5,
-    id_equipe1:"BVB",id_equipe2:"FCB",
-    id_championnat:"ger-bl",
-    nom_match:"Borussia Dortmund vs Bayern Munich",
-    visuel_url:"https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1440&q=80",
-    date:"2026-05-14",heure:"15:30",
-    description:"Bundesliga — Der Klassiker",
-    stream_type:"m3u8",
-    stream_url:"https://live-hls-abr-cdn.livepush.io/live/bigbuckbunnyclip/index.m3u8",
-    chiffre:false
-  },
-  {
-    id:6,
-    id_equipe1:"PSG",id_equipe2:"OM",
-    id_championnat:"fra-l1",
-    nom_match:"Paris Saint-Germain vs Olympique de Marseille",
-    visuel_url:"https://images.unsplash.com/photo-1506670329052-a7cdc6c2ead0?w=1440&q=80",
-    date:"2026-05-20",heure:"21:05",
-    description:"Ligue 1 — Le Classique • Journée 35",
-    stream_type:"mpd",
-    stream_url:"https://origin-m6web.live.6cloud.fr/out/v1/6play/6play-m6/cmaf_cenc00/dash-short-hd.mpd",
-    chiffre:true,
-    drm_keys:{"433ffba670963e70857859a9dff4be04":"51ede3a821229fe81e71282c8eff80e3"}
-  },
-  {
-    id:7,
-    id_equipe1:"BEN",id_equipe2:"SPO",
-    id_championnat:"uefa-uel",
-    nom_match:"Benfica vs Sporting CP",
-    visuel_url:"https://images.unsplash.com/photo-1552667466-07770ae110d0?w=1440&q=80",
-    date:"2026-05-22",heure:"18:45",
-    description:"UEFA Europa League — Finale",
-    stream_type:"m3u8",
-    stream_url:"https://live-hls-abr-cdn.livepush.io/live/bigbuckbunnyclip/index.m3u8",
-    chiffre:false
-  },
-  {
-    id:8,
-    id_equipe1:"CHE",id_equipe2:"TOT",
-    id_championnat:"eng-pl",
-    nom_match:"Chelsea FC vs Tottenham Hotspur",
-    visuel_url:"https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=1440&q=80",
-    date:"2026-05-15",heure:"13:30",
-    description:"Premier League — Derby de Londres",
-    stream_type:"m3u8",
-    stream_url:"https://live-hls-abr-cdn.livepush.io/live/bigbuckbunnyclip/index.m3u8",
-    chiffre:false
-  },
+
+
+
+
+
+  
 ];
 
 // ─── STATE ─────────────────────────────────────────────────────────
