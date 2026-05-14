@@ -60,9 +60,6 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 .hero-title{font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,5vw,62px);line-height:1;letter-spacing:1px;margin-bottom:8px}
 .hero-desc{font-size:13px;color:rgba(255,255,255,0.55);margin-bottom:20px;font-weight:400;line-height:1.5;max-width:400px}
 .hero-meta{display:flex;align-items:center;gap:16px;margin-bottom:24px}
-.hero-teams{display:flex;align-items:center;gap:10px}
-.hero-team-logo{width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.5))}
-.hero-vs{font-size:11px;font-weight:800;color:var(--muted);letter-spacing:2px}
 .hero-datetime{font-size:12px;color:var(--muted);font-weight:500}
 .hero-actions{display:flex;gap:10px;align-items:center}
 .btn-primary{display:inline-flex;align-items:center;gap:8px;padding:13px 24px;background:var(--accent);color:#000;font-size:14px;font-weight:800;border:none;border-radius:8px;cursor:pointer;transition:all .2s;text-transform:uppercase;letter-spacing:.5px}
@@ -124,15 +121,11 @@ main{padding:48px 0 80px}
 .badge-live{background:var(--live);color:#fff;display:flex;align-items:center;gap:4px}
 .badge-live::before{content:'';width:5px;height:5px;background:#fff;border-radius:50%;animation:pulse2 1.5s infinite}
 .badge-soon{background:rgba(232,255,0,0.15);color:var(--accent);border:1px solid rgba(232,255,0,0.3)}
-.badge-drm{background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.5);border:1px solid rgba(255,255,255,0.08)}
 .match-card-fav{position:absolute;top:10px;right:10px;width:28px;height:28px;background:rgba(0,0,0,0.4);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;backdrop-filter:blur(4px)}
 .match-card-fav:hover{background:rgba(232,255,0,0.15);transform:scale(1.1)}
 .match-card-fav svg{width:14px;height:14px}
 .match-card-fav.active svg{fill:var(--accent);stroke:var(--accent)}
 .match-card-fav svg{fill:none;stroke:rgba(255,255,255,0.6);stroke-width:2}
-.match-teams{position:absolute;bottom:10px;left:10px;right:10px;display:flex;align-items:center;justify-content:space-between}
-.team-logo-sm{width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 1px 3px rgba(0,0,0,.8))}
-.vs-sm{font-size:10px;font-weight:800;color:rgba(255,255,255,0.5);letter-spacing:1px}
 .match-card-info{padding:12px 14px}
 .match-card-comp{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
 .match-card-name{font-size:13px;font-weight:700;line-height:1.3;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -160,11 +153,6 @@ main{padding:48px 0 80px}
 .modal-fav-btn:hover{background:rgba(232,255,0,0.15)}
 .modal-fav-btn svg{width:16px;height:16px;fill:none;stroke:white;stroke-width:2}
 .modal-fav-btn.active svg{fill:var(--accent);stroke:var(--accent)}
-.modal-teams-row{position:absolute;bottom:20px;left:0;right:0;display:flex;align-items:center;justify-content:center;gap:20px}
-.modal-team{display:flex;flex-direction:column;align-items:center;gap:6px}
-.modal-team-logo{width:52px;height:52px;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(0,0,0,.8))}
-.modal-team-name{font-size:11px;font-weight:600;color:rgba(255,255,255,0.7);text-align:center;max-width:80px}
-.modal-vs{font-size:20px;font-weight:900;color:rgba(255,255,255,0.3)}
 .modal-body{padding:20px 24px 24px}
 .modal-comp-badge{display:inline-flex;align-items:center;gap:6px;margin-bottom:12px}
 .modal-comp-logo{width:18px;height:18px;object-fit:contain}
@@ -182,13 +170,6 @@ main{padding:48px 0 80px}
 .modal-reminder-btn{padding:14px 20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;font-size:13px;font-weight:700;color:var(--text);cursor:pointer;transition:all .2s;white-space:nowrap}
 .modal-reminder-btn:hover{border-color:rgba(232,255,0,0.3);color:var(--accent)}
 .modal-countdown{font-size:11px;color:var(--muted);margin-top:8px;text-align:center;font-weight:500}
-.modal-drm-note{font-size:11px;color:rgba(255,165,0,.7);display:flex;align-items:center;gap:5px;margin-top:8px}
-
-/* PLAYER MODAL */
-.player-modal{position:fixed;inset:0;z-index:2000;background:#000;display:none}
-.player-modal.open{display:block}
-.player-close{position:fixed;top:20px;right:20px;z-index:2001;width:40px;height:40px;background:rgba(255,255,255,0.1);border:none;border-radius:50%;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
-#player-frame{width:100%;height:100%;border:none}
 
 /* FILTER BAR */
 .filter-bar{padding:0 40px 16px;display:flex;gap:8px;overflow-x:auto;scrollbar-width:none}
@@ -221,7 +202,6 @@ main{padding:48px 0 80px}
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
   <a class="nav-logo" href="#">
     <div class="nav-logo-mark">
@@ -233,7 +213,6 @@ main{padding:48px 0 80px}
     <a class="nav-link active" href="#">Accueil</a>
     <a class="nav-link" href="#" onclick="showFavorites();return false">Mes favoris</a>
     <a class="nav-link" href="#">En direct</a>
-    <a class="nav-link" href="#">Replay</a>
   </div>
   <div class="nav-right">
     <input class="nav-search" type="text" placeholder="Rechercher un match..." id="searchInput" oninput="handleSearch(this.value)">
@@ -244,7 +223,6 @@ main{padding:48px 0 80px}
   </div>
 </nav>
 
-<!-- HERO -->
 <div class="hero" id="heroSection">
   <div class="hero-slides" id="heroSlides"></div>
   <div class="hero-gradient"></div>
@@ -252,7 +230,6 @@ main{padding:48px 0 80px}
   <div class="hero-dots" id="heroDots"></div>
 </div>
 
-<!-- LIVE TICKER -->
 <div class="live-ticker" id="liveTicker" style="display:none">
   <div class="ticker-label">
     <div class="ticker-dot"></div>
@@ -264,7 +241,6 @@ main{padding:48px 0 80px}
 </div>
 
 <main>
-  <!-- COMPETITIONS RAIL -->
   <div class="section" id="compSection">
     <div class="section-header">
       <div class="section-title"><div class="section-title-line"></div>Compétitions</div>
@@ -272,7 +248,6 @@ main{padding:48px 0 80px}
     <div class="comp-rail"><div class="comp-rail-inner" id="compRail"></div></div>
   </div>
 
-  <!-- LIVE MATCHES -->
   <div class="section" id="liveSection" style="display:none">
     <div class="section-header">
       <div class="section-title"><div class="section-title-line"></div>🔴 En Direct <span class="section-count" id="liveCount">0</span></div>
@@ -280,7 +255,6 @@ main{padding:48px 0 80px}
     <div class="match-rail"><div class="match-rail-inner" id="liveRail"></div></div>
   </div>
 
-  <!-- FAVORITES -->
   <div class="section" id="favSection" style="display:none">
     <div class="section-header">
       <div class="section-title"><div class="section-title-line"></div>⭐ Mes Favoris</div>
@@ -289,7 +263,6 @@ main{padding:48px 0 80px}
     <div class="match-rail"><div class="match-rail-inner" id="favRail"></div></div>
   </div>
 
-  <!-- UPCOMING -->
   <div class="section">
     <div class="section-header">
       <div class="section-title"><div class="section-title-line"></div>À Venir</div>
@@ -297,7 +270,6 @@ main{padding:48px 0 80px}
     <div class="match-rail"><div class="match-rail-inner" id="upcomingRail"></div></div>
   </div>
 
-  <!-- FILTER BAR -->
   <div class="section">
     <div class="section-header">
       <div class="section-title"><div class="section-title-line"></div>Tous les Matchs</div>
@@ -307,7 +279,6 @@ main{padding:48px 0 80px}
   </div>
 </main>
 
-<!-- MATCH MODAL -->
 <div class="modal-overlay" id="matchModal" onclick="if(event.target===this)closeModal()">
   <div class="modal">
     <div class="modal-hero">
@@ -322,17 +293,6 @@ main{padding:48px 0 80px}
           <button class="modal-close" onclick="closeModal()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
-        </div>
-      </div>
-      <div class="modal-teams-row">
-        <div class="modal-team">
-          <img class="modal-team-logo" id="modalTeam1Logo" src="" alt="">
-          <span class="modal-team-name" id="modalTeam1Name"></span>
-        </div>
-        <div class="modal-vs">VS</div>
-        <div class="modal-team">
-          <img class="modal-team-logo" id="modalTeam2Logo" src="" alt="">
-          <span class="modal-team-name" id="modalTeam2Name"></span>
         </div>
       </div>
     </div>
@@ -354,23 +314,10 @@ main{padding:48px 0 80px}
         </button>
       </div>
       <div class="modal-countdown" id="modalCountdown"></div>
-      <div class="modal-drm-note" id="modalDrmNote" style="display:none">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
-        Contenu chiffré — nécessite une clé DRM compatible
-      </div>
     </div>
   </div>
 </div>
 
-<!-- PLAYER MODAL -->
-<div class="player-modal" id="playerModal">
-  <button class="player-close" onclick="closePlayer()">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-  </button>
-  <iframe id="player-frame" src="" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe>
-</div>
-
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script>
@@ -401,8 +348,6 @@ const MATCHES = [
     id_championnat:"uefa-ucl",
     nom_match:"Paris Saint-Germain vs Arsenal FC",
     visuel_url:"https://thumb.canalplus.pro/http/unsafe/1440x810/filters:quality(80)/canalplus-cdn.canal-plus.io/p1/unit/41190255/canal-ouah_50001/STD169/myCANAL_16x9_sport_1920x1080-2025-05-05T153155.517--OAu",
-    logo_equipe1:"https://upload.wikimedia.org/wikipedia/fr/thumb/4/4a/Paris_Saint-Germain_Football_Club.svg/240px-Paris_Saint-Germain_Football_Club.svg.png",
-    logo_equipe2:"https://upload.wikimedia.org/wikipedia/fr/thumb/5/53/Arsenal_FC.svg/240px-Arsenal_FC.svg.png",
     date:"2026-05-14",heure:"17:00",
     description:"Ligue des champions de l'UEFA — FINALE",
     stream_type:"mpd",
@@ -417,8 +362,6 @@ const MATCHES = [
     id_championnat:"eng-pl",
     nom_match:"Manchester City vs Liverpool",
     visuel_url:"https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=1440&q=80",
-    logo_equipe1:"https://upload.wikimedia.org/wikipedia/fr/thumb/2/24/Manchester_City_FC_%28crest%29.svg/240px-Manchester_City_FC_%28crest%29.svg.png",
-    logo_equipe2:"https://upload.wikimedia.org/wikipedia/fr/thumb/3/3a/Liverpool_FC.svg/240px-Liverpool_FC.svg.png",
     date:"2026-05-14",heure:"17:30",
     description:"Premier League — Journée 38 • Match au sommet",
     stream_type:"m3u8",
@@ -432,8 +375,6 @@ const MATCHES = [
     id_championnat:"esp-ll",
     nom_match:"Real Madrid vs FC Barcelona",
     visuel_url:"https://images.unsplash.com/photo-1459865264687-595d652de67e?w=1440&q=80",
-    logo_equipe1:"https://upload.wikimedia.org/wikipedia/fr/thumb/c/c7/Logo_Real_Madrid.svg/240px-Logo_Real_Madrid.svg.png",
-    logo_equipe2:"https://upload.wikimedia.org/wikipedia/fr/thumb/2/26/Logo_FC_Barcelona.svg/240px-Logo_FC_Barcelona.svg.png",
     date:"2026-05-16",heure:"21:00",
     description:"LaLiga — El Clásico • Journée 38",
     stream_type:"mpd",
@@ -446,8 +387,6 @@ const MATCHES = [
     id_championnat:"ita-sa",
     nom_match:"Juventus vs Inter Milan",
     visuel_url:"https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=1440&q=80",
-    logo_equipe1:"https://upload.wikimedia.org/wikipedia/fr/thumb/8/87/Juventus_FC_%282017%29.svg/240px-Juventus_FC_%282017%29.svg.png",
-    logo_equipe2:"https://upload.wikimedia.org/wikipedia/fr/thumb/b/b3/Inter_Milan_logo.svg/240px-Inter_Milan_logo.svg.png",
     date:"2026-05-18",heure:"20:45",
     description:"Serie A — Derby d'Italie",
     stream_type:"m3u8",
@@ -460,8 +399,6 @@ const MATCHES = [
     id_championnat:"ger-bl",
     nom_match:"Borussia Dortmund vs Bayern Munich",
     visuel_url:"https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1440&q=80",
-    logo_equipe1:"https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Borussia_Dortmund_logo.svg/240px-Borussia_Dortmund_logo.svg.png",
-    logo_equipe2:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282002%E2%80%932017%29.svg/240px-FC_Bayern_M%C3%BCnchen_logo_%282002%E2%80%932017%29.svg.png",
     date:"2026-05-14",heure:"15:30",
     description:"Bundesliga — Der Klassiker",
     stream_type:"m3u8",
@@ -474,8 +411,6 @@ const MATCHES = [
     id_championnat:"fra-l1",
     nom_match:"Paris Saint-Germain vs Olympique de Marseille",
     visuel_url:"https://images.unsplash.com/photo-1506670329052-a7cdc6c2ead0?w=1440&q=80",
-    logo_equipe1:"https://upload.wikimedia.org/wikipedia/fr/thumb/4/4a/Paris_Saint-Germain_Football_Club.svg/240px-Paris_Saint-Germain_Football_Club.svg.png",
-    logo_equipe2:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Olympique_de_Marseille_logo.svg/240px-Olympique_de_Marseille_logo.svg.png",
     date:"2026-05-20",heure:"21:05",
     description:"Ligue 1 — Le Classique • Journée 35",
     stream_type:"mpd",
@@ -489,8 +424,6 @@ const MATCHES = [
     id_championnat:"uefa-uel",
     nom_match:"Benfica vs Sporting CP",
     visuel_url:"https://images.unsplash.com/photo-1552667466-07770ae110d0?w=1440&q=80",
-    logo_equipe1:"https://upload.wikimedia.org/wikipedia/fr/thumb/b/b8/SL_Benfica_logo.svg/240px-SL_Benfica_logo.svg.png",
-    logo_equipe2:"https://upload.wikimedia.org/wikipedia/fr/thumb/5/52/Sporting_CP.svg/240px-Sporting_CP.svg.png",
     date:"2026-05-22",heure:"18:45",
     description:"UEFA Europa League — Finale",
     stream_type:"m3u8",
@@ -503,8 +436,6 @@ const MATCHES = [
     id_championnat:"eng-pl",
     nom_match:"Chelsea FC vs Tottenham Hotspur",
     visuel_url:"https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=1440&q=80",
-    logo_equipe1:"https://upload.wikimedia.org/wikipedia/fr/thumb/4/41/Chelsea_FC.svg/240px-Chelsea_FC.svg.png",
-    logo_equipe2:"https://upload.wikimedia.org/wikipedia/fr/thumb/8/80/Tottenham_Hotspur.svg/240px-Tottenham_Hotspur.svg.png",
     date:"2026-05-15",heure:"13:30",
     description:"Premier League — Derby de Londres",
     stream_type:"m3u8",
@@ -593,7 +524,6 @@ function createMatchCard(m) {
   let badges = '';
   if (status === 'live') badges += `<span class="badge badge-live">Direct</span>`;
   if (status === 'soon') badges += `<span class="badge badge-soon">Bientôt</span>`;
-  if (m.chiffre) badges += `<span class="badge badge-drm">DRM</span>`;
 
   card.innerHTML = `
     <div class="match-card-thumb">
@@ -603,11 +533,6 @@ function createMatchCard(m) {
       <button class="match-card-fav ${fav?'active':''}" onclick="event.stopPropagation();toggleFav(${m.id})" title="${fav?'Retirer des favoris':'Ajouter aux favoris'}">
         <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       </button>
-      <div class="match-teams">
-        <img class="team-logo-sm" src="${m.logo_equipe1}" alt="${m.id_equipe1}" onerror="this.style.display='none'">
-        <span class="vs-sm">VS</span>
-        <img class="team-logo-sm" src="${m.logo_equipe2}" alt="${m.id_equipe2}" onerror="this.style.display='none'">
-      </div>
     </div>
     <div class="match-card-info">
       <div class="match-card-comp">${champ.nom}</div>
@@ -628,10 +553,6 @@ function openModal(m) {
   const fav = isFav(m.id);
 
   document.getElementById('modalImg').src = m.visuel_url;
-  document.getElementById('modalTeam1Logo').src = m.logo_equipe1;
-  document.getElementById('modalTeam2Logo').src = m.logo_equipe2;
-  document.getElementById('modalTeam1Name').textContent = m.id_equipe1;
-  document.getElementById('modalTeam2Name').textContent = m.id_equipe2;
   document.getElementById('modalCompLogo').src = champ.logo;
   document.getElementById('modalCompText').textContent = champ.nom;
   document.getElementById('modalTitle').textContent = m.nom_match;
@@ -645,7 +566,7 @@ function openModal(m) {
     </div>
     <div class="modal-meta-item">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      ${m.stream_type ? m.stream_type.toUpperCase() : 'HD'}
+      Qualité HD
     </div>
   `;
 
@@ -667,19 +588,15 @@ function openModal(m) {
     playText.textContent = 'Match à venir';
     reminderBtn.style.display = 'block';
   } else {
-    playBtn.disabled = !m.stream_url;
-    playText.textContent = m.stream_url ? '▶ Voir le replay' : 'Non disponible';
+    // Statut past : les rediffusions (replay) ne sont pas gérées
+    playBtn.disabled = true;
+    playText.textContent = 'Match terminé';
     reminderBtn.style.display = 'none';
   }
-
-  if (!m.stream_url) { playBtn.disabled = true; }
 
   // Countdown
   const cd = formatCountdown(m);
   document.getElementById('modalCountdown').textContent = cd;
-
-  // DRM
-  document.getElementById('modalDrmNote').style.display = m.chiffre ? 'flex' : 'none';
 
   // Fav
   const favBtn = document.getElementById('modalFavBtn');
@@ -706,174 +623,27 @@ function setReminder() {
   document.getElementById('modalReminderBtn').textContent = '✓ Rappel actif';
 }
 
-// ─── PLAYER ────────────────────────────────────────────────────────
+// ─── PLAYER LAUNCH (CHIFFREMENT DU LIEN) ───────────────────────────
 function launchPlayer() {
   if (!currentMatch) return;
   const m = currentMatch;
   closeModal();
 
-  // Build player URL with params
-  let playerPage;
-  const params = new URLSearchParams();
+  // On prépare les données brutes
+  const payload = {
+    url: m.stream_url,
+    type: m.stream_type,
+    drm: m.chiffre ? m.drm_keys : null,
+    title: m.nom_match
+  };
 
-  if (m.stream_type === 'm3u8') {
-    playerPage = 'lecteur_m3u8.html';
-    params.set('url', m.stream_url);
-    params.set('title', m.nom_match);
-  } else {
-    playerPage = 'lecteur_mpd.html';
-    params.set('url', m.stream_url);
-    params.set('title', m.nom_match);
-    if (m.chiffre && m.drm_keys) {
-      params.set('drm', JSON.stringify(m.drm_keys));
-    }
-  }
+  // Petite obfucastion (Base64 inversé) pour masquer les infos dans l'URL
+  const jsonStr = JSON.stringify(payload);
+  const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+  const obfuscatedToken = base64.split('').reverse().join(''); 
 
-  // Since players are separate files, we open them in the iframe
-  // Fallback: open inline player using Shaka
-  openInlinePlayer(m);
-}
-
-function openInlinePlayer(m) {
-  // Inline player using Shaka directly in an iframe with srcdoc
-  const playerHtml = buildPlayerHTML(m);
-  const blob = new Blob([playerHtml], {type:'text/html'});
-  const url = URL.createObjectURL(blob);
-  document.getElementById('player-frame').src = url;
-  document.getElementById('playerModal').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function buildPlayerHTML(m) {
-  const isHLS = m.stream_type === 'm3u8';
-  const drmConfig = m.chiffre && m.drm_keys ? JSON.stringify(m.drm_keys) : 'null';
-
-  return `<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.compiled.js"><\/script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body,html{background:#000;height:100%;font-family:'Inter',sans-serif;overflow:hidden;color:#fff;user-select:none}
-body.hide-cursor{cursor:none!important}body.hide-cursor *{cursor:none!important}
-#pc{position:relative;width:100%;height:100%;background:#000;overflow:hidden}
-video{width:100%;height:100%;display:block;object-fit:contain}
-#cl{position:absolute;top:0;left:0;width:100%;height:100%;z-index:5}
-#ui{position:absolute;top:0;left:0;width:100%;height:100%;z-index:50;display:flex;flex-direction:column;justify-content:space-between;opacity:0;transition:opacity .2s}
-#ui.vis{opacity:1}
-.top{padding:20px 30px;background:linear-gradient(to bottom,rgba(0,0,0,.85),transparent);display:flex;justify-content:space-between;align-items:center;pointer-events:auto}
-.ttl{font-size:15px;font-weight:700;position:absolute;left:50%;top:25px;transform:translateX(-50%);text-shadow:0 1px 4px rgba(0,0,0,.8);pointer-events:none;white-space:nowrap;max-width:60vw;overflow:hidden;text-overflow:ellipsis}
-.icons{display:flex;gap:20px;align-items:center}
-.ib{width:24px;height:24px;color:rgba(255,255,255,.7);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center}
-.ib:hover{color:#fff;transform:scale(1.15)}
-.ib svg{width:100%;height:100%}
-.cc{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:60px;pointer-events:auto;z-index:60}
-.cb{cursor:pointer;transition:transform .15s;color:rgba(255,255,255,.85);display:flex}
-.cb:hover{transform:scale(1.1);color:#fff}
-.bot{padding:0 30px 25px;background:linear-gradient(to top,rgba(0,0,0,.9),transparent);display:flex;flex-direction:column;gap:8px;pointer-events:auto;z-index:100}
-.td{font-size:13px;color:#ccc;display:flex;align-items:center;gap:8px}
-.lb{background:#e50914;color:#fff;padding:2px 8px;border-radius:4px;font-weight:700;font-size:12px;display:inline-flex;align-items:center;gap:4px}
-.lb::before{content:'';width:5px;height:5px;background:#fff;border-radius:50%;animation:pl 1.5s infinite}
-@keyframes pl{0%,100%{opacity:1}50%{opacity:.3}}
-.sk{width:100%;height:4px;background:rgba(255,255,255,.2);cursor:pointer;border-radius:2px;transition:height .15s;position:relative}
-.sk:hover{height:6px}
-.sf{height:100%;background:#e8ff00;width:0%;border-radius:2px;position:relative}
-.sf::after{content:'';position:absolute;right:-6px;top:50%;transform:translateY(-50%);width:13px;height:13px;background:#fff;border-radius:50%;opacity:0;transition:opacity .15s}
-.sk:hover .sf::after{opacity:1}
-.err{position:absolute;inset:0;background:#000;color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:12px;z-index:999}
-.err h2{font-size:18px;font-weight:700}
-.err p{font-size:13px;color:rgba(255,255,255,.5);max-width:300px;line-height:1.5}
-.err a{padding:10px 24px;background:#e8ff00;color:#000;text-decoration:none;border-radius:8px;font-weight:700;font-size:13px}
-</style></head><body>
-<div id="pc">
-<video id="v"></video>
-<div id="cl"></div>
-<div class="err" id="err">
-<h2>Lecture impossible</h2>
-<p>Le flux n'est pas accessible ou nécessite des droits DRM spécifiques.</p>
-<a href="javascript:location.reload()">Réessayer</a>
-</div>
-<div id="ui">
-<div class="top" style="position:relative">
-<div></div>
-<div class="ttl" id="ttl">${m.nom_match}</div>
-<div class="icons">
-<div class="ib" id="vb" title="Volume"><svg fill="none" viewBox="0 0 24 24"><path stroke="#fff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 20V4L8.115 7.934A.5.5 0 0 1 7.867 8H3.5a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .5.5h4.367a.5.5 0 0 1 .248.066L15 20z"/><path fill="#fff" d="M17.5 12a2 2 0 0 1-2 2v-4a2 2 0 0 1 2 2z"/><path fill="#fff" fill-rule="evenodd" d="M18.536 7.08a.75.75 0 0 1 1.053.125A7.72 7.72 0 0 1 21.25 12a7.72 7.72 0 0 1-1.661 4.795.75.75 0 1 1-1.178-.929A6.22 6.22 0 0 0 19.75 12c0-1.46-.5-2.802-1.339-3.866a.75.75 0 0 1 .125-1.053z" clip-rule="evenodd"/></svg></div>
-<div class="ib" id="fsb" title="Plein écran"><svg fill="none" viewBox="0 0 24 24"><path fill="#fff" d="M5 8V6h2V4H3v4h2zm14-4h-4v2h2v2h2V4zm0 12v2h-2v2h4v-4h-2zM5 16H3v4h4v-2H5v-2z"/></svg></div>
-</div>
-</div>
-<div class="cc">
-<div class="cb" id="sb" style="width:44px;height:44px"><svg fill="none" viewBox="0 0 67 67"><path fill="#fff" fill-rule="evenodd" clip-rule="evenodd" d="M33.5 0C52 0 67 15 67 33.5S52 67 33.5 67 0 52 0 33.5c.03-1.4 1.17-2.53 2.58-2.53 1.4 0 2.55 1.13 2.57 2.53 0 15.65 12.7 28.35 28.35 28.35 15.66 0 28.35-12.7 28.35-28.35 0-15.66-12.69-28.35-28.35-28.35h-.04c-7 0-13.76 2.61-18.94 7.3-.46.42-.91.85-1.34 1.29h6.58c1.42 0 2.57 1.16 2.57 2.58 0 1.42-1.15 2.58-2.57 2.58H6.01c-1.42 0-2.57-1.16-2.57-2.58V2.58C3.44 1.15 4.59 0 6.01 0c1.43 0 2.58 1.15 2.58 2.58v8.52c.78-.86 1.61-1.7 2.47-2.47A33.407 33.407 0 0 1 33.46 0h.04z"/></svg></div>
-<div class="cb" id="pb" style="width:60px;height:60px">
-<svg id="ip" fill="none" viewBox="0 0 67 67"><path fill="#fff" d="M20.28 9.65c-2.205-1.268-4.026-.228-4.026 2.307v43.805c0 2.535 1.82 3.574 4.027 2.307l38.471-21.903a2.556 2.556 0 0 0 1.094-.935 2.514 2.514 0 0 0 0-2.743 2.556 2.556 0 0 0-1.093-.936L20.28 9.65z"/></svg>
-<svg id="ipa" style="display:none" fill="none" viewBox="0 0 67 67"><path fill="#fff" fill-rule="evenodd" d="M46.332 5.773a4.125 4.125 0 1 0 0 8.25v38.25a4.125 4.125 0 1 0 0-8.25V5.773zM25.707 9.898v46.75a4.125 4.125 0 1 1-8.25 0V9.898a4.123 4.123 0 0 1 4.125-4.125 4.123 4.123 0 0 1 4.125 4.125z" clip-rule="evenodd"/></svg>
-</div>
-<div class="cb" id="sfb" style="width:44px;height:44px"><svg fill="none" viewBox="0 0 67 67"><path fill="#fff" fill-rule="evenodd" clip-rule="evenodd" d="M33.5 0C15 0 0 15 0 33.5S15 67 33.5 67 67 52 67 33.5a2.583 2.583 0 0 0-5.15 0c0 15.66-12.69 28.35-28.35 28.35-15.65 0-28.35-12.7-28.35-28.35 0-15.66 12.7-28.35 28.35-28.35 7.3 0 13.96 2.76 18.99 7.3.46.42.9.85 1.34 1.29h-6.59a2.58 2.58 0 0 0 0 5.16h13.75c1.42 0 2.57-1.16 2.57-2.58V2.58c0-1.43-1.15-2.58-2.57-2.58-1.43 0-2.58 1.15-2.58 2.58v8.52a33.446 33.446 0 0 0-2.47-2.48A33.446 33.446 0 0 0 33.54 0h-.04z"/></svg></div>
-</div>
-<div class="bot">
-<div class="td"><span class="lb">DIRECT</span></div>
-<div class="sk" id="sk"><div class="sf" id="sf"></div></div>
-</div>
-</div>
-</div>
-<script>
-var v=document.getElementById('v'),cl=document.getElementById('cl'),ui=document.getElementById('ui'),pb=document.getElementById('pb'),ip=document.getElementById('ip'),ipa=document.getElementById('ipa'),sf=document.getElementById('sf'),sk=document.getElementById('sk'),err=document.getElementById('err');
-var player,loaded=false,ut,ct,menuOpen=false;
-var drmKeys=${drmConfig};
-function showUI(){ui.classList.add('vis');document.body.classList.remove('hide-cursor');clearTimeout(ut);if(!v.paused)ut=setTimeout(function(){ui.classList.remove('vis');document.body.classList.add('hide-cursor')},5000)}
-function togglePlay(){if(!loaded)return;if(v.paused){v.play();ip.style.display='none';ipa.style.display='block'}else{v.pause();ip.style.display='block';ipa.style.display='none';ui.classList.add('vis')}}
-function skip(s){if(!loaded||!player)return;var r=player.seekRange();if(r)v.currentTime=Math.max(r.start,Math.min(r.end,v.currentTime+s))}
-cl.onmousemove=showUI;
-cl.onclick=function(){if(ct){clearTimeout(ct);ct=null;if(!document.fullscreenElement)document.getElementById('pc').requestFullscreen();else document.exitFullscreen()}else{ct=setTimeout(function(){ct=null;togglePlay();showUI()},250)}};
-pb.onclick=function(e){e.stopPropagation();togglePlay()};
-document.getElementById('sb').onclick=function(e){e.stopPropagation();skip(-10)};
-document.getElementById('sfb').onclick=function(e){e.stopPropagation();skip(10)};
-document.getElementById('vb').onclick=function(e){e.stopPropagation();v.muted=!v.muted};
-document.getElementById('fsb').onclick=function(e){e.stopPropagation();if(!document.fullscreenElement)document.getElementById('pc').requestFullscreen();else document.exitFullscreen()};
-sk.onclick=function(e){if(!loaded||!player)return;e.stopPropagation();var r=player.seekRange(),rect=sk.getBoundingClientRect();if(r){var d=r.end-r.start;v.currentTime=r.start+(e.clientX-rect.left)/rect.width*d}};
-v.ontimeupdate=function(){if(!loaded||!player)return;var r=player.seekRange();if(r){var d=r.end-r.start,p=v.currentTime-r.start;sf.style.width=d>0?(p/d)*100+'%':'100%'}};
-window.onkeydown=function(e){if(!loaded)return;showUI();if(e.code==='Space'){e.preventDefault();togglePlay()}else if(e.code==='ArrowRight'){skip(10)}else if(e.code==='ArrowLeft'){skip(-10)}};
-async function init(){
-if(!window.isSecureContext)return;
-shaka.polyfill.installAll();
-if(!shaka.Player.isBrowserSupported())return;
-player=new shaka.Player(v);
-var cfg={streaming:{rebufferingGoal:2,bufferingGoal:10,bufferBehind:30},abr:{enabled:true}};
-if(drmKeys){
-var servers={};
-for(var kid in drmKeys){servers['com.widevine.alpha']='https://cwip-shaka-proxy.appspot.com/no_auth';break}
-cfg.drm={servers:servers};
-player.getNetworkingEngine().registerRequestFilter(function(type,req){
-if(type===shaka.net.NetworkingEngine.RequestType.LICENSE){
-req.allowCrossSiteCredentials=false;
-}});
-player.configure(cfg);
-player.getNetworkingEngine().registerResponseFilter(function(type,resp){});
-}
-player.configure(cfg);
-player.addEventListener('error',function(ev){console.error(ev.detail);err.style.display='flex'});
-try{
-await player.load('${m.stream_url}');
-loaded=true;
-showUI();
-var rng=player.seekRange();
-if(rng&&rng.end>0)v.currentTime=rng.end;
-v.play().catch(function(){});
-}catch(e){console.error(e);err.style.display='flex'}
-}
-document.addEventListener('DOMContentLoaded',init);
-showUI();
-<\/script>
-</body></html>`;
-}
-
-function closePlayer() {
-  const modal = document.getElementById('playerModal');
-  modal.classList.remove('open');
-  const frame = document.getElementById('player-frame');
-  const blobUrl = frame.src;
-  frame.src = '';
-  if (blobUrl && blobUrl.startsWith('blob:')) URL.revokeObjectURL(blobUrl);
-  document.body.style.overflow = '';
+  // Ouverture du lecteur universel
+  window.open(`lecteur.html?token=${obfuscatedToken}`, '_blank');
 }
 
 // ─── HERO ──────────────────────────────────────────────────────────
@@ -915,11 +685,6 @@ function buildHero() {
       <div class="hero-title">${m.nom_match.split(' vs ').join('<br><small style="font-size:.5em;opacity:.6;letter-spacing:3px">VS</small><br>')}</div>
       <div class="hero-desc">${m.description}</div>
       <div class="hero-meta">
-        <div class="hero-teams">
-          <img class="hero-team-logo" src="${m.logo_equipe1}" alt="" onerror="this.style.display='none'">
-          <span class="hero-vs">VS</span>
-          <img class="hero-team-logo" src="${m.logo_equipe2}" alt="" onerror="this.style.display='none'">
-        </div>
         <div class="hero-datetime">${status==='live'?'🔴 EN DIRECT MAINTENANT':formatDate(m.date,m.heure)}</div>
       </div>
       <div class="hero-actions">
@@ -955,7 +720,6 @@ function buildTicker() {
   if (!live.length) return;
   document.getElementById('liveTicker').style.display = 'flex';
   const inner = document.getElementById('tickerInner');
-  // Duplicate for seamless loop
   const items = [...live, ...live].map(m =>
     `<span class="ticker-item">${m.nom_match} <span class="ticker-score">EN DIRECT</span></span>`
   ).join('');
@@ -1043,8 +807,7 @@ function buildFilterBar() {
     {id:'all', label:'Tous'},
     {id:'live', label:'🔴 En direct'},
     {id:'upcoming', label:'À venir'},
-    {id:'soon', label:'Bientôt'},
-    {id:'past', label:'Terminés'},
+    {id:'soon', label:'Bientôt'}
   ];
   filters.forEach(f => {
     const chip = document.createElement('div');
@@ -1073,12 +836,8 @@ function renderAllMatches(statusFilter) {
     filtered = filtered.filter(m => getMatchStatus(m) === statusFilter);
   }
 
-  // Hide past matches older than 2.5h
-  filtered = filtered.filter(m => {
-    const matchDT = new Date(`${m.date}T${m.heure}:00`);
-    const diff = (now - matchDT) / 60000;
-    return diff < 150;
-  });
+  // Ne pas afficher les anciens matchs (replays non pris en charge)
+  filtered = filtered.filter(m => getMatchStatus(m) !== 'past');
 
   if (!filtered.length) {
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
@@ -1123,8 +882,7 @@ function handleSearch(q) {
 // ─── KEYBOARD ──────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
-    if (document.getElementById('playerModal').classList.contains('open')) closePlayer();
-    else closeModal();
+    closeModal();
   }
 });
 
