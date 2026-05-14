@@ -48,12 +48,36 @@
             resize: vertical;
             min-height: 80px;
         }
+        .textarea-drm {
+            font-family: monospace;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+        }
         .row {
             display: flex;
             gap: 15px;
         }
         .row .form-group {
             flex: 1;
+        }
+        .box-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #e9ecef;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        .checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: normal;
+        }
+        .checkbox-label input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+            transform: scale(1.2);
         }
         button {
             width: 100%;
@@ -66,6 +90,7 @@
             cursor: pointer;
             transition: background 0.3s;
             font-weight: bold;
+            margin-top: 10px;
         }
         button:hover {
             background-color: #2980b9;
@@ -132,6 +157,45 @@
         <textarea id="description" placeholder="Entrez une brève description du match..."></textarea>
     </div>
 
+    <hr style="border: 1px solid #ecf0f1; margin: 20px 0;">
+
+    <div class="form-group">
+        <label for="stream-type">Type de flux vidéo :</label>
+        <select id="stream-type" onchange="toggleStreamOptions()">
+            <option value="none">-- Aucun / À définir plus tard --</option>
+            <option value="m3u8">Lien m3u8 (HLS)</option>
+            <option value="mpd">Lien MPD (DASH)</option>
+        </select>
+    </div>
+
+    <!-- Section M3U8 -->
+    <div id="m3u8-section" style="display: none;" class="box-section">
+        <div class="form-group" style="margin-bottom: 0;">
+            <label for="m3u8-url">URL du flux m3u8 :</label>
+            <input type="url" id="m3u8-url" placeholder="https://exemple.com/stream.m3u8">
+        </div>
+    </div>
+
+    <!-- Section MPD -->
+    <div id="mpd-section" style="display: none;" class="box-section">
+        <div class="form-group">
+            <label for="mpd-url">URL du flux MPD :</label>
+            <input type="url" id="mpd-url" placeholder="https://exemple.com/stream.mpd">
+        </div>
+        
+        <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="mpd-drm" onchange="toggleDRM()">
+                Flux chiffré (DRM)
+            </label>
+        </div>
+
+        <div id="drm-section" style="display: none; margin-bottom: 0;" class="form-group">
+            <label for="drm-keys">Clés de stream (Format JSON valide) :</label>
+            <textarea id="drm-keys" class="textarea-drm" placeholder='{&#10;  "433ffba670963e70857859a9dff4be04": "51ede3a821229fe81e71282c8eff80e3"&#10;}'></textarea>
+        </div>
+    </div>
+
     <button onclick="genererJSON()">Générer le JSON</button>
 
     <div class="output-container" id="output-container" style="display: none;">
@@ -170,7 +234,6 @@
         { "id": "ger-dfb", "nom": "DFB-Pokal (Coupe d'Allemagne)", "logo": "https://upload.wikimedia.org/wikipedia/en/b/be/DFB-Pokal_logo.svg" }
     ];
 
-    // Fusion de toutes tes listes d'équipes en un seul tableau
     const equipes = [
         // Nations
         { "id": "ARG", "nom": "Argentine", "logo": "https://flagcdn.com/w320/ar.png" },
@@ -484,7 +547,7 @@
             compSelect.appendChild(option);
         });
 
-        // Trier les équipes par ordre alphabétique pour faciliter la recherche
+        // Trier les équipes par ordre alphabétique
         equipes.sort((a, b) => a.nom.localeCompare(b.nom));
 
         const eq1Select = document.getElementById('equipe1');
@@ -501,6 +564,18 @@
             opt2.textContent = eq.nom;
             eq2Select.appendChild(opt2);
         });
+    }
+
+    // --- GESTION DE L'AFFICHAGE DU TYPE DE FLUX ---
+    function toggleStreamOptions() {
+        const type = document.getElementById('stream-type').value;
+        document.getElementById('m3u8-section').style.display = (type === 'm3u8') ? 'block' : 'none';
+        document.getElementById('mpd-section').style.display = (type === 'mpd') ? 'block' : 'none';
+    }
+
+    function toggleDRM() {
+        const isDRM = document.getElementById('mpd-drm').checked;
+        document.getElementById('drm-section').style.display = isDRM ? 'block' : 'none';
     }
 
     // --- GÉNÉRATION DU JSON ---
@@ -521,7 +596,7 @@
         const equipe1 = equipes.find(e => e.id === idEq1);
         const equipe2 = equipes.find(e => e.id === idEq2);
 
-        const matchJson = {
+        let matchJson = {
             id_equipe1: equipe1.id,
             id_equipe2: equipe2.id,
             id_championnat: idComp,
@@ -533,6 +608,28 @@
             heure: heureMatch,
             description: description
         };
+
+        // Ajout des informations de flux vidéo
+        const streamType = document.getElementById('stream-type').value;
+        
+        if (streamType === 'm3u8') {
+            matchJson.stream_type = 'm3u8';
+            matchJson.stream_url = document.getElementById('m3u8-url').value;
+        } else if (streamType === 'mpd') {
+            matchJson.stream_type = 'mpd';
+            matchJson.stream_url = document.getElementById('mpd-url').value;
+            matchJson.chiffre = document.getElementById('mpd-drm').checked;
+            
+            if (matchJson.chiffre) {
+                const keysRaw = document.getElementById('drm-keys').value;
+                try {
+                    matchJson.drm_keys = JSON.parse(keysRaw);
+                } catch (e) {
+                    alert("Erreur ! Le format JSON des clés de stream est invalide. Veuillez vérifier vos accolades et guillemets.");
+                    return; // Stoppe la génération si le JSON est cassé
+                }
+            }
+        }
 
         const jsonString = JSON.stringify(matchJson, null, 2);
         
