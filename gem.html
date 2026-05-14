@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moovies Sport - Catalogue</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0a0a0c;
+            --surface-color: #1a1a1f;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --accent: #e50914; /* Rouge façon plateforme streaming */
+            --accent-hover: #ff1523;
+            --live-color: #2ecc71;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Roboto', sans-serif; background-color: var(--bg-color); color: var(--text-main); overflow-x: hidden; }
+        
+        /* Navbar */
+        nav { position: fixed; top: 0; width: 100%; padding: 20px 50px; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent); z-index: 100; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
+        .logo { font-size: 28px; font-weight: 900; letter-spacing: 1px; pointer-events: auto; }
+        .logo span { color: var(--accent); }
+
+        /* Hero Banner */
+        .hero { position: relative; height: 80vh; width: 100%; display: flex; align-items: flex-end; padding: 50px; background-size: cover; background-position: center; transition: background-image 0.5s ease-in-out; }
+        .hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, var(--bg-color) 0%, transparent 60%, rgba(0,0,0,0.4) 100%); }
+        .hero::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to right, var(--bg-color) 0%, transparent 50%); }
+        .hero-content { position: relative; z-index: 10; max-width: 600px; }
+        .hero-championship { font-size: 14px; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); margin-bottom: 10px; font-weight: 700; }
+        .hero-title { font-size: 48px; font-weight: 900; margin-bottom: 15px; line-height: 1.1; }
+        .hero-desc { font-size: 16px; color: var(--text-muted); margin-bottom: 25px; line-height: 1.5; }
+        
+        .btn { padding: 12px 28px; border: none; border-radius: 4px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: inline-flex; align-items: center; gap: 10px; }
+        .btn-primary { background: var(--text-main); color: #000; }
+        .btn-primary:hover { background: rgba(255,255,255,0.8); }
+        
+        /* Catalog Sections */
+        .catalog { padding: 20px 50px 50px; position: relative; z-index: 20; margin-top: -100px; }
+        .row { margin-bottom: 40px; }
+        .row-title { font-size: 22px; font-weight: 700; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .cards-container { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; scrollbar-width: none; }
+        .cards-container::-webkit-scrollbar { display: none; }
+        
+        /* Match Card */
+        .card { flex: 0 0 300px; background: var(--surface-color); border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease; position: relative; }
+        .card:hover { transform: scale(1.05) translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.5); z-index: 2; }
+        .card-img-wrapper { height: 170px; position: relative; }
+        .card-img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+        .card-img-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%); display: flex; justify-content: space-between; align-items: flex-end; padding: 10px; }
+        .team-logos { display: flex; gap: 5px; align-items: center; }
+        .team-logos img { width: 35px; height: 35px; object-fit: contain; background: rgba(255,255,255,0.1); border-radius: 50%; padding: 4px; backdrop-filter: blur(4px); }
+        .status-badge { font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 4px; text-transform: uppercase; background: rgba(255,255,255,0.2); }
+        .status-live { background: var(--accent); animation: pulse 2s infinite; }
+        .card-info { padding: 15px; }
+        .card-title { font-size: 15px; font-weight: 700; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-time { font-size: 13px; color: var(--text-muted); }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(10px); z-index: 1000; display: none; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease; }
+        .modal-overlay.active { display: flex; opacity: 1; }
+        .modal-content { background: var(--surface-color); width: 90%; max-width: 900px; border-radius: 12px; overflow: hidden; position: relative; transform: scale(0.95); transition: transform 0.3s ease; box-shadow: 0 25px 50px rgba(0,0,0,0.5); }
+        .modal-overlay.active .modal-content { transform: scale(1); }
+        .modal-close { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; background: rgba(0,0,0,0.5); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 10; border: none; color: white; font-size: 24px; transition: background 0.2s; }
+        .modal-close:hover { background: rgba(255,255,255,0.2); }
+        .modal-hero { height: 350px; position: relative; background-size: cover; background-position: center; display: flex; align-items: flex-end; padding: 40px; }
+        .modal-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, var(--surface-color) 0%, transparent 80%); }
+        .modal-info { position: relative; z-index: 5; width: 100%; }
+        .modal-title-group { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 20px; }
+        .modal-h1 { font-size: 32px; font-weight: 900; margin-bottom: 5px; }
+        .modal-meta { font-size: 15px; color: var(--text-muted); margin-bottom: 20px; display: flex; align-items: center; gap: 15px; }
+        .modal-actions { display: flex; gap: 15px; }
+        .btn-fav { background: rgba(255,255,255,0.1); color: white; }
+        .btn-fav:hover { background: rgba(255,255,255,0.2); }
+        .btn-fav.active { background: var(--text-main); color: black; }
+        .modal-details { padding: 0 40px 40px; color: #ccc; font-size: 15px; line-height: 1.6; }
+
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">MOOVIES<span>SPORT</span></div>
+    </nav>
+
+    <header class="hero" id="hero-banner">
+        <div class="hero-content">
+            <div class="hero-championship" id="hero-champ">Mise en avant</div>
+            <h1 class="hero-title" id="hero-title">Chargement...</h1>
+            <p class="hero-desc" id="hero-desc">Veuillez patienter pendant le chargement du catalogue.</p>
+            <button class="btn btn-primary" id="hero-btn">Plus d'infos</button>
+        </div>
+    </header>
+
+    <main class="catalog" id="catalog-container">
+        </main>
+
+    <div class="modal-overlay" id="match-modal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">×</button>
+            <div class="modal-hero" id="modal-hero-img">
+                <div class="modal-info">
+                    <div class="modal-title-group">
+                        <div>
+                            <div class="modal-meta" id="modal-champ-name">UEFA Champions League</div>
+                            <h1 class="modal-h1" id="modal-title">PSG vs ARS</h1>
+                            <div class="modal-meta" id="modal-time-info">Aujourd'hui à 21:00</div>
+                        </div>
+                        <div class="team-logos" id="modal-logos" style="transform: scale(1.5); transform-origin: bottom right;"></div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-primary" id="modal-play-btn" style="display: none;">
+                            ▶ Regarder le direct
+                        </button>
+                        <button class="btn btn-fav" id="modal-fav-btn" onclick="toggleFavorite()">
+                            + Ma Liste
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-details" id="modal-desc">Description détaillée ici...</div>
+        </div>
+    </div>
+
+    <script>
+        // Données statiques (Remplaçable par un fetch() vers une API)
+        const championnats = [
+            { id: "fifa-wc", nom: "Coupe du Monde de la FIFA" },
+            { id: "uefa-ucl", nom: "UEFA Champions League" },
+            { id: "fra-l1", nom: "Ligue 1 McDonald's" }
+        ];
+
+        let matchsData = [
+            {
+                id: "m1",
+                id_equipe1: "PSG", id_equipe2: "ARS", id_championnat: "uefa-ucl",
+                nom_match: "Paris Saint-Germain vs Arsenal FC",
+                visuel_url: "https://thumb.canalplus.pro/http/unsafe/1440x810/filters:quality(80)/canalplus-cdn.canal-plus.io/p1/unit/41190255/canal-ouah_50001/STD169/myCANAL_16x9_sport_1920x1080-2025-05-05T153155.517--OAu",
+                logo_equipe1: "https://upload.wikimedia.org/wikipedia/fr/thumb/4/4a/Paris_Saint-Germain_Football_Club.svg/240px-Paris_Saint-Germain_Football_Club.svg.png",
+                logo_equipe2: "https://upload.wikimedia.org/wikipedia/fr/thumb/5/53/Arsenal_FC.svg/240px-Arsenal_FC.svg.png",
+                date: "2026-05-30", heure: "18:00",
+                description: "Ligue des champions de l'UEFA - Phase de groupes. Le choc très attendu au Parc des Princes.",
+                stream_type: "mpd", stream_url: "https://origin-m6web.live.6cloud.fr/out/v1/6play/6play-m6/cmaf_cenc00/dash-short-hd.mpd",
+                chiffre: true, drm_keys: { "433ffba670963e70857859a9dff4be04": "51ede3a821229fe81e71282c8eff80e3" }
+            },
+            {
+                id: "m2",
+                id_equipe1: "OM", id_equipe2: "OL", id_championnat: "fra-l1",
+                nom_match: "Olympique de Marseille vs Olympique Lyonnais",
+                visuel_url: "https://cdn.pixabay.com/photo/2016/11/29/02/05/audience-1866738_1280.jpg",
+                logo_equipe1: "https://upload.wikimedia.org/wikipedia/fr/thumb/4/43/Logo_Olympique_de_Marseille.svg/200px-Logo_Olympique_de_Marseille.svg.png",
+                logo_equipe2: "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e2/Olympique_lyonnais_%28logo%29.svg/200px-Olympique_lyonnais_%28logo%29.svg.png",
+                date: "2026-05-31", heure: "21:00",
+                description: "L'Olympico ! La rivalité historique du championnat de France.",
+                stream_type: "m3u8", stream_url: "https://live-hls-abr-cdn.livepush.io/live/bigbuckbunnyclip/index.m3u8", chiffre: false
+            }
+        ];
+
+        let currentActiveMatchId = null;
+        let heroInterval;
+
+        // Astuce de démo : Rendre le premier match "En direct" par rapport à l'heure locale
+        const now = new Date();
+        matchsData[0].date = now.toISOString().split('T')[0];
+        matchsData[0].heure = now.getHours().toString().padStart(2, '0') + ":" + now.getMinutes().toString().padStart(2, '0');
+
+        // Utilitaires de Temps
+        function getMatchDates(match) {
+            const matchStart = new Date(`${match.date}T${match.heure}:00`);
+            const diffMinutes = (matchStart.getTime() - new Date().getTime()) / 60000;
+            const isLive = diffMinutes <= 20 && diffMinutes >= -150; // De H-20min à H+2h30
+            const isFinished = diffMinutes < -150;
+            return { matchStart, diffMinutes, isLive, isFinished };
+        }
+
+        // Système de Favoris (Cache)
+        function getFavorites() {
+            return JSON.parse(localStorage.getItem('moovies_sport_favs') || '[]');
+        }
+        function toggleFavorite() {
+            if (!currentActiveMatchId) return;
+            let favs = getFavorites();
+            const btn = document.getElementById('modal-fav-btn');
+            if (favs.includes(currentActiveMatchId)) {
+                favs = favs.filter(id => id !== currentActiveMatchId);
+                btn.classList.remove('active');
+                btn.innerHTML = "+ Ma Liste";
+            } else {
+                favs.push(currentActiveMatchId);
+                btn.classList.add('active');
+                btn.innerHTML = "✓ Dans ma liste";
+            }
+            localStorage.setItem('moovies_sport_favs', JSON.stringify(favs));
+            renderCatalog(); // Met à jour la ligne des favoris
+        }
+
+        // Rendu UI
+        function initApp() {
+            renderHero();
+            renderCatalog();
+        }
+
+        function renderHero() {
+            const validMatches = matchsData.filter(m => !getMatchDates(m).isFinished);
+            if(validMatches.length === 0) return;
+            
+            let currentIndex = 0;
+            const updateHero = () => {
+                const match = validMatches[currentIndex];
+                const champInfo = championnats.find(c => c.id === match.id_championnat);
+                const heroEl = document.getElementById('hero-banner');
+                
+                heroEl.style.backgroundImage = `url('${match.visuel_url}')`;
+                document.getElementById('hero-champ').innerText = champInfo ? champInfo.nom : 'En vedette';
+                document.getElementById('hero-title').innerText = match.nom_match;
+                document.getElementById('hero-desc').innerText = match.description;
+                
+                const btn = document.getElementById('hero-btn');
+                btn.onclick = () => openModal(match.id);
+                
+                currentIndex = (currentIndex + 1) % validMatches.length;
+            };
+
+            updateHero();
+            clearInterval(heroInterval);
+            heroInterval = setInterval(updateHero, 8000); // Alterne toutes les 8s
+        }
+
+        function createMatchCard(match) {
+            const { isLive } = getMatchDates(match);
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.onclick = () => openModal(match.id);
+
+            let statusHtml = isLive 
+                ? `<div class="status-badge status-live">EN DIRECT</div>` 
+                : `<div class="status-badge">${match.date} - ${match.heure}</div>`;
+
+            card.innerHTML = `
+                <div class="card-img-wrapper">
+                    <img src="${match.visuel_url}" alt="${match.nom_match}">
+                    <div class="card-img-overlay">
+                        ${statusHtml}
+                        <div class="team-logos">
+                            <img src="${match.logo_equipe1}">
+                            <img src="${match.logo_equipe2}">
+                        </div>
+                    </div>
+                </div>
+                <div class="card-info">
+                    <div class="card-title">${match.nom_match}</div>
+                </div>
+            `;
+            return card;
+        }
+
+        function renderCatalog() {
+            const container = document.getElementById('catalog-container');
+            container.innerHTML = ''; // Reset
+
+            const favs = getFavorites();
+            const liveMatches = [];
+            const favMatches = [];
+            const byChamp = {};
+
+            // Filtrage des matchs de moins de 2h30
+            matchsData.forEach(match => {
+                const dates = getMatchDates(match);
+                if (dates.isFinished) return; // Ne pas afficher les vieux matchs
+
+                if (dates.isLive) liveMatches.push(match);
+                if (favs.includes(match.id)) favMatches.push(match);
+
+                if (!byChamp[match.id_championnat]) byChamp[match.id_championnat] = [];
+                byChamp[match.id_championnat].push(match);
+            });
+
+            // Ligne : En direct
+            if (liveMatches.length > 0) appendRow(container, '🔴 En Direct', liveMatches);
+            
+            // Ligne : Favoris
+            if (favMatches.length > 0) appendRow(container, '⭐ Ma Liste', favMatches);
+
+            // Lignes : Par championnat
+            for (const [champId, matches] of Object.entries(byChamp)) {
+                const champInfo = championnats.find(c => c.id === champId);
+                const title = champInfo ? champInfo.nom : champId;
+                appendRow(container, title, matches);
+            }
+        }
+
+        function appendRow(parent, title, matches) {
+            const row = document.createElement('div');
+            row.className = 'row';
+            const cardsHtml = document.createElement('div');
+            cardsHtml.className = 'cards-container';
+            
+            matches.forEach(m => cardsHtml.appendChild(createMatchCard(m)));
+
+            row.innerHTML = `<h2 class="row-title">${title}</h2>`;
+            row.appendChild(cardsHtml);
+            parent.appendChild(row);
+        }
+
+        // Modale & Lecteur
+        function openModal(matchId) {
+            const match = matchsData.find(m => m.id === matchId);
+            if (!match) return;
+            currentActiveMatchId = match.id;
+
+            const { isLive, matchStart } = getMatchDates(match);
+            const champInfo = championnats.find(c => c.id === match.id_championnat);
+
+            document.getElementById('modal-hero-img').style.backgroundImage = `url('${match.visuel_url}')`;
+            document.getElementById('modal-champ-name').innerText = champInfo ? champInfo.nom : '';
+            document.getElementById('modal-title').innerText = match.nom_match;
+            document.getElementById('modal-desc').innerText = match.description;
+            
+            const timeInfoStr = matchStart.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }) + " à " + match.heure;
+            document.getElementById('modal-time-info').innerText = isLive ? "🔴 Actuellement en direct" : timeInfoStr;
+
+            document.getElementById('modal-logos').innerHTML = `
+                <img src="${match.logo_equipe1}">
+                <img src="${match.logo_equipe2}">
+            `;
+
+            // Gestion Bouton Favoris
+            const favBtn = document.getElementById('modal-fav-btn');
+            if (getFavorites().includes(match.id)) {
+                favBtn.classList.add('active');
+                favBtn.innerHTML = "✓ Dans ma liste";
+            } else {
+                favBtn.classList.remove('active');
+                favBtn.innerHTML = "+ Ma Liste";
+            }
+
+            // Gestion Bouton Play
+            const playBtn = document.getElementById('modal-play-btn');
+            if (isLive) {
+                playBtn.style.display = 'inline-flex';
+                playBtn.onclick = () => launchPlayer(match);
+            } else {
+                playBtn.style.display = 'none';
+            }
+
+            document.getElementById('match-modal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('match-modal').classList.remove('active');
+            currentActiveMatchId = null;
+        }
+
+        function launchPlayer(match) {
+            // Détermine quel lecteur utiliser
+            const lecteurFile = match.stream_type === 'mpd' ? 'lecteur_mpd.html' : 'lecteur_m3u8.html';
+            
+            // Construction de l'URL avec les paramètres pour le lecteur
+            const params = new URLSearchParams();
+            params.append('url', match.stream_url);
+            params.append('title', match.nom_match);
+            if (match.chiffre && match.drm_keys) {
+                // On passe les clés en Base64 pour éviter les soucis d'URL
+                params.append('drm', btoa(JSON.stringify(match.drm_keys)));
+            }
+
+            const targetUrl = `${lecteurFile}?${params.toString()}`;
+            
+            // Ouvre le lecteur dans un nouvel onglet (ou `window.location.href = targetUrl` pour rester sur la même page)
+            window.open(targetUrl, '_blank');
+        }
+
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
