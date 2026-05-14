@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur de Match JSON</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 800px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #34495e;
+        }
+        select, input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        .row {
+            display: flex;
+            gap: 15px;
+        }
+        .row .form-group {
+            flex: 1;
+        }
+        button {
+            width: 100%;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: bold;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .output-container {
+            margin-top: 25px;
+        }
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Générateur JSON de Match</h1>
+    
+    <div class="form-group">
+        <label for="championnat">Championnat / Compétition :</label>
+        <select id="championnat">
+            <option value="">-- Sélectionner --</option>
+        </select>
+    </div>
+
+    <div class="row">
+        <div class="form-group">
+            <label for="equipe1">Équipe 1 (Domicile) :</label>
+            <select id="equipe1">
+                <option value="">-- Sélectionner --</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="equipe2">Équipe 2 (Extérieur) :</label>
+            <select id="equipe2">
+                <option value="">-- Sélectionner --</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="visuel">URL du visuel horizontal :</label>
+        <input type="url" id="visuel" placeholder="https://exemple.com/image.jpg">
+    </div>
+
+    <div class="row">
+        <div class="form-group">
+            <label for="date">Date :</label>
+            <input type="date" id="date">
+        </div>
+        <div class="form-group">
+            <label for="heure">Heure :</label>
+            <input type="time" id="heure">
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="description">Description du match :</label>
+        <textarea id="description" placeholder="Entrez une brève description du match..."></textarea>
+    </div>
+
+    <button onclick="genererJSON()">Générer le JSON</button>
+
+    <div class="output-container" id="output-container" style="display: none;">
+        <label>Résultat JSON :</label>
+        <pre id="json-output"></pre>
+    </div>
+</div>
+
+<script>
+    // --- DONNÉES ---
+    const competitions = [
+        { "id": "fifa-wc", "nom": "Coupe du Monde de la FIFA", "logo": "https://upload.wikimedia.org/wikipedia/commons/1/10/FIFA_World_Cup_2026_Logo.svg" },
+        { "id": "uefa-euro", "nom": "Championnat d'Europe de l'UEFA (Euro)", "logo": "https://upload.wikimedia.org/wikipedia/fr/5/52/Logo_UEFA_Euro_2024.svg" },
+        { "id": "uefa-ucl", "nom": "UEFA Champions League", "logo": "https://upload.wikimedia.org/wikipedia/fr/b/bf/UEFA_Champions_League_logo_2.svg" },
+        { "id": "uefa-uel", "nom": "UEFA Europa League", "logo": "https://upload.wikimedia.org/wikipedia/fr/f/f3/Logo_UEFA_Europa_League_2021.svg" },
+        { "id": "uefa-unl", "nom": "UEFA Nations League", "logo": "https://upload.wikimedia.org/wikipedia/fr/9/90/UEFA_Nations_League_2021_Logo.svg" },
+        { "id": "eng-pl", "nom": "Premier League (Angleterre)", "logo": "https://upload.wikimedia.org/wikipedia/fr/f/f2/Premier_League_Logo.svg" },
+        { "id": "esp-ll", "nom": "LaLiga EA Sports (Espagne)", "logo": "https://upload.wikimedia.org/wikipedia/commons/0/0f/LaLiga_logo_2023.svg" },
+        { "id": "ger-bl", "nom": "Bundesliga (Allemagne)", "logo": "https://upload.wikimedia.org/wikipedia/fr/0/0a/Logo_Bundesliga_2017.svg" },
+        { "id": "ita-sa", "nom": "Serie A Enilive (Italie)", "logo": "https://upload.wikimedia.org/wikipedia/commons/e/e1/Serie_A_logo_%282022%29.svg" },
+        { "id": "fra-l1", "nom": "Ligue 1 McDonald's (France)", "logo": "https://upload.wikimedia.org/wikipedia/commons/5/5e/Ligue1_McDonalds_logo.svg" },
+        { "id": "uefa-uecl", "nom": "UEFA Conference League", "logo": "https://upload.wikimedia.org/wikipedia/fr/a/a2/Logo_UEFA_Europa_Conference_League_2021.svg" },
+        { "id": "uefa-sc", "nom": "Supercoupe de l'UEFA", "logo": "https://upload.wikimedia.org/wikipedia/fr/1/15/Supercoupe_de_l%27UEFA_%28logo%29.svg" },
+        { "id": "eng-ch", "nom": "Championship (Angleterre D2)", "logo": "https://upload.wikimedia.org/wikipedia/en/5/5c/EFL_Championship.svg" },
+        { "id": "esp-sd", "nom": "LaLiga Hypermotion (Espagne D2)", "logo": "https://upload.wikimedia.org/wikipedia/commons/0/0f/LaLiga_logo_2023.svg" },
+        { "id": "ger-2bl", "nom": "2. Bundesliga (Allemagne D2)", "logo": "https://upload.wikimedia.org/wikipedia/fr/a/a6/Logo_2._Bundesliga_2017.svg" },
+        { "id": "ita-sb", "nom": "Serie BKT (Italie D2)", "logo": "https://upload.wikimedia.org/wikipedia/commons/0/04/Lega_Serie_B_logo_%28from_2024%29.svg" },
+        { "id": "fra-l2", "nom": "Ligue 2 BKT (France D2)", "logo": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Ligue2_BKT_logo.svg" },
+        { "id": "fra-n1", "nom": "Championnat National (France D3 / Ligue 3)", "logo": "https://upload.wikimedia.org/wikipedia/fr/f/f6/Logo_Championnat_National_FFF_2020.svg" },
+        { "id": "por-pl", "nom": "Liga Portugal Betclic", "logo": "https://upload.wikimedia.org/wikipedia/commons/0/0e/Liga_Portugal.svg" },
+        { "id": "ned-er", "nom": "Eredivisie (Pays-Bas)", "logo": "https://upload.wikimedia.org/wikipedia/commons/0/0f/Eredivisie_nieuw_logo_2017-.svg" },
+        { "id": "eng-fac", "nom": "FA Cup (Coupe d'Angleterre)", "logo": "https://upload.wikimedia.org/wikipedia/en/c/c1/Emirates_FA_Cup_logo.svg" },
+        { "id": "fra-cdf", "nom": "Coupe de France", "logo": "https://upload.wikimedia.org/wikipedia/fr/2/23/Logo_Coupe_de_France_de_football_2022.svg" },
+        { "id": "esp-cdr", "nom": "Copa del Rey (Coupe d'Espagne)", "logo": "https://upload.wikimedia.org/wikipedia/commons/b/b8/Copa_del_Rey_logo.svg" },
+        { "id": "ita-ci", "nom": "Coppa Italia Frecciarossa (Coupe d'Italie)", "logo": "https://upload.wikimedia.org/wikipedia/commons/5/5b/Coppa_Italia_logo_%282024%29.svg" },
+        { "id": "ger-dfb", "nom": "DFB-Pokal (Coupe d'Allemagne)", "logo": "https://upload.wikimedia.org/wikipedia/en/b/be/DFB-Pokal_logo.svg" }
+    ];
+
+    // Fusion de toutes tes listes d'équipes en un seul tableau
+    const equipes = [
+        // Nations
+        { "id": "ARG", "nom": "Argentine", "logo": "https://flagcdn.com/w320/ar.png" },
+        { "id": "FRA", "nom": "France", "logo": "https://flagcdn.com/w320/fr.png" },
+        { "id": "ESP", "nom": "Espagne", "logo": "https://flagcdn.com/w320/es.png" },
+        { "id": "ENG", "nom": "Angleterre", "logo": "https://flagcdn.com/w320/gb-eng.png" },
+        { "id": "BRA", "nom": "Brésil", "logo": "https://flagcdn.com/w320/br.png" },
+        { "id": "BEL", "nom": "Belgique", "logo": "https://flagcdn.com/w320/be.png" },
+        { "id": "POR", "nom": "Portugal", "logo": "https://flagcdn.com/w320/pt.png" },
+        { "id": "NED", "nom": "Pays-Bas", "logo": "https://flagcdn.com/w320/nl.png" },
+        { "id": "ITA", "nom": "Italie", "logo": "https://flagcdn.com/w320/it.png" },
+        { "id": "GER", "nom": "Allemagne", "logo": "https://flagcdn.com/w320/de.png" },
+        { "id": "CRO", "nom": "Croatie", "logo": "https://flagcdn.com/w320/hr.png" },
+        { "id": "USA", "nom": "États-Unis", "logo": "https://flagcdn.com/w320/us.png" },
+        { "id": "MEX", "nom": "Mexique", "logo": "https://flagcdn.com/w320/mx.png" },
+        { "id": "CAN", "nom": "Canada", "logo": "https://flagcdn.com/w320/ca.png" },
+        { "id": "MAR", "nom": "Maroc", "logo": "https://flagcdn.com/w320/ma.png" },
+        { "id": "SEN", "nom": "Sénégal", "logo": "https://flagcdn.com/w320/sn.png" },
+        { "id": "JPN", "nom": "Japon", "logo": "https://flagcdn.com/w320/jp.png" },
+        { "id": "KOR", "nom": "Corée du Sud", "logo": "https://flagcdn.com/w320/kr.png" },
+        { "id": "AUS", "nom": "Australie", "logo": "https://flagcdn.com/w320/au.png" },
+        { "id": "URY", "nom": "Uruguay", "logo": "https://flagcdn.com/w320/uy.png" },
+        { "id": "COL", "nom": "Colombie", "logo": "https://flagcdn.com/w320/co.png" },
+        { "id": "CHE", "nom": "Suisse", "logo": "https://flagcdn.com/w320/ch.png" },
+        { "id": "DEN", "nom": "Danemark", "logo": "https://flagcdn.com/w320/dk.png" },
+        { "id": "NOR", "nom": "Norvège", "logo": "https://flagcdn.com/w320/no.png" },
+        { "id": "TUR", "nom": "Turquie", "logo": "https://flagcdn.com/w320/tr.png" },
+        { "id": "AUT", "nom": "Autriche", "logo": "https://flagcdn.com/w320/at.png" },
+        { "id": "UKR", "nom": "Ukraine", "logo": "https://flagcdn.com/w320/ua.png" },
+        { "id": "SWE", "nom": "Suède", "logo": "https://flagcdn.com/w320/se.png" },
+        { "id": "HUN", "nom": "Hongrie", "logo": "https://flagcdn.com/w320/hu.png" },
+        { "id": "ECU", "nom": "Équateur", "logo": "https://flagcdn.com/w320/ec.png" },
+        { "id": "PAR", "nom": "Paraguay", "logo": "https://flagcdn.com/w320/py.png" },
+        { "id": "EGY", "nom": "Égypte", "logo": "https://flagcdn.com/w320/eg.png" },
+        { "id": "NGA", "nom": "Nigeria", "logo": "https://flagcdn.com/w320/ng.png" },
+        { "id": "CIV", "nom": "Côte d'Ivoire", "logo": "https://flagcdn.com/w320/ci.png" },
+        { "id": "DZA", "nom": "Algérie", "logo": "https://flagcdn.com/w320/dz.png" },
+        { "id": "TUN", "nom": "Tunisie", "logo": "https://flagcdn.com/w320/tn.png" },
+        { "id": "CMR", "nom": "Cameroun", "logo": "https://flagcdn.com/w320/cm.png" },
+        { "id": "MLI", "nom": "Mali", "logo": "https://flagcdn.com/w320/ml.png" },
+        { "id": "ZAF", "nom": "Afrique du Sud", "logo": "https://flagcdn.com/w320/za.png" },
+        { "id": "IRN", "nom": "Iran", "logo": "https://flagcdn.com/w320/ir.png" },
+        { "id": "SAU", "nom": "Arabie Saoudite", "logo": "https://flagcdn.com/w320/sa.png" },
+        { "id": "IRQ", "nom": "Irak", "logo": "https://flagcdn.com/w320/iq.png" },
+        { "id": "UZB", "nom": "Ouzbékistan", "logo": "https://flagcdn.com/w320/uz.png" },
+        { "id": "QAT", "nom": "Qatar", "logo": "https://flagcdn.com/w320/qa.png" },
+        { "id": "PAN", "nom": "Panama", "logo": "https://flagcdn.com/w320/pa.png" },
+        { "id": "CRI", "nom": "Costa Rica", "logo": "https://flagcdn.com/w320/cr.png" },
+        { "id": "NZL", "nom": "Nouvelle-Zélande", "logo": "https://flagcdn.com/w320/nz.png" },
+        { "id": "JAM", "nom": "Jamaïque", "logo": "https://flagcdn.com/w320/jm.png" },
+        // France
+        { "id": "AJA", "nom": "AJ Auxerre", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/6/62/Logo_AJ_Auxerre.svg/240px-Logo_AJ_Auxerre.svg.png" },
+        { "id": "ANG", "nom": "Angers SCO", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d2/Logo_Angers_SCO.svg/240px-Logo_Angers_SCO.svg.png" },
+        { "id": "ASM", "nom": "AS Monaco", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/ba/AS_Monaco_FC.svg/240px-AS_Monaco_FC.svg.png" },
+        { "id": "ASSE", "nom": "AS Saint-Étienne", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/5f/Logo_AS_Saint-Etienne_2022.svg/240px-Logo_AS_Saint-Etienne_2022.svg.png" },
+        { "id": "HAC", "nom": "Le Havre AC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/9/9b/Logo_Le_Havre_AC.svg/240px-Logo_Le_Havre_AC.svg.png" },
+        { "id": "LOSC", "nom": "Lille OSC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/70/Logo_Lille_OSC_2018.svg/240px-Logo_Lille_OSC_2018.svg.png" },
+        { "id": "OL", "nom": "Olympique Lyonnais", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e2/Olympique_lyonnais_%28logo%29.svg/240px-Olympique_lyonnais_%28logo%29.svg.png" },
+        { "id": "OM", "nom": "Olympique de Marseille", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/4/43/Logo_Olympique_de_Marseille.svg/240px-Logo_Olympique_de_Marseille.svg.png" },
+        { "id": "MHSC", "nom": "Montpellier HSC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/a/a8/Montpellier_HSC_logo.svg/240px-Montpellier_HSC_logo.svg.png" },
+        { "id": "FCN", "nom": "FC Nantes", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f7/FC_Nantes_2019_logo.svg/240px-FC_Nantes_2019_logo.svg.png" },
+        { "id": "OGCN", "nom": "OGC Nice", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b1/OGC_Nice_logo.svg/240px-OGC_Nice_logo.svg.png" },
+        { "id": "PSG", "nom": "Paris Saint-Germain", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/4/4a/Paris_Saint-Germain_Football_Club.svg/240px-Paris_Saint-Germain_Football_Club.svg.png" },
+        { "id": "RCL", "nom": "RC Lens", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/70/Logo_RC_Lens_2014.svg/240px-Logo_RC_Lens_2014.svg.png" },
+        { "id": "SDR", "nom": "Stade de Reims", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/02/Logo_Stade_de_Reims_2020.svg/240px-Logo_Stade_de_Reims_2020.svg.png" },
+        { "id": "SRFC", "nom": "Stade Rennais FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e9/Logo_Stade_Rennais_FC.svg/240px-Logo_Stade_Rennais_FC.svg.png" },
+        { "id": "SB29", "nom": "Stade Brestois 29", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/10/Logo_Stade_Brestois_29.svg/240px-Logo_Stade_Brestois_29.svg.png" },
+        { "id": "STRAS", "nom": "RC Strasbourg Alsace", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/df/RC_Strasbourg_Alsace.svg/240px-RC_Strasbourg_Alsace.svg.png" },
+        { "id": "TFC", "nom": "Toulouse FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/58/Toulouse_FC_logo_2021.svg/240px-Toulouse_FC_logo_2021.svg.png" },
+        { "id": "ACA", "nom": "AC Ajaccio", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/3/30/AC_Ajaccio_logo_2015.svg/240px-AC_Ajaccio_logo_2015.svg.png" },
+        { "id": "Amiens", "nom": "Amiens SC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f6/Amiens_SC_Logo.svg/240px-Amiens_SC_Logo.svg.png" },
+        { "id": "Annecy", "nom": "FC Annecy", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f2/FC_Annecy_logo.svg/240px-FC_Annecy_logo.svg.png" },
+        { "id": "Bastia", "nom": "SC Bastia", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/3/3d/Logo_SC_Bastia.svg/240px-Logo_SC_Bastia.svg.png" },
+        { "id": "Caen", "nom": "SM Caen", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/a/aa/Logo_SM_Caen_2016.svg/240px-Logo_SM_Caen_2016.svg.png" },
+        { "id": "Clermont", "nom": "Clermont Foot 63", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/7b/Logo_Clermont_Foot_63.svg/240px-Logo_Clermont_Foot_63.svg.png" },
+        { "id": "Dunkerque", "nom": "US Littoral Dunkerque", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b3/US_Littoral_Dunkerque_logo.svg/240px-US_Littoral_Dunkerque_logo.svg.png" },
+        { "id": "Grenoble", "nom": "Grenoble Foot 38", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/3/36/Logo_Grenoble_Foot_38.svg/240px-Logo_Grenoble_Foot_38.svg.png" },
+        { "id": "Guingamp", "nom": "EA Guingamp", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/22/En_Avant_Guingamp_logo.svg/240px-En_Avant_Guingamp_logo.svg.png" },
+        { "id": "Laval", "nom": "Stade Lavallois", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/3/3d/Stade_Lavallois_logo_2023.svg/240px-Stade_Lavallois_logo_2023.svg.png" },
+        { "id": "Lorient", "nom": "FC Lorient", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/1d/Logo_FC_Lorient_2010.svg/240px-Logo_FC_Lorient_2010.svg.png" },
+        { "id": "Martigues", "nom": "FC Martigues", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/c/cf/Logo_FC_Martigues.svg/240px-Logo_FC_Martigues.svg.png" },
+        { "id": "Metz", "nom": "FC Metz", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/4/4c/FC_Metz_logo_2021.svg/240px-FC_Metz_logo_2021.svg.png" },
+        { "id": "PFC", "nom": "Paris FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d4/Logo_Paris_FC_2011.svg/240px-Logo_Paris_FC_2011.svg.png" },
+        { "id": "Pau", "nom": "Pau FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/75/Pau_Football_Club_logo_2022.svg/240px-Pau_Football_Club_logo_2022.svg.png" },
+        { "id": "RedStar", "nom": "Red Star FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/0c/Red_Star_FC_logo.svg/240px-Red_Star_FC_logo.svg.png" },
+        { "id": "Rodez", "nom": "Rodez AF", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/c/cf/Rodez_Aveyron_Football_logo.svg/240px-Rodez_Aveyron_Football_logo.svg.png" },
+        { "id": "Troyes", "nom": "ES Troyes AC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/bf/ES_Troyes_AC_logo_2012.svg/240px-ES_Troyes_AC_logo_2012.svg.png" },
+        { "id": "AUB", "nom": "Aubagne FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f6/Logo_Aubagne_FC.svg/240px-Logo_Aubagne_FC.svg.png" },
+        { "id": "AVR", "nom": "US Avranches", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/7d/Logo_US_Avranches_MSM.svg/240px-Logo_US_Avranches_MSM.svg.png" },
+        { "id": "BOU", "nom": "Bourg-en-Bresse 01", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/ba/Football_Bourg-en-Bresse_P%C3%A9ronnas_01_logo.svg/240px-Football_Bourg-en-Bresse_P%C3%A9ronnas_01_logo.svg.png" },
+        { "id": "BOU1", "nom": "US Boulogne CO", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e0/US_Boulogne_CO.svg/240px-US_Boulogne_CO.svg.png" },
+        { "id": "CHA", "nom": "LB Châteauroux", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/22/Logo_LB_Chateauroux.svg/240px-Logo_LB_Chateauroux.svg.png" },
+        { "id": "CON", "nom": "US Concarneau", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/be/US_Concarneau_logo.svg/240px-US_Concarneau_logo.svg.png" },
+        { "id": "DIJ", "nom": "Dijon FCO", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f7/Dijon_FCO_logo_2014.svg/240px-Dijon_FCO_logo_2014.svg.png" },
+        { "id": "MAN", "nom": "Le Mans FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b3/Le_Mans_Football_Club_logo.svg/240px-Le_Mans_Football_Club_logo.svg.png" },
+        { "id": "NAN", "nom": "AS Nancy-Lorraine", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d3/Logo_AS_Nancy-Lorraine.svg/240px-Logo_AS_Nancy-Lorraine.svg.png" },
+        { "id": "NIM", "nom": "Nîmes Olympique", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f0/Logo_Nimes_Olympique.svg/240px-Logo_Nimes_Olympique.svg.png" },
+        { "id": "ORL", "nom": "US Orléans", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/50/US_Orl%C3%A9ans_logo.svg/240px-US_Orl%C3%A9ans_logo.svg.png" },
+        { "id": "QUE", "nom": "Quevilly Rouen Métropole", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/52/Quevilly_Rouen_M%C3%A9tropole_Logo_2015.svg/240px-Quevilly_Rouen_M%C3%A9tropole_Logo_2015.svg.png" },
+        { "id": "SOU", "nom": "FC Sochaux-Montbéliard", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/5d/Logo_FC_Sochaux-Montbeliard_2024.svg/240px-Logo_FC_Sochaux-Montbeliard_2024.svg.png" },
+        { "id": "VAL", "nom": "Valenciennes FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/3/36/Valenciennes_FC_logo.svg/240px-Valenciennes_FC_logo.svg.png" },
+        { "id": "VER", "nom": "FC Versailles 78", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/14/Logo_FC_Versailles_78.svg/240px-Logo_FC_Versailles_78.svg.png" },
+        { "id": "VIL", "nom": "FC Villefranche Beaujolais", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d4/FC_Villefranche_Beaujolais_logo.svg/240px-FC_Villefranche_Beaujolais_logo.svg.png" },
+        // Angleterre
+        { "id": "ARS", "nom": "Arsenal FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/53/Arsenal_FC.svg/240px-Arsenal_FC.svg.png" },
+        { "id": "AVL", "nom": "Aston Villa", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e9/Aston_Villa_FC_logo_2024.svg/240px-Aston_Villa_FC_logo_2024.svg.png" },
+        { "id": "BOU_EN", "nom": "AFC Bournemouth", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e5/AFC_Bournemouth_%282013%29.svg/240px-AFC_Bournemouth_%282013%29.svg.png" },
+        { "id": "BRE", "nom": "Brentford FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/2a/Brentford_FC_logo.svg/240px-Brentford_FC_logo.svg.png" },
+        { "id": "BHA", "nom": "Brighton & Hove Albion", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/fd/Brighton_&_Hove_Albion_logo.svg/240px-Brighton_&_Hove_Albion_logo.svg.png" },
+        { "id": "CHE", "nom": "Chelsea FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/51/Chelsea_FC.svg/240px-Chelsea_FC.svg.png" },
+        { "id": "CRY", "nom": "Crystal Palace", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/a/a2/Crystal_Palace_FC_logo_2022.svg/240px-Crystal_Palace_FC_logo_2022.svg.png" },
+        { "id": "EVE", "nom": "Everton FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/7c/Everton_FC_logo.svg/240px-Everton_FC_logo.svg.png" },
+        { "id": "FUL", "nom": "Fulham FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/eb/Fulham_FC.svg/240px-Fulham_FC.svg.png" },
+        { "id": "IPS", "nom": "Ipswich Town", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/4/43/Ipswich_Town.svg/240px-Ipswich_Town.svg.png" },
+        { "id": "LEI", "nom": "Leicester City", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/2d/Leicester_City_FC.svg/240px-Leicester_City_FC.svg.png" },
+        { "id": "LIV", "nom": "Liverpool FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/54/Logo_Liverpool_FC.svg/240px-Logo_Liverpool_FC.svg.png" },
+        { "id": "MCI", "nom": "Manchester City", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/ba/Manchester_City_FC_logo.svg/240px-Manchester_City_FC_logo.svg.png" },
+        { "id": "MUN", "nom": "Manchester United", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b9/Manchester_United_FC_logo.svg/240px-Manchester_United_FC_logo.svg.png" },
+        { "id": "NEW", "nom": "Newcastle United", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/56/Newcastle_United_Logo.svg/240px-Newcastle_United_Logo.svg.png" },
+        { "id": "NFO", "nom": "Nottingham Forest", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d2/Nottingham_Forest_logo.svg/240px-Nottingham_Forest_logo.svg.png" },
+        { "id": "SOU_EN", "nom": "Southampton FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/c/c9/Southampton_FC.svg/240px-Southampton_FC.svg.png" },
+        { "id": "TOT", "nom": "Tottenham Hotspur", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b4/Tottenham_Hotspur.svg/240px-Tottenham_Hotspur.svg.png" },
+        { "id": "WHU", "nom": "West Ham United", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/c/c2/West_Ham_United_FC_logo.svg/240px-West_Ham_United_FC_logo.svg.png" },
+        { "id": "WOL", "nom": "Wolverhampton Wanderers", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/fc/Wolverhampton_Wanderers.svg/240px-Wolverhampton_Wanderers.svg.png" },
+        { "id": "BLR", "nom": "Blackburn Rovers", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f0/Blackburn_Rovers_FC.svg/240px-Blackburn_Rovers_FC.svg.png" },
+        { "id": "BUR", "nom": "Burnley FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/6/62/Burnley_FC_logo.svg/240px-Burnley_FC_logo.svg.png" },
+        { "id": "CAR", "nom": "Cardiff City", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/3/3c/Cardiff_City_FC_logo.svg/240px-Cardiff_City_FC_logo.svg.png" },
+        { "id": "COV", "nom": "Coventry City", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/9/94/Coventry_City_FC_logo.svg/240px-Coventry_City_FC_logo.svg.png" },
+        { "id": "DER", "nom": "Derby County", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/4/4a/Derby_County_FC_logo.svg/240px-Derby_County_FC_logo.svg.png" },
+        { "id": "HUL", "nom": "Hull City", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/54/Hull_City_AFC_logo.svg/240px-Hull_City_AFC_logo.svg.png" },
+        { "id": "LEE", "nom": "Leeds United", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/54/Leeds_United_FC_logo.svg/240px-Leeds_United_FC_logo.svg.png" },
+        { "id": "LUT", "nom": "Luton Town", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/23/Luton_Town_FC_logo_2009.svg/240px-Luton_Town_FC_logo_2009.svg.png" },
+        { "id": "MID", "nom": "Middlesbrough FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/2c/Middlesbrough_FC_logo.svg/240px-Middlesbrough_FC_logo.svg.png" },
+        { "id": "MIL_EN", "nom": "Millwall FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e0/Millwall_FC_logo.svg/240px-Millwall_FC_logo.svg.png" },
+        { "id": "NOR_EN", "nom": "Norwich City", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/17/Norwich_City_FC_logo_2022.svg/240px-Norwich_City_FC_logo_2022.svg.png" },
+        { "id": "OXF", "nom": "Oxford United", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b2/Oxford_United_FC_logo.svg/240px-Oxford_United_FC_logo.svg.png" },
+        { "id": "PLY", "nom": "Plymouth Argyle", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b3/Plymouth_Argyle_FC_logo.svg/240px-Plymouth_Argyle_FC_logo.svg.png" },
+        { "id": "POR_EN", "nom": "Portsmouth FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/3/38/Portsmouth_FC_logo.svg/240px-Portsmouth_FC_logo.svg.png" },
+        { "id": "PNE", "nom": "Preston North End", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/ba/Preston_North_End_FC_logo.svg/240px-Preston_North_End_FC_logo.svg.png" },
+        { "id": "QPR", "nom": "Queens Park Rangers", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/3/31/Queens_Park_Rangers_FC_logo.svg/240px-Queens_Park_Rangers_FC_logo.svg.png" },
+        { "id": "SHE", "nom": "Sheffield United", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/9/9c/Sheffield_United_FC_logo.svg/240px-Sheffield_United_FC_logo.svg.png" },
+        { "id": "SHW", "nom": "Sheffield Wednesday", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/8/8e/Sheffield_Wednesday_FC_logo.svg/240px-Sheffield_Wednesday_FC_logo.svg.png" },
+        { "id": "STK", "nom": "Stoke City", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/29/Stoke_City_FC_logo.svg/240px-Stoke_City_FC_logo.svg.png" },
+        { "id": "SUN", "nom": "Sunderland AFC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/77/Sunderland_AFC.svg/240px-Sunderland_AFC.svg.png" },
+        { "id": "SWA", "nom": "Swansea City", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f9/Swansea_City_AFC_logo.svg/240px-Swansea_City_AFC_logo.svg.png" },
+        { "id": "WAT", "nom": "Watford FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e2/Watford_FC_2019.svg/240px-Watford_FC_2019.svg.png" },
+        { "id": "WBA", "nom": "West Bromwich Albion", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/8/8b/West_Bromwich_Albion.svg/240px-West_Bromwich_Albion.svg.png" },
+        // Espagne
+        { "id": "ALA", "nom": "Deportivo Alavés", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f8/Deportivo_Alav%C3%A9s_logo_2020.svg/240px-Deportivo_Alav%C3%A9s_logo_2020.svg.png" },
+        { "id": "ATH", "nom": "Athletic Club", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/09/Athletic_Club_de_Bilbao.svg/240px-Athletic_Club_de_Bilbao.svg.png" },
+        { "id": "ATM", "nom": "Atlético de Madrid", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/c/c1/Atletico_Madrid_logo_2024.svg/240px-Atletico_Madrid_logo_2024.svg.png" },
+        { "id": "BAR", "nom": "FC Barcelone", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/a/a1/Logo_FC_Barcelona.svg/240px-Logo_FC_Barcelona.svg.png" },
+        { "id": "BET", "nom": "Real Betis", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/13/Real_betis_logo.svg/240px-Real_betis_logo.svg.png" },
+        { "id": "CEL", "nom": "RC Celta de Vigo", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f3/Logo_RC_Celta_Vigo.svg/240px-Logo_RC_Celta_Vigo.svg.png" },
+        { "id": "ESP_CLUB", "nom": "RCD Espanyol", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d6/RCD_Espanyol_de_Barcelona_logo.svg/240px-RCD_Espanyol_de_Barcelona_logo.svg.png" },
+        { "id": "GET", "nom": "Getafe CF", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/4/46/Getafe_CF_logo.svg/240px-Getafe_CF_logo.svg.png" },
+        { "id": "GIR", "nom": "Girona FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/9/90/Girona_FC_logo.svg/240px-Girona_FC_logo.svg.png" },
+        { "id": "LPA", "nom": "UD Las Palmas", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/a/a1/UD_Las_Palmas_logo.svg/240px-UD_Las_Palmas_logo.svg.png" },
+        { "id": "LEG", "nom": "CD Leganés", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b8/CD_Legan%C3%A9s_logo_2016.svg/240px-CD_Legan%C3%A9s_logo_2016.svg.png" },
+        { "id": "MAL_ES", "nom": "RCD Mallorca", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e0/RCD_Mallorca_logo.svg/240px-RCD_Mallorca_logo.svg.png" },
+        { "id": "OSA", "nom": "CA Osasuna", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/db/Logo_CA_Osasuna.svg/240px-Logo_CA_Osasuna.svg.png" },
+        { "id": "RVA", "nom": "Rayo Vallecano", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/1a/Rayo_Vallecano_logo.svg/240px-Rayo_Vallecano_logo.svg.png" },
+        { "id": "RMA", "nom": "Real Madrid", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/c/c7/Logo_Real_Madrid.svg/240px-Logo_Real_Madrid.svg.png" },
+        { "id": "RSO", "nom": "Real Sociedad", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f1/Real_Sociedad_logo.svg/240px-Real_Sociedad_logo.svg.png" },
+        { "id": "SEV", "nom": "Sevilla FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/3/3b/Sevilla_FC_logo.svg/240px-Sevilla_FC_logo.svg.png" },
+        { "id": "VAL_ES", "nom": "Valencia CF", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/1b/Valencia_CF_logo.svg/240px-Valencia_CF_logo.svg.png" },
+        { "id": "VAD", "nom": "Real Valladolid", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/53/Real_Valladolid_CF_logo_2022.svg/240px-Real_Valladolid_CF_logo_2022.svg.png" },
+        { "id": "VIL_ES", "nom": "Villarreal CF", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/70/Villarreal_CF_logo.svg/240px-Villarreal_CF_logo.svg.png" },
+        { "id": "ALB", "nom": "Albacete Balompié", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/15/Albacete_Balompi%C3%A9_logo.svg/240px-Albacete_Balompi%C3%A9_logo.svg.png" },
+        { "id": "ALM_ES", "nom": "UD Almería", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/a/a2/UD_Almeria_logo_2022.svg/240px-UD_Almeria_logo_2022.svg.png" },
+        { "id": "BUR_ES", "nom": "Burgos CF", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d4/Burgos_CF_logo.svg/240px-Burgos_CF_logo.svg.png" },
+        { "id": "CAD", "nom": "Cádiz CF", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/58/C%C3%A1diz_CF_logo.svg/240px-C%C3%A1diz_CF_logo.svg.png" },
+        { "id": "CAR_ES", "nom": "FC Cartagena", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/00/FC_Cartagena_logo.svg/240px-FC_Cartagena_logo.svg.png" },
+        { "id": "CAS", "nom": "CD Castellón", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/df/CD_Castell%C3%B3n_logo.svg/240px-CD_Castell%C3%B3n_logo.svg.png" },
+        { "id": "COR", "nom": "Córdoba CF", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/be/C%C3%B3rdoba_CF_logo.svg/240px-C%C3%B3rdoba_CF_logo.svg.png" },
+        { "id": "DEP", "nom": "Deportivo La Coruña", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d3/Deportivo_La_Corogne_logo.svg/240px-Deportivo_La_Corogne_logo.svg.png" },
+        { "id": "ELC", "nom": "Elche CF", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/a/a7/Elche_CF_logo.svg/240px-Elche_CF_logo.svg.png" },
+        { "id": "ELD", "nom": "CD Eldense", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f6/CD_Eldense_logo.svg/240px-CD_Eldense_logo.svg.png" },
+        { "id": "FER", "nom": "Racing de Ferrol", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/22/Racing_Ferrol_logo.svg/240px-Racing_Ferrol_logo.svg.png" },
+        { "id": "GRA", "nom": "Granada CF", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d5/Granada_CF_logo.svg/240px-Granada_CF_logo.svg.png" },
+        { "id": "HUE", "nom": "SD Huesca", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/a/a2/SD_Huesca_logo.svg/240px-SD_Huesca_logo.svg.png" },
+        { "id": "LEV", "nom": "Levante UD", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/7b/Levante_UD_logo.svg/240px-Levante_UD_logo.svg.png" },
+        { "id": "MAL_ES2", "nom": "Málaga CF", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d4/M%C3%A1laga_CF_logo.svg/240px-M%C3%A1laga_CF_logo.svg.png" },
+        { "id": "MIR", "nom": "CD Mirandés", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d6/CD_Mirand%C3%A9s_logo.svg/240px-CD_Mirand%C3%A9s_logo.svg.png" },
+        { "id": "OVI", "nom": "Real Oviedo", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/25/Real_Oviedo_logo.svg/240px-Real_Oviedo_logo.svg.png" },
+        { "id": "RAC", "nom": "Racing de Santander", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/3/30/Racing_Santander_logo.svg/240px-Racing_Santander_logo.svg.png" },
+        { "id": "SPO", "nom": "Sporting de Gijón", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e0/Real_Sporting_de_Gijon_logo.svg/240px-Real_Sporting_de_Gijon_logo.svg.png" },
+        { "id": "TEN", "nom": "CD Tenerife", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/2e/CD_Tenerife_logo.svg/240px-CD_Tenerife_logo.svg.png" },
+        // Allemagne
+        { "id": "AUG", "nom": "FC Augsbourg", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b5/FC_Augsburg_logo.svg/240px-FC_Augsburg_logo.svg.png" },
+        { "id": "LEV_DE", "nom": "Bayer Leverkusen", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/59/Bayer_04_Leverkusen_logo.svg/240px-Bayer_04_Leverkusen_logo.svg.png" },
+        { "id": "BAY", "nom": "Bayern Munich", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/1b/Logo_FC_Bayern_M%C3%BCnchen.svg/240px-Logo_FC_Bayern_M%C3%BCnchen.svg.png" },
+        { "id": "BOC", "nom": "VfL Bochum", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/72/VfL_Bochum_logo.svg/240px-VfL_Bochum_logo.svg.png" },
+        { "id": "DOR", "nom": "Borussia Dortmund", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/6/67/Borussia_Dortmund_logo.svg/240px-Borussia_Dortmund_logo.svg.png" },
+        { "id": "MGL", "nom": "Borussia Mönchengladbach", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/ba/Borussia_Moenchengladbach_logo.svg/240px-Borussia_Moenchengladbach_logo.svg.png" },
+        { "id": "FRA_DE", "nom": "Eintracht Francfort", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/04/Eintracht_Frankfurt_logo.svg/240px-Eintracht_Frankfurt_logo.svg.png" },
+        { "id": "FRE", "nom": "SC Fribourg", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f1/SC_Freiburg_logo.svg/240px-SC_Freiburg_logo.svg.png" },
+        { "id": "HEI", "nom": "FC Heidenheim", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/17/1._FC_Heidenheim_1846_logo.svg/240px-1._FC_Heidenheim_1846_logo.svg.png" },
+        { "id": "HOF", "nom": "TSG Hoffenheim", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e7/Logo_TSG_Hoffenheim.svg/240px-Logo_TSG_Hoffenheim.svg.png" },
+        { "id": "HOL", "nom": "Holstein Kiel", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f6/Holstein_Kiel_logo.svg/240px-Holstein_Kiel_logo.svg.png" },
+        { "id": "RBL", "nom": "RB Leipzig", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/04/RB_Leipzig_2014_logo.svg/240px-RB_Leipzig_2014_logo.svg.png" },
+        { "id": "MAI", "nom": "FSV Mayence", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/9/9e/Logo_FSV_Mainz_05.svg/240px-Logo_FSV_Mainz_05.svg.png" },
+        { "id": "STP", "nom": "FC Sankt Pauli", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/0b/FC_St._Pauli_logo.svg/240px-FC_St._Pauli_logo.svg.png" },
+        { "id": "STU", "nom": "VfB Stuttgart", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/eb/VfB_Stuttgart_1893_Logo.svg/240px-VfB_Stuttgart_1893_Logo.svg.png" },
+        { "id": "UNB", "nom": "Union Berlin", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/4/44/1._FC_Union_Berlin_logo.svg/240px-1._FC_Union_Berlin_logo.svg.png" },
+        { "id": "WER", "nom": "Werder Brême", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/be/Werder_Bremen_logo.svg/240px-Werder_Bremen_logo.svg.png" },
+        { "id": "WOL_DE", "nom": "VfL Wolfsburg", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f3/VfL_Wolfsburg_logo.svg/240px-VfL_Wolfsburg_logo.svg.png" },
+        { "id": "DAR", "nom": "SV Darmstadt 98", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d4/SV_Darmstadt_98_logo.svg/240px-SV_Darmstadt_98_logo.svg.png" },
+        { "id": "DUS", "nom": "Fortuna Düsseldorf", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/9/94/Fortuna_Duesseldorf_logo.svg/240px-Fortuna_Duesseldorf_logo.svg.png" },
+        { "id": "ELV", "nom": "SV Elversberg", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/a/a2/SV_07_Elversberg_logo.svg/240px-SV_07_Elversberg_logo.svg.png" },
+        { "id": "FUE", "nom": "Greuther Fürth", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f2/SpVgg_Greuther_Fuerth_logo.svg/240px-SpVgg_Greuther_Fuerth_logo.svg.png" },
+        { "id": "HAM", "nom": "Hambourg SV", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/6/66/Hamburger_SV_logo.svg/240px-Hamburger_SV_logo.svg.png" },
+        { "id": "HAN", "nom": "Hanovre 96", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/c/cd/Hannover_96_logo.svg/240px-Hannover_96_logo.svg.png" },
+        { "id": "HER", "nom": "Hertha Berlin", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/3/38/Hertha_BSC_logo.svg/240px-Hertha_BSC_logo.svg.png" },
+        { "id": "KAI", "nom": "FC Kaiserslautern", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d3/1._FC_Kaiserslautern_logo.svg/240px-1._FC_Kaiserslautern_logo.svg.png" },
+        { "id": "KAR", "nom": "Karlsruher SC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/a/a3/Karlsruher_SC_logo.svg/240px-Karlsruher_SC_logo.svg.png" },
+        { "id": "KOL", "nom": "FC Cologne", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/53/1._FC_Koeln_logo.svg/240px-1._FC_Koeln_logo.svg.png" },
+        { "id": "MAG", "nom": "FC Magdebourg", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b3/1._FC_Magdeburg_logo.svg/240px-1._FC_Magdeburg_logo.svg.png" },
+        { "id": "MUN_DE", "nom": "Preußen Münster", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d5/Preussen_Muenster_logo.svg/240px-Preussen_Muenster_logo.svg.png" },
+        { "id": "NUR", "nom": "FC Nuremberg", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/0c/1._FC_Nuernberg_logo.svg/240px-1._FC_Nuernberg_logo.svg.png" },
+        { "id": "PAD", "nom": "SC Paderborn 07", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e0/SC_Paderborn_07_logo.svg/240px-SC_Paderborn_07_logo.svg.png" },
+        { "id": "REG", "nom": "Jahn Ratisbonne", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/3/36/SSV_Jahn_Regensburg_logo.svg/240px-SSV_Jahn_Regensburg_logo.svg.png" },
+        { "id": "SCH", "nom": "Schalke 04", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/6/6d/FC_Schalke_04_logo.svg/240px-FC_Schalke_04_logo.svg.png" },
+        { "id": "ULM", "nom": "SSV Ulm 1846", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/1b/SSV_Ulm_1846_logo.svg/240px-SSV_Ulm_1846_logo.svg.png" },
+        // Italie
+        { "id": "ATA", "nom": "Atalanta Bergame", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/a/a2/Atalanta_Bergame_Logo.svg/240px-Atalanta_Bergame_Logo.svg.png" },
+        { "id": "BOL", "nom": "Bologne FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/5b/Bologna_FC_logo.svg/240px-Bologna_FC_logo.svg.png" },
+        { "id": "CAG", "nom": "Cagliari Calcio", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/6/61/Cagliari_Calcio_1920.svg/240px-Cagliari_Calcio_1920.svg.png" },
+        { "id": "COMO", "nom": "Côme 1907", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/1d/Como_1907_logo.svg/240px-Como_1907_logo.svg.png" },
+        { "id": "EMP", "nom": "Empoli FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/2d/Empoli_FC_logo.svg/240px-Empoli_FC_logo.svg.png" },
+        { "id": "FIO", "nom": "ACF Fiorentina", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b3/ACF_Fiorentina_logo_2022.svg/240px-ACF_Fiorentina_logo_2022.svg.png" },
+        { "id": "GEN", "nom": "Genoa CFC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d4/Genoa_CFC_logo.svg/240px-Genoa_CFC_logo.svg.png" },
+        { "id": "INT", "nom": "Inter Milan", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/05/Inter_Milan_logo_2021.svg/240px-Inter_Milan_logo_2021.svg.png" },
+        { "id": "JUV", "nom": "Juventus FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d2/Juventus_Logo_2017.svg/240px-Juventus_Logo_2017.svg.png" },
+        { "id": "LAZ", "nom": "SS Lazio", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/4/4c/Lazio_Rome_logo.svg/240px-Lazio_Rome_logo.svg.png" },
+        { "id": "LEC", "nom": "US Lecce", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/be/US_Lecce_logo.svg/240px-US_Lecce_logo.svg.png" },
+        { "id": "MIL_IT", "nom": "AC Milan", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d0/Logo_AC_Milan.svg/240px-Logo_AC_Milan.svg.png" },
+        { "id": "MON", "nom": "AC Monza", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d3/AC_Monza_logo.svg/240px-AC_Monza_logo.svg.png" },
+        { "id": "NAP", "nom": "SSC Naples", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b5/SSC_Napoli_logo_2024.svg/240px-SSC_Napoli_logo_2024.svg.png" },
+        { "id": "PAR_IT", "nom": "Parme Calcio", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b4/Parma_Calcio_1913_logo.svg/240px-Parma_Calcio_1913_logo.svg.png" },
+        { "id": "ROM", "nom": "AS Rome", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f3/AS_Roma_logo.svg/240px-AS_Roma_logo.svg.png" },
+        { "id": "TOR", "nom": "Torino FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/2e/Torino_FC_Logo.svg/240px-Torino_FC_Logo.svg.png" },
+        { "id": "UDI", "nom": "Udinese Calcio", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/07/Logo_Udinese_Calcio.svg/240px-Logo_Udinese_Calcio.svg.png" },
+        { "id": "VEN", "nom": "Venise FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/7b/Venezia_FC_logo_2022.svg/240px-Venezia_FC_logo_2022.svg.png" },
+        { "id": "VER_IT", "nom": "Hellas Vérone", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d1/Logo_Hellas_Verona.svg/240px-Logo_Hellas_Verona.svg.png" },
+        { "id": "BARI", "nom": "SSC Bari", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/14/SSC_Bari_logo.svg/240px-SSC_Bari_logo.svg.png" },
+        { "id": "BRE_IT", "nom": "Brescia Calcio", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/17/Brescia_Calcio_logo_2017.svg/240px-Brescia_Calcio_logo_2017.svg.png" },
+        { "id": "CAR_IT", "nom": "Carrarese Calcio", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/8/8e/Carrarese_Calcio_logo.svg/240px-Carrarese_Calcio_logo.svg.png" },
+        { "id": "CAT", "nom": "US Catanzaro", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d7/US_Catanzaro_1929_logo.svg/240px-US_Catanzaro_1929_logo.svg.png" },
+        { "id": "CES", "nom": "Cesena FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/9/90/Cesena_Football_Club_logo.svg/240px-Cesena_Football_Club_logo.svg.png" },
+        { "id": "CIT", "nom": "AS Cittadella", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/77/AS_Cittadella_logo.svg/240px-AS_Cittadella_logo.svg.png" },
+        { "id": "CRE", "nom": "US Cremonese", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/18/US_Cremonese_logo.svg/240px-US_Cremonese_logo.svg.png" },
+        { "id": "FRO", "nom": "Frosinone Calcio", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/6/64/Frosinone_Calcio_logo.svg/240px-Frosinone_Calcio_logo.svg.png" },
+        { "id": "JUV_STABIA", "nom": "Juve Stabia", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/07/SS_Juve_Stabia_logo.svg/240px-SS_Juve_Stabia_logo.svg.png" },
+        { "id": "MOD", "nom": "Modène FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/9/9f/Modena_FC_logo_2022.svg/240px-Modena_FC_logo_2022.svg.png" },
+        { "id": "PAL", "nom": "Palerme FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/4/4e/Palermo_FC_logo.svg/240px-Palermo_FC_logo.svg.png" },
+        { "id": "PISA", "nom": "Pise SC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/6/66/Pisa_SC_logo.svg/240px-Pisa_SC_logo.svg.png" },
+        { "id": "REG_IT", "nom": "AC Reggiana", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/01/AC_Reggiana_1919_logo.svg/240px-AC_Reggiana_1919_logo.svg.png" },
+        { "id": "SAL", "nom": "US Salernitana", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/d/d4/US_Salernitana_1919_logo.svg/240px-US_Salernitana_1919_logo.svg.png" },
+        { "id": "SAM", "nom": "Sampdoria Gênes", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/bb/Sampdoria_G%C3%AAnes_Logo.svg/240px-Sampdoria_G%C3%AAnes_Logo.svg.png" },
+        { "id": "SAS", "nom": "US Sassuolo", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/1d/US_Sassuolo_Calcio_logo.svg/240px-US_Sassuolo_Calcio_logo.svg.png" },
+        { "id": "SPE", "nom": "Spezia Calcio", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b3/Spezia_Calcio_logo_2023.svg/240px-Spezia_Calcio_logo_2023.svg.png" },
+        { "id": "SUD", "nom": "FC Südtirol", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/15/FC_S%C3%BCdtirol_logo.svg/240px-FC_S%C3%BCdtirol_logo.svg.png" },
+        // Portugal
+        { "id": "AVS", "nom": "AVS Futebol SAD", "logo": "https://upload.wikimedia.org/wikipedia/pt/thumb/d/d4/AVS_Futebol_SAD_logo.png/240px-AVS_Futebol_SAD_logo.png" },
+        { "id": "AROU", "nom": "FC Arouca", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b3/FC_Arouca_logo.svg/240px-FC_Arouca_logo.svg.png" },
+        { "id": "BENF", "nom": "SL Benfica", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/a/a2/Logo_SL_Benfica.svg/240px-Logo_SL_Benfica.svg.png" },
+        { "id": "BOAV", "nom": "Boavista FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/4/42/Boavista_FC_logo.svg/240px-Boavista_FC_logo.svg.png" },
+        { "id": "CASA", "nom": "Casa Pia AC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/a/af/Casa_Pia_AC_logo.svg/240px-Casa_Pia_AC_logo.svg.png" },
+        { "id": "ESTO", "nom": "GD Estoril-Praia", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b0/GD_Estoril-Praia_logo.svg/240px-GD_Estoril-Praia_logo.svg.png" },
+        { "id": "ESTR", "nom": "Estrela da Amadora", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/5/5e/Estrela_da_Amadora_logo.svg/240px-Estrela_da_Amadora_logo.svg.png" },
+        { "id": "FAMAL", "nom": "FC Famalicão", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e0/FC_Famalic%C3%A3o_logo.svg/240px-FC_Famalic%C3%A3o_logo.svg.png" },
+        { "id": "FAREN", "nom": "SC Farense", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/8/82/SC_Farense_logo.svg/240px-SC_Farense_logo.svg.png" },
+        { "id": "GILV", "nom": "Gil Vicente FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f6/Gil_Vicente_FC_logo.svg/240px-Gil_Vicente_FC_logo.svg.png" },
+        { "id": "MOREI", "nom": "Moreirense FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/ef/Moreirense_FC_logo.svg/240px-Moreirense_FC_logo.svg.png" },
+        { "id": "NACI", "nom": "Nacional Madère", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/29/Clube_Desportivo_Nacional_logo.svg/240px-Clube_Desportivo_Nacional_logo.svg.png" },
+        { "id": "PORTO", "nom": "FC Porto", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/b/b5/FC_Porto_logo.svg/240px-FC_Porto_logo.svg.png" },
+        { "id": "RIOAV", "nom": "Rio Ave FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/ec/Rio_Ave_FC_logo.svg/240px-Rio_Ave_FC_logo.svg.png" },
+        { "id": "SANT", "nom": "Santa Clara", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/18/CD_Santa_Clara_logo.svg/240px-CD_Santa_Clara_logo.svg.png" },
+        { "id": "SPORT", "nom": "Sporting CP", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/3/3e/Sporting_Clube_de_Portugal.svg/240px-Sporting_Clube_de_Portugal.svg.png" },
+        { "id": "BRAGA", "nom": "SC Braga", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f4/SC_Braga_logo.svg/240px-SC_Braga_logo.svg.png" },
+        { "id": "VITSC", "nom": "Vitória Guimarães", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/14/Vit%C3%B3ria_Guimar%C3%A3es_logo.svg/240px-Vit%C3%B3ria_Guimar%C3%A3es_logo.svg.png" },
+        // Pays-Bas
+        { "id": "AJX", "nom": "Ajax Amsterdam", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/7/79/Ajax_Amsterdam.svg/240px-Ajax_Amsterdam.svg.png" },
+        { "id": "ALM_NL", "nom": "Almere City FC", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f6/Almere_City_FC_logo.svg/240px-Almere_City_FC_logo.svg.png" },
+        { "id": "AZA", "nom": "AZ Alkmaar", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e0/AZ_Alkmaar.svg/240px-AZ_Alkmaar.svg.png" },
+        { "id": "FEY", "nom": "Feyenoord Rotterdam", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/1b/Feyenoord_Rotterdam_logo_2024.svg/240px-Feyenoord_Rotterdam_logo_2024.svg.png" },
+        { "id": "FOR", "nom": "Fortuna Sittard", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f4/Logo_Fortuna_Sittard.svg/240px-Logo_Fortuna_Sittard.svg.png" },
+        { "id": "GAE", "nom": "Go Ahead Eagles", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/3/30/Go_Ahead_Eagles_logo.svg/240px-Go_Ahead_Eagles_logo.svg.png" },
+        { "id": "GRO", "nom": "FC Groningue", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/f/f3/FC_Groningen_logo.svg/240px-FC_Groningen_logo.svg.png" },
+        { "id": "HEE", "nom": "SC Heerenveen", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/e3/SC_Heerenveen_logo.svg/240px-SC_Heerenveen_logo.svg.png" },
+        { "id": "HER_NL", "nom": "Heracles Almelo", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/e/eb/Heracles_Almelo_logo.svg/240px-Heracles_Almelo_logo.svg.png" },
+        { "id": "NAC", "nom": "NAC Breda", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/07/NAC_Breda_logo.svg/240px-NAC_Breda_logo.svg.png" },
+        { "id": "NEC", "nom": "NEC Nimègue", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/16/NEC_Nijmegen_logo.svg/240px-NEC_Nijmegen_logo.svg.png" },
+        { "id": "PEC", "nom": "PEC Zwolle", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/1/1a/PEC_Zwolle_logo.svg/240px-PEC_Zwolle_logo.svg.png" },
+        { "id": "PSV", "nom": "PSV Eindhoven", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/05/PSV_Eindhoven.svg/240px-PSV_Eindhoven.svg.png" },
+        { "id": "RKC", "nom": "RKC Waalwijk", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/0/02/RKC_Waalwijk_logo.svg/240px-RKC_Waalwijk_logo.svg.png" },
+        { "id": "SPA", "nom": "Sparta Rotterdam", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/9/90/Sparta_Rotterdam_logo.svg/240px-Sparta_Rotterdam_logo.svg.png" },
+        { "id": "TWE", "nom": "FC Twente", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/2/22/FC_Twente_logo.svg/240px-FC_Twente_logo.svg.png" },
+        { "id": "UTR", "nom": "FC Utrecht", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/9/90/FC_Utrecht_logo.svg/240px-FC_Utrecht_logo.svg.png" },
+        { "id": "WIL", "nom": "Willem II Tilburg", "logo": "https://upload.wikimedia.org/wikipedia/fr/thumb/c/cd/Willem_II_logo.svg/240px-Willem_II_logo.svg.png" }
+    ];
+
+    // --- INITIALISATION DES MENUS DÉROULANTS ---
+    function init() {
+        const compSelect = document.getElementById('championnat');
+        competitions.forEach(c => {
+            let option = document.createElement('option');
+            option.value = c.id;
+            option.textContent = c.nom;
+            compSelect.appendChild(option);
+        });
+
+        // Trier les équipes par ordre alphabétique pour faciliter la recherche
+        equipes.sort((a, b) => a.nom.localeCompare(b.nom));
+
+        const eq1Select = document.getElementById('equipe1');
+        const eq2Select = document.getElementById('equipe2');
+
+        equipes.forEach(eq => {
+            let opt1 = document.createElement('option');
+            opt1.value = eq.id;
+            opt1.textContent = eq.nom;
+            eq1Select.appendChild(opt1);
+
+            let opt2 = document.createElement('option');
+            opt2.value = eq.id;
+            opt2.textContent = eq.nom;
+            eq2Select.appendChild(opt2);
+        });
+    }
+
+    // --- GÉNÉRATION DU JSON ---
+    function genererJSON() {
+        const idComp = document.getElementById('championnat').value;
+        const idEq1 = document.getElementById('equipe1').value;
+        const idEq2 = document.getElementById('equipe2').value;
+        const visuelUrl = document.getElementById('visuel').value;
+        const dateMatch = document.getElementById('date').value;
+        const heureMatch = document.getElementById('heure').value;
+        const description = document.getElementById('description').value;
+
+        if (!idComp || !idEq1 || !idEq2) {
+            alert("Veuillez au moins sélectionner un championnat et les deux équipes !");
+            return;
+        }
+
+        const equipe1 = equipes.find(e => e.id === idEq1);
+        const equipe2 = equipes.find(e => e.id === idEq2);
+
+        const matchJson = {
+            id_equipe1: equipe1.id,
+            id_equipe2: equipe2.id,
+            id_championnat: idComp,
+            nom_match: `${equipe1.nom} vs ${equipe2.nom}`,
+            visuel_url: visuelUrl,
+            logo_equipe1: equipe1.logo,
+            logo_equipe2: equipe2.logo,
+            date: dateMatch,
+            heure: heureMatch,
+            description: description
+        };
+
+        const jsonString = JSON.stringify(matchJson, null, 2);
+        
+        document.getElementById('output-container').style.display = 'block';
+        document.getElementById('json-output').textContent = jsonString;
+    }
+
+    // Lancer l'initialisation au chargement
+    window.onload = init;
+</script>
+
+</body>
+</html>
